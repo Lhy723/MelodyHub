@@ -3,18 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
 import { AnimatedContent, toast, Dropdown, Switch } from '../../components/ui';
 import type { Model } from '../../types/provider';
-import { invoke } from '@tauri-apps/api/core';
+import { desktopApi } from '../../lib/desktopApi';
 import { Check, Loader2, Download, Plus, Trash2, Eye, Brain, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 
 interface RemoteModelEntry {
   id: string;
   name: string;
-}
-
-interface FetchModelsResult {
-  success: boolean;
-  models: RemoteModelEntry[];
-  message: string;
 }
 
 const API_FLAVOR_OPTIONS = [
@@ -159,11 +153,7 @@ export const EditProviderPage: React.FC = () => {
     setFetchingModels(true);
     setModelFetchMessage('');
     try {
-      const result = await invoke<FetchModelsResult>('fetch_provider_models', {
-        flavor: apiFlavor,
-        apiBase,
-        apiKey,
-      });
+      const result = await desktopApi.fetchProviderModels(apiFlavor, apiBase, apiKey);
       setRemoteModels(result.models ?? []);
       setModelFetchMessage(result.message);
       toast(result.message, result.success ? 'success' : 'info');
@@ -183,16 +173,7 @@ export const EditProviderPage: React.FC = () => {
     setTestResult('idle');
     setTestMessage('');
     try {
-      const result = await invoke<{
-        success: boolean;
-        modelCount?: number;
-        error?: { kind: string; message: string };
-        message: string;
-      }>('test_provider_connection', {
-        flavor: apiFlavor,
-        apiBase,
-        apiKey,
-      });
+      const result = await desktopApi.testProviderConnection(apiFlavor, apiBase, apiKey);
       if (result.success) {
         setTestResult('success');
         setTestMessage(result.message);

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { useSettingsStore } from '../../store/settingsStore';
+import { desktopApi } from '../../lib/desktopApi';
 import { toast } from '../../components/ui';
 import { Play, Square, Copy, Check, Loader2, Cpu } from 'lucide-react';
 
@@ -52,7 +52,8 @@ export const ProxyControl: React.FC = () => {
   }, [loaded, loadSettings]);
 
   const poll = useCallback(() => {
-    invoke<ProxyStatus>('get_proxy_status')
+    desktopApi
+      .getProxyStatus()
       .then(setStatus)
       .catch(() => setStatus(null));
   }, []);
@@ -73,13 +74,14 @@ export const ProxyControl: React.FC = () => {
     setToggling(true);
     try {
       if (running) {
-        await invoke('stop_proxy');
+        await desktopApi.stopProxy();
         toast('代理已停止', 'info');
       } else {
-        await invoke('start_proxy', { host: settings.host, port: settings.port });
+        await desktopApi.startProxy(settings.host, settings.port);
         toast('代理已启动', 'success');
       }
-      await invoke<ProxyStatus>('get_proxy_status')
+      await desktopApi
+        .getProxyStatus()
         .then(setStatus)
         .catch(() => setStatus(null));
     } catch (e: unknown) {
