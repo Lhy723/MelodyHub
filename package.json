@@ -24,6 +24,7 @@
     "@tauri-apps/plugin-updater": "^2",
     "lucide-react": "^1.23.0",
     "react": "^19.1.0",
+    "react-aria-components": "^1.19.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.18.1",
     "recharts": "^3.9.1",
