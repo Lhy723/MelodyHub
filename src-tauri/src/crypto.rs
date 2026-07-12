@@ -32,7 +32,8 @@ fn get_or_create_key(app_handle: &tauri::AppHandle) -> Result<[u8; KEY_LEN], Str
 
     // Try reading from keyring first.
     if let Ok(encoded) = entry.get_password() {
-        if let Ok(decoded) = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &encoded)
+        if let Ok(decoded) =
+            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &encoded)
         {
             if decoded.len() == KEY_LEN {
                 let mut key = [0u8; KEY_LEN];
@@ -55,9 +56,13 @@ fn get_or_create_key(app_handle: &tauri::AppHandle) -> Result<[u8; KEY_LEN], Str
             key.copy_from_slice(&decoded);
             let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, key);
             // Write to keyring.
-            entry.set_password(&b64).map_err(|e| format!("Failed to store key in OS keyring: {}", e))?;
+            entry
+                .set_password(&b64)
+                .map_err(|e| format!("Failed to store key in OS keyring: {}", e))?;
             // Verify read-back.
-            let readback = entry.get_password().map_err(|e| format!("Failed to verify key in OS keyring: {}", e))?;
+            let readback = entry
+                .get_password()
+                .map_err(|e| format!("Failed to verify key in OS keyring: {}", e))?;
             if readback != b64 {
                 return Err("Key migration verification failed: key mismatch".into());
             }

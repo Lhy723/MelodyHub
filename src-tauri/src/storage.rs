@@ -73,10 +73,7 @@ pub fn save_providers(app_handle: &tauri::AppHandle, providers: &[Provider]) -> 
             } else {
                 match crypto::encrypt(&p.api_key, app_handle) {
                     Ok(enc) => Ok(p.clone().with_encrypted_key(enc)),
-                    Err(e) => Err(format!(
-                        "Unable to encrypt API key for '{}': {}",
-                        p.name, e
-                    )),
+                    Err(e) => Err(format!("Unable to encrypt API key for '{}': {}", p.name, e)),
                 }
             }
         })
