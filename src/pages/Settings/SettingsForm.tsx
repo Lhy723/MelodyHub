@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
-import { useStatsStore } from '../../store/statsStore';
 import {
   Button,
   FormField,
@@ -24,11 +23,6 @@ const concurrencyOptions = sel([
   { value: '20', label: '20' },
   { value: '50', label: '50' },
 ]);
-const periodOptions = sel([
-  { value: 'daily', label: '每日' },
-  { value: 'weekly', label: '每周' },
-  { value: 'monthly', label: '每月' },
-]);
 const languageOptions = sel([
   { value: 'zh-CN', label: '简体中文' },
   { value: 'en', label: 'English' },
@@ -47,12 +41,6 @@ const timeFormatOptions = sel([
   { value: '24h', label: '24小时' },
   { value: '12h', label: '12小时' },
 ]);
-const logLevelOptions = sel([
-  { value: 'debug', label: 'Debug' },
-  { value: 'info', label: 'Info' },
-  { value: 'warn', label: 'Warn' },
-  { value: 'error', label: 'Error' },
-]);
 const proxyProtocolOptions = sel([
   { value: 'http', label: 'HTTP' },
   { value: 'socks5', label: 'SOCKS5' },
@@ -69,11 +57,6 @@ const retryOptions = sel([
   { value: '3', label: '3次' },
   { value: '5', label: '5次' },
 ]);
-const cacheOptions = sel([
-  { value: 'none', label: '不缓存' },
-  { value: 'memory', label: '内存缓存' },
-  { value: 'disk', label: '磁盘缓存' },
-]);
 
 const errorMessage = (e: unknown, fallback: string) => (e instanceof Error ? e.message : e ? String(e) : fallback);
 
@@ -81,7 +64,6 @@ export const SettingsForm: React.FC = () => {
   const t = useT();
   const { settings, activeCategory, loaded, isDirty, loadSettings, saveSettings, updateSettings, resetSettings } =
     useSettingsStore();
-  const resetStats = useStatsStore((s) => s.resetStats);
   const [proxyRunning, setProxyRunning] = useState(false);
   const [proxyHost, setProxyHost] = useState(settings.host);
   const [proxyPort, setProxyPort] = useState(8080);
@@ -220,35 +202,10 @@ export const SettingsForm: React.FC = () => {
     </span>
   );
 
-  const plannedDivider = () => (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--spacer-8)',
-        margin: 'var(--spacer-8) 0 var(--spacer-16) 0',
-        gridColumn: '1 / -1',
-      }}
-    >
-      <div style={{ flex: 1, height: 1, background: 'var(--border-neutral-l1)' }} />
-      <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
-        计划中 (v0.2.0)
-      </span>
-      <div style={{ flex: 1, height: 1, background: 'var(--border-neutral-l1)' }} />
-    </div>
-  );
-
   const handleResetWithConfirm = () => {
     if (window.confirm('确定恢复所有默认值？未保存的修改将丢失。')) {
       resetSettings();
       toast('已恢复默认值', 'info');
-    }
-  };
-
-  const handleResetStatsWithConfirm = async () => {
-    if (window.confirm('确定清空当前仪表盘统计窗口？历史日志文件会保留。')) {
-      await resetStats();
-      toast('统计已重置', 'info');
     }
   };
 
@@ -372,41 +329,6 @@ export const SettingsForm: React.FC = () => {
                 </FormField>
               </FormGrid>
             </section>
-            <section style={{ marginBottom: 'var(--spacer-32)' }}>
-              <SectionTitle>{t('settings.token')}</SectionTitle>
-              <FormGrid>
-                <FormField label="用量上限">
-                  <Input
-                    type="number"
-                    value={settings.tokenLimit.toString()}
-                    onChange={(e) => updateSettings({ tokenLimit: parseInt(e.target.value) || 0 })}
-                  />
-                </FormField>
-                {plannedDivider()}
-                <FormField label="提醒阈值">
-                  <Input
-                    type="text"
-                    value={settings.tokenWarningThreshold}
-                    onChange={(e) => updateSettings({ tokenWarningThreshold: e.target.value })}
-                  />
-                  {planned()}
-                </FormField>
-                <FormField label="统计周期">
-                  <Dropdown
-                    options={periodOptions}
-                    value={settings.tokenStatPeriod}
-                    onChange={(v) => updateSettings({ tokenStatPeriod: v })}
-                    size="sm"
-                  />
-                  {planned()}
-                </FormField>
-                <FormField label="">
-                  <Button variant="secondary" onClick={handleResetStatsWithConfirm}>
-                    {t('settings.tokenReset')}
-                  </Button>
-                </FormField>
-              </FormGrid>
-            </section>
             <div
               style={{
                 display: 'flex',
@@ -482,30 +404,12 @@ export const SettingsForm: React.FC = () => {
           <section style={{ marginBottom: 'var(--spacer-32)' }}>
             <SectionTitle>{t('settings.logging.title')}</SectionTitle>
             <FormGrid>
-              <FormField label="日志级别">
-                <Dropdown
-                  options={logLevelOptions}
-                  value={settings.logLevel}
-                  onChange={(v) => updateSettings({ logLevel: v })}
-                  size="sm"
-                  disabled
-                />
-                {planned()}
-              </FormField>
               <FormField label="日志保留天数">
                 <Input
                   type="number"
                   value={settings.logRetentionDays.toString()}
                   onChange={(e) => updateSettings({ logRetentionDays: parseInt(e.target.value) || 30 })}
                 />
-              </FormField>
-              <FormField label="记录请求内容">
-                <Switch
-                  checked={settings.logRequestContent}
-                  onChange={(v) => updateSettings({ logRequestContent: v })}
-                  disabled
-                />
-                {planned()}
               </FormField>
               <FormField label="自动清理日志">
                 <Switch checked={settings.logAutoClean} onChange={(v) => updateSettings({ logAutoClean: v })} />
@@ -568,10 +472,6 @@ export const SettingsForm: React.FC = () => {
                   size="sm"
                 />
               </FormField>
-              <FormField label="日志安全审计">
-                <Switch checked={settings.auditLog} onChange={(v) => updateSettings({ auditLog: v })} disabled />
-                {planned()}
-              </FormField>
             </FormGrid>
           </section>
         )}
@@ -595,38 +495,6 @@ export const SettingsForm: React.FC = () => {
                   onChange={(v) => updateSettings({ maxRetries: v })}
                   size="sm"
                 />
-              </FormField>
-              {plannedDivider()}
-              <FormField label="调试模式">
-                <Switch checked={settings.debugMode} onChange={(v) => updateSettings({ debugMode: v })} disabled />
-                {planned()}
-              </FormField>
-              <FormField label="缓存策略">
-                <Dropdown
-                  options={cacheOptions}
-                  value={settings.cacheStrategy}
-                  onChange={(v) => updateSettings({ cacheStrategy: v })}
-                  size="sm"
-                  disabled
-                />
-                {planned()}
-              </FormField>
-              <FormField label="数据存储路径">
-                <Input
-                  type="text"
-                  value={settings.dataPath}
-                  onChange={(e) => updateSettings({ dataPath: e.target.value })}
-                  disabled
-                />
-                {planned()}
-              </FormField>
-              <FormField label="实验性功能">
-                <Switch
-                  checked={settings.experimentalFeatures}
-                  onChange={(v) => updateSettings({ experimentalFeatures: v })}
-                  disabled
-                />
-                {planned()}
               </FormField>
             </FormGrid>
           </section>

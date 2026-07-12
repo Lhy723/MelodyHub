@@ -10,19 +10,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   host: '127.0.0.1',
   autoStart: true,
   maxConcurrency: 20,
-  // Token
-  tokenLimit: 1000000,
-  tokenWarningThreshold: '80%',
-  tokenStatPeriod: 'daily',
   // 界面
   language: 'zh-CN',
   theme: 'light',
   pageSize: 10,
   timeFormat: '24h',
-  // 通知
-  apiErrorNotify: true,
-  quotaNotify: true,
-  modelStatusNotify: false,
   // 网络代理
   proxyEnabled: false,
   proxyHost: '',
@@ -31,9 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   proxyUsername: '',
   proxyPassword: '',
   // 日志与监控
-  logLevel: 'info',
   logRetentionDays: 30,
-  logRequestContent: true,
   logAutoClean: true,
   // 安全与认证
   encryptApiKeys: true,
@@ -41,14 +31,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   ipWhitelist: '',
   corsEnabled: true,
   rateLimit: '0',
-  auditLog: false,
   // 高级选项
-  debugMode: false,
   apiTimeout: 60,
   maxRetries: '0',
-  cacheStrategy: 'none',
-  dataPath: '~/.melody-hub/data',
-  experimentalFeatures: false,
 };
 
 interface SettingsStore {
