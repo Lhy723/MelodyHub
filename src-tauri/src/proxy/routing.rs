@@ -1093,24 +1093,39 @@ fn select_candidate_index(
                 .insert(key, candidate_identity(&candidates[index]));
             index
         }
-        RoutingStrategy::ContextOptimized => candidates
-            .iter()
-            .enumerate()
-            .filter(|(_, (_, _, model, _))| {
-                context_fits(model, capabilities.estimated_context_tokens)
-            })
-            .min_by_key(|(_, (_, _, model, _))| model.context_window.unwrap_or(u32::MAX))
-            .map(|(index, _)| index)
-            .unwrap_or_else(|| {
-                candidates
-                    .iter()
-                    .enumerate()
-                    .max_by_key(|(_, (_, _, model, _))| {
-                        model.context_window.unwrap_or_default()
-                    })
-                    .map(|(index, _)| index)
-                    .unwrap_or(0)
-            }),
+        RoutingStrategy::ContextOptimized => {
+            // Aligns with OmniRoute `sortModelsByContextSize`, which
+            // ranks targets by context window descending (most capable
+            // first). Targets whose known limit satisfies the estimated
+            // request tokens are preferred over those that don't; within
+            // each group the largest window wins. Unknown limits are
+            // treated as 0 so targets with explicit limits rank higher.
+            candidates
+                .iter()
+                .enumerate()
+                .max_by(|(_, (_, _, left_model, _)), (_, (_, _, right_model, _))| {
+                    let left_fits = context_fits(
+                        left_model,
+                        capabilities.estimated_context_tokens,
+                    );
+                    let right_fits = context_fits(
+                        right_model,
+                        capabilities.estimated_context_tokens,
+                    );
+                    // Sufficient windows outrank insufficient ones;
+                    // within a group, the larger window wins.
+                    left_fits
+                        .cmp(&right_fits)
+                        .then_with(|| {
+                            left_model
+                                .context_window
+                                .unwrap_or(0)
+                                .cmp(&right_model.context_window.unwrap_or(0))
+                        })
+                })
+                .map(|(index, _)| index)
+                .unwrap_or(0)
+        }
         RoutingStrategy::Auto => candidates
             .iter()
             .enumerate()
@@ -1193,18 +1208,37 @@ fn select_round_robin_identity_index(
 }
 
 fn reset_aware_score(target: &RouteTarget) -> f64 {
-    let headroom = target.quota_remaining.unwrap_or(0.5).clamp(0.0, 1.0);
+    // Mirrors OmniRoute `scoreQuotaWindow`: a single-window blend of
+    // remaining headroom and reset pressure. Reset pressure rewards
+    // buckets that are nearly spent AND about to reset (use up quota
+    // before it refreshes), while the remaining term keeps fuller
+    // buckets relevant. Weights approximate OmniRoute's blended
+    // session+weekly defaults (effective ~0.32 remaining / ~0.68
+    // pressure) since MelodyHub exposes only one quota window.
+    const REMAINING_WEIGHT: f64 = 0.30;
+    const PRESSURE_WEIGHT: f64 = 0.70;
+    const WINDOW_MS: f64 = 7.0 * 24.0 * 3_600_000.0; // 7-day horizon
+    const EXHAUSTION_GUARD: f64 = 0.10;
+
+    let remaining = target.quota_remaining.unwrap_or(0.5).clamp(0.0, 1.0);
     let now_ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as i64;
-    let hours_to_reset = target
+    let ms_until_reset = target
         .quota_reset_at
-        .map(|reset| ((reset - now_ms).max(0) as f64 / 3_600_000.0).max(0.25))
-        .unwrap_or(168.0);
-    // Spend fuller buckets that will reset soon, mirroring OmniRoute's
-    // reset-aware ordering while remaining useful when telemetry is partial.
-    headroom / hours_to_reset.sqrt()
+        .map(|reset| (reset - now_ms).max(0) as f64)
+        .unwrap_or(WINDOW_MS / 2.0);
+    let reset_urgency =
+        (1.0 - (ms_until_reset / WINDOW_MS).clamp(0.0, 1.0)).clamp(0.0, 1.0);
+    let reset_pressure = reset_urgency * (1.0 - remaining);
+    let mut score = REMAINING_WEIGHT * remaining + PRESSURE_WEIGHT * reset_pressure;
+    // Exhaustion guard: nearly-empty buckets are deprioritized unless
+    // reset is imminent, preventing a starving target from winning.
+    if remaining < EXHAUSTION_GUARD {
+        score *= (remaining / EXHAUSTION_GUARD).max(0.05);
+    }
+    score
 }
 
 fn auto_score(
@@ -1581,7 +1615,7 @@ mod tests {
                 &mut cfg,
                 &caps
             ),
-            2
+            1
         );
         assert_eq!(
             select_candidate_index(
@@ -1591,7 +1625,7 @@ mod tests {
                 &mut cfg,
                 &caps
             ),
-            2
+            0
         );
         assert_eq!(
             select_candidate_index(
