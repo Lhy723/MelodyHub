@@ -6,7 +6,7 @@ import type { Aggregation } from '../../types/aggregation';
 import type { Model } from '../../types/provider';
 import { SpotlightCard } from '../../components/ui';
 import { useT } from '../../i18n';
-import { Bot, ChevronRight, Eye, Brain, SlidersHorizontal, Wrench, Braces } from 'lucide-react';
+import { Box, ChevronRight, Eye, Brain, SlidersHorizontal, Wrench, Braces } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -207,6 +207,7 @@ export const ModelInventory: React.FC = () => {
                 style={{
                   cursor: 'pointer',
                   height: '100%',
+                  transition: 'background-color var(--transition-normal, 0.2s ease)',
                 }}
                 onClick={() => navigate(`/models/${encodeURIComponent(entry.name)}`)}
                 onMouseEnter={(e) => {
@@ -225,7 +226,7 @@ export const ModelInventory: React.FC = () => {
                     padding: 'var(--spacer-16) var(--spacer-16)',
                   }}
                 >
-                  <Bot size={16} style={{ color: 'var(--icon-tertiary)', flexShrink: 0, marginTop: 2 }} />
+                  <Box size={16} style={{ color: 'var(--icon-tertiary)', flexShrink: 0, marginTop: 2 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{

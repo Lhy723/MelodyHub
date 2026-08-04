@@ -13,7 +13,7 @@ import { RoutingStrategySelect } from './RoutingStrategySelect';
 import { useT } from '../../i18n';
 import {
   ArrowLeft,
-  Bot,
+  Box,
   Eye,
   Brain,
   SlidersHorizontal,
@@ -495,7 +495,7 @@ export const ModelDetailPage: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              <Bot size={20} />
+              <Box size={20} />
             </div>
             <h1
               style={{

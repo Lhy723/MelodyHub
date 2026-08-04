@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { desktopApi } from './desktopApi';
+import type { AgentAppConfigInput, AgentAppStatus } from './desktopApi';
 import type { AppSettings } from '../types/settings';
 import type { Provider } from '../types/provider';
 import type { Aggregation } from '../types/aggregation';
@@ -57,6 +58,29 @@ const aggregationFixture: Aggregation = {
   strategy: 'round-robin',
   priority: '1',
   enabled: true,
+};
+
+const agentStatusFixture: AgentAppStatus = {
+  id: 'codex',
+  configPath: '/tmp/.codex/config.toml',
+  configLabel: '~/.codex/config.toml',
+  configExists: true,
+  backupExists: false,
+  isManaged: true,
+  endpoint: 'http://127.0.0.1:8080/v1',
+  model: 'gpt-5.1-codex-mini',
+  availableModels: [],
+  authTokenSet: true,
+  authTokenMasked: '••••••••',
+  reasoningEffort: 'medium',
+  thinkingEnabled: true,
+  featureFlags: { web_search: true },
+  codexSettings: {
+    model: 'gpt-5.1-codex-mini',
+    'features.web_search': true,
+  },
+  configText: 'model = "gpt-5.1-codex-mini"\n',
+  error: null,
 };
 
 describe('desktopApi command contracts', () => {
@@ -120,6 +144,52 @@ describe('desktopApi command contracts', () => {
     const result = await desktopApi.getProxyStatus();
     expect(invoke).toHaveBeenCalledWith('get_proxy_status');
     expect(result).toEqual({ running: true, host: '127.0.0.1', port: 8080, uptimeSecs: 120 });
+  });
+
+  it('uses the canonical command for loading agent apps', async () => {
+    vi.mocked(invoke).mockResolvedValue([agentStatusFixture]);
+    const result = await desktopApi.loadAgentApps();
+    expect(invoke).toHaveBeenCalledWith('load_agent_apps');
+    expect(result).toEqual([agentStatusFixture]);
+  });
+
+  it('passes the agent config as a nested command payload', async () => {
+    const config: AgentAppConfigInput = {
+      id: 'codex',
+      endpoint: 'http://127.0.0.1:8080/v1',
+      model: 'gpt-5.1-codex-mini',
+      availableModels: [],
+      reasoningEffort: 'medium',
+      thinkingEnabled: true,
+      featureFlags: { web_search: true },
+      authToken: 'melody-token',
+    };
+    vi.mocked(invoke).mockResolvedValue(agentStatusFixture);
+    await desktopApi.saveAgentAppConfig(config);
+    expect(invoke).toHaveBeenCalledWith('save_agent_app_config', { config });
+  });
+
+  it('uses the canonical command for restoring an agent config', async () => {
+    vi.mocked(invoke).mockResolvedValue(agentStatusFixture);
+    await desktopApi.restoreAgentAppConfig('codex');
+    expect(invoke).toHaveBeenCalledWith('restore_agent_app_config', { id: 'codex' });
+  });
+
+  it('passes complete agent config text to the canonical command', async () => {
+    vi.mocked(invoke).mockResolvedValue(agentStatusFixture);
+    await desktopApi.saveAgentAppText('codex', 'model = "gpt-5.1-codex-mini"\n');
+    expect(invoke).toHaveBeenCalledWith('save_agent_app_text', {
+      id: 'codex',
+      content: 'model = "gpt-5.1-codex-mini"\n',
+    });
+  });
+
+  it('passes one Codex setting to the canonical command', async () => {
+    vi.mocked(invoke).mockResolvedValue(agentStatusFixture);
+    await desktopApi.saveAgentAppSetting('codex', 'sandbox_mode', 'workspace-write');
+    expect(invoke).toHaveBeenCalledWith('save_agent_app_setting', {
+      setting: { id: 'codex', key: 'sandbox_mode', value: 'workspace-write' },
+    });
   });
 
   it('propagates errors from the mocked transport', async () => {

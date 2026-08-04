@@ -5,7 +5,7 @@ import { useProviderStore } from '../../store/providerStore';
 import type { Model } from '../../types/provider';
 import type { ProviderHealthSnapshot } from '../../lib/desktopApi';
 import { ConfirmDialog, SpotlightCard, Tag, toast, ProviderLogo } from '../../components/ui';
-import { ChevronRight, Pencil, Trash2, Bot, Copy, Power, PowerOff, Loader2 } from 'lucide-react';
+import { ChevronRight, Pencil, Trash2, Box, Copy, Power, PowerOff, Loader2 } from 'lucide-react';
 
 const describeModelCapabilities = (model: Model, t: ReturnType<typeof useT>) => {
   const tags: string[] = [];
@@ -99,13 +99,18 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
         overflow: 'hidden',
         opacity: isDisabled ? 0.7 : 1,
         filter: isDisabled ? 'saturate(0.7)' : 'none',
-        transition: 'opacity var(--transition-normal, 0.2s ease), filter var(--transition-normal, 0.2s ease)',
         cursor: 'pointer',
       }}
     >
       <div
         onClick={() => navigate(`/providers/${provider.id}`)}
-        style={{ height: '100%' }}
+        style={{ height: '100%', transition: 'background-color var(--transition-normal, 0.2s ease)' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'var(--bg-overlay-l1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'transparent';
+        }}
       >
       {/* Header */}
       <div
@@ -476,7 +481,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
                 color: isDisabled ? 'var(--text-disabled)' : 'var(--text-secondary)',
               }}
             >
-              <Bot size={14} style={{ color: isDisabled ? 'var(--icon-disabled)' : 'var(--icon-tertiary)' }} />
+              <Box size={14} style={{ color: isDisabled ? 'var(--icon-disabled)' : 'var(--icon-tertiary)' }} />
               <span>{model.name}</span>
               {capabilityTags.map((tag) => (
                 <span

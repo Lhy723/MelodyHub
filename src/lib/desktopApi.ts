@@ -21,6 +21,40 @@ export interface UpdateMetadata {
   body: string;
 }
 
+export type AgentAppId = 'codex' | 'claude' | 'opencode';
+
+export interface AgentAppStatus {
+  id: AgentAppId;
+  configPath: string;
+  configLabel: string;
+  configExists: boolean;
+  backupExists: boolean;
+  isManaged: boolean;
+  endpoint: string;
+  model: string;
+  availableModels: string[];
+  authTokenSet: boolean;
+  authTokenMasked: string;
+  reasoningEffort: string;
+  thinkingEnabled: boolean;
+  featureFlags: Record<string, boolean>;
+  codexSettings?: Record<string, unknown>;
+  configText: string;
+  error?: string | null;
+}
+
+export interface AgentAppConfigInput {
+  id: AgentAppId;
+  endpoint: string;
+  model: string;
+  availableModels: string[];
+  reasoningEffort: string;
+  thinkingEnabled: boolean;
+  featureFlags: Record<string, boolean>;
+  /** null keeps the existing credential; a string replaces it. */
+  authToken: string | null;
+}
+
 /** Progress events streamed from `download_and_install_update`. */
 export type DownloadEvent =
   | { event: 'started'; data: { contentLength?: number } }
@@ -56,6 +90,11 @@ export interface DesktopApi {
     apiKey: string,
   ): Promise<{ success: boolean; modelCount?: number; error?: { kind: string; message: string }; message: string }>;
   getProviderHealth(): Promise<Record<string, ProviderHealthSnapshot>>;
+  loadAgentApps(): Promise<AgentAppStatus[]>;
+  saveAgentAppConfig(config: AgentAppConfigInput): Promise<AgentAppStatus>;
+  saveAgentAppText(id: AgentAppId, content: string): Promise<AgentAppStatus>;
+  saveAgentAppSetting(id: AgentAppId, key: string, value: unknown): Promise<AgentAppStatus>;
+  restoreAgentAppConfig(id: AgentAppId): Promise<AgentAppStatus>;
   /** Probe the updater endpoints. Returns `null` when up-to-date. */
   checkForUpdates(): Promise<UpdateMetadata | null>;
   /** Download + install the pending update, streaming progress to `onEvent`. */
@@ -85,6 +124,12 @@ export const desktopApi: DesktopApi = {
   fetchProviderModels: (flavor, apiBase, apiKey) => invoke('fetch_provider_models', { flavor, apiBase, apiKey }),
   testProviderConnection: (flavor, apiBase, apiKey) => invoke('test_provider_connection', { flavor, apiBase, apiKey }),
   getProviderHealth: () => invoke<Record<string, ProviderHealthSnapshot>>('get_provider_health'),
+  loadAgentApps: () => invoke<AgentAppStatus[]>('load_agent_apps'),
+  saveAgentAppConfig: (config) => invoke<AgentAppStatus>('save_agent_app_config', { config }),
+  saveAgentAppText: (id, content) => invoke<AgentAppStatus>('save_agent_app_text', { id, content }),
+  saveAgentAppSetting: (id, key, value) =>
+    invoke<AgentAppStatus>('save_agent_app_setting', { setting: { id, key, value } }),
+  restoreAgentAppConfig: (id) => invoke<AgentAppStatus>('restore_agent_app_config', { id }),
   checkForUpdates: () => invoke<UpdateMetadata | null>('check_for_updates'),
   downloadAndInstallUpdate: (onEvent) => {
     const channel = new Channel<DownloadEvent>();
