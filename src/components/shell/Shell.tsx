@@ -40,7 +40,7 @@ export const Shell: React.FC = () => {
         fontFamily: 'var(--font-family-base)',
         fontSize: 'var(--body-base-font-size)',
         lineHeight: 'var(--body-base-line-height)',
-        ['--sidebar-width' as string]: '220px',
+        ['--sidebar-width' as string]: '220px', // 唯一字面量源；Sidebar 与内容区均引用该 var。
         position: 'relative',
         // macOS transparent window needs rounded corners; disable when maximized/fullscreen.
         // Windows keeps sharp corners in all states.
@@ -48,36 +48,7 @@ export const Shell: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      {/* Subtle background grain texture */}
-      <div
-        className="ds-shell__grain"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: 'none',
-          opacity: 0.035,
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
-          backgroundRepeat: 'repeat',
-          backgroundSize: '256px 256px',
-        }}
-      />
-      {/* Subtle radial gradient accent */}
-      <div
-        className="ds-shell__accent"
-        style={{
-          position: 'absolute',
-          top: '-50%',
-          right: '-20%',
-          width: '60%',
-          height: '60%',
-          zIndex: 0,
-          pointerEvents: 'none',
-          opacity: 0.04,
-          background: 'radial-gradient(ellipse at center, var(--bg-brand) 0%, transparent 70%)',
-        }}
-      />
+      {/* interior 基调：背景交给纯 --bg-base-default，不再叠加噪点纹理/品牌径向光装饰层。 */}
 
       <Sidebar activeKey={activeKey} onNavigate={navigate} />
       <div
@@ -90,7 +61,7 @@ export const Shell: React.FC = () => {
           flexDirection: 'column',
           height: '100vh',
           overflow: 'hidden',
-          background: 'transparent' /* Let grain show through */,
+          background: 'transparent' /* 透出壳层 --bg-base-default 纯色底 */,
           position: 'relative',
           zIndex: 1,
         }}
@@ -150,7 +121,7 @@ export const Shell: React.FC = () => {
                 style={{
                   fontFamily: 'var(--font-family-heading)',
                   fontSize: 'var(--heading-md-font-size)',
-                  fontWeight: 700,
+                  fontWeight: 'var(--font-weight-strong)',
                   lineHeight: 'var(--heading-md-line-height)',
                   color: 'var(--text-default)',
                   margin: 0,

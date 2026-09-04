@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Modal } from '../interior/modal';
+import { Button } from './Button';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -36,64 +37,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       initialFocusRef={variant === 'danger' ? cancelRef : confirmRef}
       footer={
         <>
-          <button
-            ref={cancelRef}
-            onClick={onCancel}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--spacer-6)',
-              height: 28,
-              padding: '0 var(--spacer-12)',
-              borderRadius: 'var(--radius-8)',
-              border: '1px solid var(--border-neutral-l1)',
-              cursor: 'pointer',
-              background: 'transparent',
-              color: 'var(--text-default)',
-              fontSize: 'var(--body-base-font-size)',
-              fontWeight: 'var(--body-base-strong-font-weight)',
-              fontFamily: 'inherit',
-              transition: 'background var(--transition-fast, 0.12s ease)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
+          <Button ref={cancelRef} variant="secondary" size="md" onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
-            ref={confirmRef}
-            onClick={onConfirm}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--spacer-6)',
-              height: 28,
-              padding: '0 var(--spacer-12)',
-              borderRadius: 'var(--radius-8)',
-              border: 'none',
-              cursor: 'pointer',
-              background: variant === 'danger' ? 'var(--status-error-default)' : 'var(--bg-brand)',
-              color: 'var(--text-onbrand)',
-              fontSize: 'var(--body-base-font-size)',
-              fontWeight: 'var(--body-base-strong-font-weight)',
-              fontFamily: 'inherit',
-              transition: 'background var(--transition-fast, 0.12s ease)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background =
-                variant === 'danger' ? 'var(--status-error-hover)' : 'var(--bg-brand-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background =
-                variant === 'danger' ? 'var(--status-error-default)' : 'var(--bg-brand)';
-            }}
-          >
+          </Button>
+          <Button ref={confirmRef} variant={variant === 'danger' ? 'danger' : 'primary'} size="md" onClick={onConfirm}>
             {confirmLabel}
-          </button>
+          </Button>
         </>
       }
     />

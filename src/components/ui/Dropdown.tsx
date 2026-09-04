@@ -418,9 +418,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
           fontFamily: 'inherit',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.6 : 1,
-          outline: open ? '2px solid var(--bg-brand-popup)' : 'none',
-          outlineOffset: -1,
-          transition: 'border-color var(--transition-fast), outline var(--transition-fast)',
+          // 打开时用 1px inset 描边（与 interior tabs/sortable-table 同手法），
+          // 不占用 outline，保留全局 ：focus-visible 键盘焦点环。
+          boxShadow: open ? 'inset 0 0 0 1px var(--bg-brand)' : 'none',
+          transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast)',
         }}
       >
         <span
@@ -479,7 +480,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
               borderRadius: 'var(--radius-8)',
               border: '1px solid var(--border-neutral-l1)',
               background: 'var(--bg-base-default)',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06)',
+              boxShadow: 'var(--shadow-floating)',
               overflow: 'hidden',
             }}
           >

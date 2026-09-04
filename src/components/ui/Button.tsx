@@ -25,10 +25,12 @@ interface ButtonProps extends StripMotionHandlers<React.ButtonHTMLAttributes<HTM
   icon?: LucideIcon;
   iconOnly?: boolean;
   loading?: boolean;
+  /** React 19: ref 是普通 prop；显式转发给 motion.button 供调用方聚焦使用。 */
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'background: var(--bg-brand); color: #fff; border-color: var(--bg-brand);',
+  primary: 'background: var(--bg-brand); color: var(--text-onbrand); border-color: var(--bg-brand);',
   secondary: 'background: var(--bg-overlay-l1); color: var(--text-default); border-color: var(--border-neutral-l1);',
   ghost: 'background: transparent; color: var(--text-default); border-color: transparent;',
   brand: 'background: var(--bg-brand); color: var(--text-onbrand); border-color: var(--bg-brand);',
@@ -63,15 +65,12 @@ const variantHoverBackground: Record<ButtonVariant, string> = {
   link: 'transparent',
 };
 
-// Subtle elevation for "emphasis" variants (brand / primary / danger).
-// Secondary / ghost / link stay flat to preserve their quiet role.
+// Interior 基调按钮保持扁平：primary/brand 不再带品牌色 glow 阴影。
 const variantShadow: Record<ButtonVariant, string> = {
-  primary:
-    '0 1px 2px color-mix(in srgb, var(--bg-brand) 40%, transparent), 0 4px 12px color-mix(in srgb, var(--bg-brand) 24%, transparent)',
+  primary: 'none',
   secondary: 'none',
   ghost: 'none',
-  brand:
-    '0 1px 2px color-mix(in srgb, var(--bg-brand) 40%, transparent), 0 4px 12px color-mix(in srgb, var(--bg-brand) 24%, transparent)',
+  brand: 'none',
   danger: '0 1px 2px rgba(0, 0, 0, 0.08)',
   link: 'none',
 };
@@ -90,6 +89,7 @@ export const Button: React.FC<ButtonProps> = ({
   icon: Icon,
   iconOnly = false,
   loading = false,
+  ref,
   children,
   style,
   disabled,
@@ -162,6 +162,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <motion.button
+      ref={ref}
       className="ds-btn"
       // `disabled || loading` keeps click handlers from firing while
       // in-flight, but we still render content (not the browser

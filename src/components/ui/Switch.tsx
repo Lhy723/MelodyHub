@@ -86,8 +86,8 @@ export const Switch: React.FC<SwitchProps> = (props) => {
           width: pressed ? 20 : 18,
           height: 18,
           borderRadius: '50%',
-          background: '#fff',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
+          background: 'var(--bg-base-default)',
+          boxShadow: 'var(--shadow-sm)',
           transition: 'left .28s cubic-bezier(0.22,1,0.36,1), width .2s ease',
           pointerEvents: 'none',
         }}

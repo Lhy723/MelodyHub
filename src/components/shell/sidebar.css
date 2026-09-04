@@ -1,0 +1,27 @@
+/* Shell 侧边栏导航项（interior 基调：扁平 + 发丝线 + 克制）。
+   hover/press 从 JS 内联样式迁入 CSS 伪类：
+   - hover 浅一档 --bg-overlay-l1，不加色条/药丸/品牌色；
+   - active 项常态即 --bg-overlay-l1（降噪视觉不变）；
+   - press 统一加深一档 --bg-overlay-l2；
+   图标/文字颜色仍由组件内联控制，这里不接管。 */
+.mh-nav-item {
+  background: transparent;
+  color: var(--text-secondary);
+  transition:
+    background 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mh-nav-item:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-nav-item:active {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-nav-item[data-active='true'] {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}

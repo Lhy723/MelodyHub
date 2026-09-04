@@ -4,6 +4,7 @@ import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { useT } from '../../i18n';
 import { isMac } from './WindowControls';
+import './sidebar.css';
 
 interface NavItem {
   key: string;
@@ -100,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
         left: 0,
         bottom: 0,
         zIndex: 20,
-        width: 220,
+        width: 'var(--sidebar-width, 220px)', // 引用 Shell 定义的唯一宽度源。
         display: 'flex',
         flexDirection: 'column',
         background: 'var(--bg-base-secondary)',
@@ -166,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
             <button
               key={item.key}
               onClick={() => onNavigate(item.path)}
-              className="ds-shell__nav-item"
+              className="mh-nav-item"
               data-active={isActive ? 'true' : undefined}
               style={{
                 position: 'relative',
@@ -177,35 +178,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
                 borderRadius: 'var(--radius-8)',
                 border: 'none',
                 textDecoration: 'none',
-                color: isActive ? 'var(--text-default)' : 'var(--text-secondary)',
                 fontSize: 'var(--body-base-font-size)',
                 fontWeight: isActive ? 'var(--font-weight-medium)' : 'var(--body-base-font-weight)',
                 lineHeight: 'var(--body-base-line-height)',
                 cursor: 'pointer',
-                background: isActive ? 'var(--bg-overlay-l1)' : 'transparent',
                 width: '100%',
                 textAlign: 'left',
                 fontFamily: 'inherit',
-                transition:
-                  'background 0.18s cubic-bezier(0.22,1,0.36,1), color 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s cubic-bezier(0.22,1,0.36,1)',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-                  e.currentTarget.style.color = 'var(--text-default)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                }
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.background = 'var(--bg-overlay-l2)';
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.background = 'var(--bg-overlay-l1)';
               }}
             >
               <span
