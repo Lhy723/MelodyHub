@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { t as translate, useT } from '../../i18n';
 import {
-  AnimatedContent,
   Button,
   Card,
   CardDesc,
@@ -836,7 +835,6 @@ export const ApplicationSettings: React.FC = () => {
           {t('applications.loading')}
         </Card>
       ) : (
-        <>
           <Tabs
             label={t('applications.tabsLabel')}
             items={AGENTS.map((agent) => {
@@ -864,16 +862,17 @@ export const ApplicationSettings: React.FC = () => {
             })}
             value={activeId}
             onValueChange={(v) => setActiveId(v as AgentAppId)}
-          />
-
-          {!activeStatus ? (
-            <Card padding="var(--spacer-32)" style={{ color: 'var(--text-tertiary)', textAlign: 'center' }}>
-              {t('applications.loading')}
-            </Card>
-          ) : (
-            <AnimatedContent key={activeAgent.id} delay={40}>
-              <div role="tabpanel" aria-label={t(activeAgent.nameKey)}>
-                <Card padding="0" style={{ overflow: 'hidden' }}>
+            renderPanel={() =>
+              !activeStatus ? (
+                <div style={{ padding: 'var(--spacer-32)', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                  {t('applications.loading')}
+                </div>
+              ) : (
+                <div role="tabpanel" aria-label={t(activeAgent.nameKey)}>
+                  <Card
+                    padding="0"
+                    style={{ overflow: 'hidden', background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none' }}
+                  >
                   <div
                     style={{
                       display: 'flex',
@@ -1273,7 +1272,7 @@ export const ApplicationSettings: React.FC = () => {
                   />
                 )}
 
-                <Card padding="0" style={{ overflow: 'hidden', marginTop: 'var(--spacer-16)' }}>
+                  <div style={{ borderTop: '1px solid var(--border-neutral-l1)', padding: 'var(--spacer-20)' }}>
                   <div
                     style={{
                       display: 'flex',
@@ -1336,11 +1335,11 @@ export const ApplicationSettings: React.FC = () => {
                       {t('applications.finalConfig.secretHint')}
                     </p>
                   </div>
-                </Card>
-              </div>
-            </AnimatedContent>
-          )}
-        </>
+                  </div>
+                </div>
+              )
+            }
+          />
       )}
     </div>
   );
