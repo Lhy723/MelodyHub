@@ -50,7 +50,7 @@ export const ToastContainer: React.FC = () => {
   const bgMap: Record<ToastType, string> = {
     success: 'var(--status-success-default)',
     error: 'var(--status-error-default)',
-    info: 'var(--text-default)',
+    info: 'var(--icon-tertiary)',
   };
 
   return (
@@ -83,16 +83,27 @@ export const ToastContainer: React.FC = () => {
               alignItems: 'center',
               gap: 'var(--spacer-8)',
               padding: 'var(--spacer-8) var(--spacer-12)',
-              background: bgMap[t.type],
+              background: 'var(--bg-base-default)',
+              border: '1px solid var(--border-neutral-l1)',
               borderRadius: 'var(--radius-8)',
-              color: '#fff',
+              color: 'var(--text-default)',
               fontSize: 'var(--body-md-font-size)',
               lineHeight: 'var(--body-md-line-height)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              boxShadow: 'var(--shadow-md)',
               minWidth: 200,
               pointerEvents: 'auto',
             }}
           >
+            <span
+              aria-hidden
+              style={{
+                flexShrink: 0,
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: bgMap[t.type],
+              }}
+            />
             <span style={{ flex: 1 }}>{t.message}</span>
             <button
               aria-label={i18n('common.closeNotification')}
@@ -100,7 +111,7 @@ export const ToastContainer: React.FC = () => {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#fff',
+                color: 'var(--text-tertiary)',
                 cursor: 'pointer',
                 display: 'flex',
                 padding: 2,
