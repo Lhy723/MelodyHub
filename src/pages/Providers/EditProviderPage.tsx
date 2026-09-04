@@ -26,9 +26,9 @@ const headerInputStyle: React.CSSProperties = {
   color: 'var(--text-default)',
   background: 'transparent',
   border: '1px solid transparent',
-  borderRadius: 6,
-  padding: '2px 6px',
-  margin: '-2px -6px',
+  borderRadius: 'var(--radius-6)',
+  padding: '2px var(--spacer-6)',
+  margin: '-2px calc(-1 * var(--spacer-6))',
   outline: 'none',
   font: 'inherit',
 };
@@ -181,12 +181,12 @@ export const EditProviderPage: React.FC = () => {
 
   const statusDotColor =
     {
-      connected: '#10b981',
-      error: '#ef4444',
-      testing: '#f59e0b',
-      configuring: '#9ca3af',
-      disabled: '#9ca3af',
-    }[form.status] || '#9ca3af';
+      connected: 'var(--status-success-default)',
+      error: 'var(--status-error-default)',
+      testing: 'var(--status-warning-default)',
+      configuring: 'var(--text-disabled)',
+      disabled: 'var(--text-disabled)',
+    }[form.status] || 'var(--text-disabled)';
 
   const saveStateText = {
     saved: '所有更改已保存',
@@ -197,7 +197,7 @@ export const EditProviderPage: React.FC = () => {
   const saveStateColor = {
     saved: 'var(--text-tertiary)',
     saving: 'var(--text-secondary)',
-    error: 'var(--status-error-default, #ef4444)',
+    error: 'var(--status-error-default)',
   }[saveState];
 
   const tabCounts: Record<string, number | undefined> = {
@@ -217,22 +217,14 @@ export const EditProviderPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          {/* 页头返回钮：hover/focus 走 index.css 的 .icon-action-btn 伪类 */}
           <button
             type="button"
+            className="icon-action-btn"
+            aria-label="返回供应商列表"
             onClick={() => {
               flushSave();
               navigate('/providers');
-            }}
-            style={{
-              width: 32,
-              height: 32,
-              display: 'grid',
-              placeItems: 'center',
-              borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
             }}
           >
             <ArrowLeft size={18} />

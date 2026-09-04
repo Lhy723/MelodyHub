@@ -5,9 +5,11 @@ import { useAggregationStore } from '../../store/aggregationStore';
 import { buildLegacyAggregationTargets, normalizeStrategyKey } from '../../types/aggregation';
 import type { RouteTarget, RoutingStrategy } from '../../types/aggregation';
 import type { Model } from '../../types/provider';
-import { Card, AnimatedContent, Button } from '../../components/ui';
+import { Card, AnimatedContent, Button, Switch } from '../../components/ui';
 import { ReorderList } from '../../components/interior/reorder-list';
 import { toast } from '../../components/ui/Toast';
+import { Chip } from '../Providers/chip';
+import './modelconfig.css';
 import { ModelBulkEditPanel, type BulkEditValues } from './ModelBulkEditPanel';
 import { ModelSourcesTable, type SourceRow, type PendingEdits, type ModelPatch } from './ModelSourcesTable';
 import { RoutingStrategySelect } from './RoutingStrategySelect';
@@ -454,26 +456,8 @@ export const ModelDetailPage: React.FC = () => {
     <div>
       <button
         onClick={() => navigate('/models')}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 'var(--spacer-6)',
-          cursor: 'pointer',
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--text-tertiary)',
-          fontFamily: 'inherit',
-          fontSize: 'var(--body-sm-font-size)',
-          padding: 0,
-          marginBottom: 'var(--spacer-20)',
-          transition: 'color 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = 'var(--text-default)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'var(--text-tertiary)';
-        }}
+        className="mh-back-link"
+        style={{ marginBottom: 'var(--spacer-20)' }}
       >
         <ArrowLeft size={16} /> 模型配置
       </button>
@@ -491,8 +475,8 @@ export const ModelDetailPage: React.FC = () => {
                 width: 40,
                 height: 40,
                 borderRadius: 'var(--radius-10)',
-                background: 'var(--brand-100)',
-                color: 'var(--icon-brand)',
+                background: 'var(--bg-overlay-l1)',
+                color: 'var(--icon-secondary)',
                 flexShrink: 0,
               }}
             >
@@ -542,8 +526,8 @@ export const ModelDetailPage: React.FC = () => {
                   height: 32,
                   flexShrink: 0,
                   borderRadius: 'var(--radius-8)',
-                  background: 'var(--brand-100)',
-                  color: 'var(--icon-brand)',
+                  background: 'var(--bg-overlay-l1)',
+                  color: 'var(--icon-secondary)',
                 }}
               >
                 <Route size={17} />
@@ -795,17 +779,13 @@ export const ModelDetailPage: React.FC = () => {
                               gap: 'var(--spacer-6)',
                               fontSize: 'var(--body-xs-font-size)',
                               color: 'var(--text-secondary)',
-                              cursor: 'pointer',
                               flexShrink: 0,
                             }}
                           >
-                            <input
-                              type="checkbox"
+                            <Switch
                               checked={target.enabled}
-                              onChange={(event) =>
-                                patchRoutingTarget(target.id, { enabled: event.target.checked })
-                              }
-                              style={{ cursor: 'pointer' }}
+                              onChange={(checked) => patchRoutingTarget(target.id, { enabled: checked })}
+                              aria-label={t('models.routing.colEnabled')}
                             />
                             {target.enabled ? t('models.routing.enabledOn') : t('models.routing.enabledOff')}
                           </label>
@@ -998,14 +978,12 @@ export const ModelDetailPage: React.FC = () => {
                             gap: 'var(--spacer-6)',
                             fontSize: 'var(--body-xs-font-size)',
                             color: 'var(--text-secondary)',
-                            cursor: 'pointer',
                           }}
                         >
-                          <input
-                            type="checkbox"
+                          <Switch
                             checked={target.enabled}
-                            onChange={(event) => patchRoutingTarget(target.id, { enabled: event.target.checked })}
-                            style={{ cursor: 'pointer' }}
+                            onChange={(checked) => patchRoutingTarget(target.id, { enabled: checked })}
+                            aria-label={t('models.routing.colEnabled')}
                           />
                           {target.enabled ? t('models.routing.enabledOn') : t('models.routing.enabledOff')}
                         </label>
@@ -1119,11 +1097,11 @@ const CapabilityItem: React.FC<{ icon: React.ReactNode; label: string; enabled: 
       gap: 'var(--spacer-10)',
       padding: 'var(--spacer-16) var(--spacer-24)',
       borderRadius: 'var(--radius-10)',
-      background: enabled ? 'var(--brand-50)' : 'var(--bg-overlay-l1)',
+      background: 'var(--bg-overlay-l1)',
       opacity: enabled ? 1 : 0.5,
     }}
   >
-    <span style={{ color: enabled ? 'var(--icon-brand)' : 'var(--icon-tertiary)', display: 'flex' }}>{icon}</span>
+    <span style={{ color: enabled ? 'var(--icon-secondary)' : 'var(--icon-tertiary)', display: 'flex' }}>{icon}</span>
     <span
       style={{
         fontSize: 'var(--body-sm-font-size)',
@@ -1183,7 +1161,7 @@ const DirectDetailRow: React.FC<{ source: DirectMapping; pendingPatch?: ModelPat
         padding: 'var(--spacer-16)',
         borderRadius: 'var(--radius-10)',
         border: '1px solid var(--border-neutral-l1)',
-        background: pendingPatch ? 'rgba(245,158,11,0.06)' : 'var(--bg-base-default)',
+        background: pendingPatch ? 'var(--status-warning-surface-l1)' : 'var(--bg-base-default)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-8)' }}>
@@ -1195,8 +1173,8 @@ const DirectDetailRow: React.FC<{ source: DirectMapping; pendingPatch?: ModelPat
             width: 28,
             height: 28,
             borderRadius: 'var(--radius-6)',
-            background: 'var(--brand-100)',
-            color: 'var(--icon-brand)',
+            background: 'var(--bg-overlay-l1)',
+            color: 'var(--icon-secondary)',
             flexShrink: 0,
           }}
         >
@@ -1211,23 +1189,10 @@ const DirectDetailRow: React.FC<{ source: DirectMapping; pendingPatch?: ModelPat
         >
           {source.providerName}
         </span>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            height: 22,
-            padding: '0 var(--spacer-8)',
-            borderRadius: 'var(--radius-4)',
-            background: 'var(--bg-overlay-l2)',
-            color: 'var(--text-tertiary)',
-            fontSize: 'var(--body-xs-font-size)',
-          }}
-        >
+        <Chip size="sm" muted>
           {source.matchedBy === 'alias' ? '别名映射' : '直接映射'}
-        </span>
-        {pendingPatch && (
-          <span style={{ width: 3, height: 16, borderRadius: 2, background: 'var(--bg-brand)', marginLeft: 4 }} />
-        )}
+        </Chip>
+        {pendingPatch && <span className="mh-pending-bar" style={{ marginLeft: 4 }} />}
       </div>
 
       {source.matchedBy === 'alias' && (
@@ -1267,22 +1232,9 @@ const DirectDetailRow: React.FC<{ source: DirectMapping; pendingPatch?: ModelPat
         {tags.length > 0 && (
           <div style={{ display: 'flex', gap: 'var(--spacer-8)', alignItems: 'center', flexWrap: 'wrap' }}>
             {tags.map((t) => (
-              <span
-                key={t}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  height: 28,
-                  padding: '0 var(--spacer-16)',
-                  borderRadius: 'var(--radius-6)',
-                  background: 'var(--bg-overlay-l2)',
-                  color: 'var(--text-secondary)',
-                  fontSize: 'var(--body-xs-font-size)',
-                  fontWeight: 'var(--font-weight-medium)',
-                }}
-              >
+              <Chip key={t} size="sm" muted>
                 {t}
-              </span>
+              </Chip>
             ))}
           </div>
         )}

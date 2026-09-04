@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { ProviderLogo } from '../../components/ui/ProviderLogo';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Trash2, RotateCcw } from 'lucide-react';
+import './modelconfig.css';
 import type { Model, Provider } from '../../types/provider';
 
 const cellInputStyle: React.CSSProperties = {
@@ -166,18 +167,14 @@ export const ModelSourcesTable: React.FC<ModelSourcesTableProps> = ({
                   alignItems: 'center',
                   padding: '6px 14px',
                   borderBottom: '1px solid var(--border-neutral-l1)',
-                  background: hasPatch ? 'rgba(245,158,11,0.06)' : 'transparent',
+                  background: hasPatch ? 'var(--status-warning-surface-l1)' : 'transparent',
                   transition: 'background .2s',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <ProviderLogo providerId={row.provider.id} name={row.provider.name} size={20} />
                   <span style={{ fontSize: 'var(--body-sm-font-size)', fontWeight: 500 }}>{row.provider.name}</span>
-                  {hasPatch && (
-                    <span
-                      style={{ width: 3, height: 16, borderRadius: 2, background: 'var(--bg-brand)', marginLeft: 4 }}
-                    />
-                  )}
+                  {hasPatch && <span className="mh-pending-bar" style={{ marginLeft: 4 }} />}
                 </div>
                 <div style={{ display: 'grid', placeItems: 'center' }}>{renderCellSwitch(row, 'supportsVision')}</div>
                 <div style={{ display: 'grid', placeItems: 'center' }}>

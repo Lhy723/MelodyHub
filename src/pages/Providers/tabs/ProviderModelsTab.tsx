@@ -5,10 +5,13 @@ import { Dropdown } from '../../../components/ui/Dropdown';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { toast } from '../../../components/ui/Toast';
 import { desktopApi } from '../../../lib/desktopApi';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { LoadingButton } from '../../../components/interior/loading-button';
+import { Popover } from '../../../components/interior/popover';
 import { useIconMorph, MorphGlyph } from '../../../components/interior/icon-morph';
 import { FloatingLabelInput } from '../../../components/interior/floating-label';
+import { Chip } from '../chip';
+import '../providers.css';
 import { ModelLogo } from '../../../components/ui/ProviderLogo';
 
 // 行内展开箭头：map 回调里不能调 hook，包一层行级组件持有变形状态。
@@ -20,8 +23,8 @@ import type { Model } from '../../../types/provider';
 
 const inputBaseStyle: React.CSSProperties = {
   height: 30,
-  padding: '0 8px',
-  borderRadius: 6,
+  padding: '0 var(--spacer-8)',
+  borderRadius: 'var(--radius-6)',
   border: '1px solid var(--border-neutral-l1)',
   background: 'var(--bg-overlay-l1)',
   color: 'var(--text-default)',
@@ -32,7 +35,7 @@ const inputBaseStyle: React.CSSProperties = {
 };
 
 const cellStyle: React.CSSProperties = {
-  padding: '6px 8px',
+  padding: 'var(--spacer-6) var(--spacer-8)',
   fontSize: 'var(--body-sm-font-size)',
   display: 'flex',
   alignItems: 'center',
@@ -294,27 +297,15 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {filteredRemote.map((name) => (
-              <button
+              <Chip
                 key={name}
-                type="button"
+                dashed
                 onClick={() => addRemoteModel(name)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '4px 10px',
-                  borderRadius: 999,
-                  border: '1px dashed var(--border-neutral-l1)',
-                  background: 'var(--bg-overlay-l1)',
-                  color: 'var(--text-secondary)',
-                  fontSize: 'var(--body-sm-font-size)',
-                  cursor: 'pointer',
-                  font: 'inherit',
-                }}
+                title={`加入模型 ${name}`}
               >
                 <Plus size={12} />
                 <span style={{ fontFamily: 'var(--font-family-mono)' }}>{name}</span>
-              </button>
+              </Chip>
             ))}
           </div>
           <Button variant="ghost" size="sm" onClick={addAllRemote} style={{ alignSelf: 'flex-start' }}>
@@ -347,65 +338,60 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
               <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--bg-brand)', marginLeft: 4 }}>
                 已选 {selectedIds.size}
               </span>
-              <div style={{ position: 'relative', marginLeft: 'auto' }}>
-                <Button variant="secondary" size="sm" onClick={() => setBulkPopoverOpen(!bulkPopoverOpen)}>
-                  批量设置能力 ▾
-                </Button>
-                {bulkPopoverOpen && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: 4,
-                      zIndex: 20,
-                      background: 'var(--bg-base-default)',
-                      border: '1px solid var(--border-neutral-l1)',
-                      borderRadius: 10,
-                      padding: 12,
-                      minWidth: 200,
-                      boxShadow: 'var(--shadow-floating)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {BULK_CAPS.map(({ key, label }) => (
-                        <div
-                          key={key}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
-                        >
-                          <span style={{ fontSize: 'var(--body-sm-font-size)' }}>{label}</span>
-                          <Switch
-                            checked={bulkValues[key] === true}
-                            indeterminate={bulkValues[key] === null}
-                            onChange={(v: boolean) => setBulkValues((prev) => ({ ...prev, [key]: v ? true : false }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setBulkPopoverOpen(false)}
-                        style={{ flex: 1 }}
+              <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
+                {/* 批量设置弹层：interior Popover（定位/翻转/失焦/Escape 关闭），原 absolute div + --shadow-floating 移除 */}
+                <Popover
+                  label="批量设置能力"
+                  open={bulkPopoverOpen}
+                  onOpenChange={setBulkPopoverOpen}
+                  side="bottom"
+                  align="end"
+                  triggerClassName="mh-bulk-trigger"
+                  trigger={
+                    <>
+                      批量设置能力
+                      <ChevronDown size={14} />
+                    </>
+                  }
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 200 }}>
+                    {BULK_CAPS.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
                       >
-                        取消
-                      </Button>
-                      <Button size="sm" variant="primary" onClick={applyBulkCaps} style={{ flex: 1 }}>
-                        应用
-                      </Button>
-                    </div>
+                        <span style={{ fontSize: 'var(--body-sm-font-size)' }}>{label}</span>
+                        <Switch
+                          checked={bulkValues[key] === true}
+                          indeterminate={bulkValues[key] === null}
+                          onChange={(v: boolean) => setBulkValues((prev) => ({ ...prev, [key]: v ? true : false }))}
+                        />
+                      </div>
+                    ))}
                   </div>
-                )}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setBulkPopoverOpen(false)}
+                      style={{ flex: 1 }}
+                    >
+                      取消
+                    </Button>
+                    <Button size="sm" variant="primary" onClick={applyBulkCaps} style={{ flex: 1 }}>
+                      应用
+                    </Button>
+                  </div>
+                </Popover>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Trash2}
+                  onClick={() => setConfirmDelete({ type: 'bulk', ids: Array.from(selectedIds) })}
+                >
+                  删除
+                </Button>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Trash2}
-                onClick={() => setConfirmDelete({ type: 'bulk', ids: Array.from(selectedIds) })}
-              >
-                删除
-              </Button>
             </>
           )}
         </div>

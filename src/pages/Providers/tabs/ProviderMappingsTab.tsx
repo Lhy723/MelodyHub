@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../../../components/ui/Button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ArrowRight } from 'lucide-react';
 import { useIconMorph, MorphGlyph } from '../../../components/interior/icon-morph';
 import { FloatingLabelInput } from '../../../components/interior/floating-label';
 
@@ -81,7 +81,15 @@ export const ProviderMappingsTab: React.FC<ProviderMappingsTabProps> = ({ mappin
                   hint="支持 * 通配符"
                 />
               </div>
-              <span style={{ color: 'var(--text-tertiary)', marginTop: 32 }}>→</span>
+              <span
+                style={{
+                  color: 'var(--text-tertiary)',
+                  marginTop: 32,
+                  display: 'inline-flex',
+                }}
+              >
+                <ArrowRight size={14} />
+              </span>
               <div style={{ flex: 1 }}>
                 <FloatingLabelInput
                   label="上游模型名"
@@ -91,21 +99,12 @@ export const ProviderMappingsTab: React.FC<ProviderMappingsTabProps> = ({ mappin
               </div>
               <button
                 type="button"
+                className="icon-action-btn"
+                aria-label="删除映射"
                 onClick={() => removeEntry(idx)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  marginTop: 24,
-                  display: 'grid',
-                  placeItems: 'center',
-                  background: 'none',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  color: 'var(--text-tertiary)',
-                }}
+                style={{ marginTop: 24 }}
               >
-                <Trash2 size={16} />
+                <Trash2 size={14} />
               </button>
             </div>
           ))}

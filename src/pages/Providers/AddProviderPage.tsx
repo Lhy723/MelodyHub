@@ -2,9 +2,11 @@ import { useT } from '../../i18n';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
-import { Dropdown, toast, ProviderLogo, Switch } from '../../components/ui';
+import { Dropdown, toast, ProviderLogo, Switch, Button } from '../../components/ui';
+import './providers.css';
+import { Chip } from './chip';
 import { WizardSteps } from '../../components/interior/wizard-steps';
-import { LoadingButton, useAsyncAction } from '../../components/interior/loading-button';
+import { LoadingButton } from '../../components/interior/loading-button';
 import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
 import { FloatingLabelInput } from '../../components/interior/floating-label';
 
@@ -19,8 +21,8 @@ import { buildModelFromName } from '../../lib/modelPresets';
 import { invoke } from '@tauri-apps/api/core';
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
-  Loader2,
   RefreshCw,
   Plus,
   Trash2,
@@ -401,6 +403,8 @@ export const AddProviderPage: React.FC = () => {
 
   // ── Test connection ──────────────────────────────────────
 
+  // 进行/成功/失败三态交给 LoadingButton；testResult 只负责结果横幅与向导门禁。
+  // 成功反馈 = 按钮 success 脸 + 结果横幅（不再重复发成功 toast）；失败保留 toast 后继续 throw 进 error 脸。
   const handleTestConnection = async () => {
     setTestResult('idle');
     setTestMessage('');
@@ -418,21 +422,19 @@ export const AddProviderPage: React.FC = () => {
       if (result.success) {
         setTestResult('success');
         setTestMessage(result.message);
-        toast(result.message, 'success');
-      } else {
-        setTestResult('fail');
-        setTestMessage(result.message);
-        toast(result.message, 'error');
+        return;
       }
+      setTestResult('fail');
+      setTestMessage(result.message);
+      toast(result.message, 'error');
+      throw new Error(result.message);
     } catch (e: unknown) {
       setTestResult('fail');
       setTestMessage(errorMessage(e, '连接测试失败'));
       toast(errorMessage(e, '连接测试失败'), 'error');
+      throw e instanceof Error ? e : new Error(errorMessage(e, '连接测试失败'));
     }
   };
-
-  // 测试按钮保留主 CTA 铬（全宽品牌色 + 成功变绿四态），进行态改由 useAsyncAction 拥有（防重入 + 竞态保护）；testResult 保留（向导门禁用 + 结果面板依赖）。
-  const testConnectionAction = useAsyncAction({ action: handleTestConnection });
 
   // ── Final submit ─────────────────────────────────────────
 
@@ -514,27 +516,12 @@ export const AddProviderPage: React.FC = () => {
           marginBottom: 'var(--spacer-24)',
         }}
       >
+        {/* 页头返回钮：hover/focus 走 .icon-action-btn 伪类 */}
         <button
+          type="button"
+          className="icon-action-btn"
+          aria-label="返回供应商列表"
           onClick={() => navigate('/providers')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 36,
-            height: 36,
-            borderRadius: 'var(--radius-8)',
-            border: '1px solid var(--border-neutral-l1)',
-            background: 'var(--bg-base-default)',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            transition: 'background var(--transition-fast, 0.12s ease)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--bg-base-default)';
-          }}
         >
           <ArrowLeft size={16} />
         </button>
@@ -790,22 +777,11 @@ export const AddProviderPage: React.FC = () => {
                     <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)' }}>
                       接口返回的模型
                     </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        remoteModels.forEach((remote) => addModel(makeModel(remote.name || remote.id, remote.id)))
-                      }
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--text-brand)',
-                        cursor: 'pointer',
-                        fontSize: 'var(--body-sm-font-size)',
-                        fontFamily: 'inherit',
-                      }}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() =>
+                      remoteModels.forEach((remote) => addModel(makeModel(remote.name || remote.id, remote.id)))
+                    }>
                       全部加入
-                    </button>
+                    </Button>
                   </div>
                   <div
                     style={{
@@ -821,30 +797,17 @@ export const AddProviderPage: React.FC = () => {
                       const displayName = remote.name || remote.id;
                       const added = models.some((model) => model.id === remote.id || model.name === displayName);
                       return (
-                        <button
+                        <Chip
                           key={remote.id}
-                          type="button"
                           onClick={() => addModel(makeModel(displayName, remote.id))}
                           disabled={added}
+                          muted={added}
                           title={added ? '已加入' : '加入模型列表'}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 'var(--spacer-4)',
-                            minHeight: 28,
-                            padding: '0 var(--spacer-10)',
-                            borderRadius: 'var(--radius-8)',
-                            border: added ? '1px solid var(--border-neutral-l1)' : '1px solid var(--border-brand)',
-                            background: added ? 'var(--bg-overlay-l1)' : 'var(--bg-base-default)',
-                            color: added ? 'var(--text-tertiary)' : 'var(--text-brand)',
-                            cursor: added ? 'default' : 'pointer',
-                            fontSize: 'var(--body-sm-font-size)',
-                            fontFamily: 'var(--font-family-mono)',
-                          }}
+                          style={{ fontFamily: 'var(--font-family-mono)' }}
                         >
                           <AddedGlyph added={added} />
                           {displayName}
-                        </button>
+                        </Chip>
                       );
                     })}
                   </div>
@@ -876,28 +839,14 @@ export const AddProviderPage: React.FC = () => {
                     hint="例如 gpt-4o、claude-3-5-sonnet-20241022"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={addManualModel}
+                <Button
+                  variant="brand"
+                  icon={Plus}
                   disabled={!manualModelName.trim()}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 'var(--spacer-6)',
-                    height: 36,
-                    padding: '0 var(--spacer-16)',
-                    borderRadius: 'var(--radius-8)',
-                    background: manualModelName.trim() ? 'var(--bg-brand)' : 'var(--bg-brand-disabled)',
-                    color: 'var(--text-onbrand)',
-                    cursor: manualModelName.trim() ? 'pointer' : 'not-allowed',
-                    opacity: manualModelName.trim() ? 1 : 0.65,
-                    border: 'none',
-                    fontSize: 'var(--body-base-font-size)',
-                    fontFamily: 'inherit',
-                  }}
+                  onClick={addManualModel}
                 >
-                  <Plus size={14} /> {t('providers.form.add')}
-                </button>
+                  {t('providers.form.add')}
+                </Button>
               </div>
 
               {/* Model list with alias mapping */}
@@ -989,22 +938,11 @@ export const AddProviderPage: React.FC = () => {
                         {/* Delete */}
                         <button
                           type="button"
+                          className="icon-action-btn"
                           aria-label="删除模型"
                           title="删除模型"
                           onClick={() => removeModel(index)}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            marginTop: 'var(--spacer-16)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: 'var(--radius-8)',
-                            border: '1px solid var(--border-neutral-l1)',
-                            background: 'transparent',
-                            color: 'var(--icon-tertiary)',
-                            cursor: 'pointer',
-                          }}
+                          style={{ marginTop: 'var(--spacer-16)' }}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -1029,11 +967,10 @@ export const AddProviderPage: React.FC = () => {
                           >
                             <Eye size={14} style={{ color: 'var(--icon-tertiary)' }} />
                             <span>{t('capability.vision')}</span>
-                            <input
-                              type="checkbox"
+                            <Switch
                               checked={Boolean(model.supportsVision)}
-                              onChange={(e) => updateModel(index, { supportsVision: e.target.checked })}
-                              style={{ accentColor: 'var(--bg-brand)', width: 16, height: 16, cursor: 'pointer' }}
+                              onChange={(v) => updateModel(index, { supportsVision: v })}
+                              aria-label={t('capability.vision')}
                             />
                           </label>
                           <label
@@ -1047,11 +984,10 @@ export const AddProviderPage: React.FC = () => {
                           >
                             <Brain size={14} style={{ color: 'var(--icon-tertiary)' }} />
                             <span>{t('capability.reasoning')}</span>
-                            <input
-                              type="checkbox"
+                            <Switch
                               checked={Boolean(model.supportsReasoning)}
-                              onChange={(e) => updateModel(index, { supportsReasoning: e.target.checked })}
-                              style={{ accentColor: 'var(--bg-brand)', width: 16, height: 16, cursor: 'pointer' }}
+                              onChange={(v) => updateModel(index, { supportsReasoning: v })}
+                              aria-label={t('capability.reasoning')}
                             />
                           </label>
                           <label
@@ -1070,17 +1006,16 @@ export const AddProviderPage: React.FC = () => {
                               }}
                             />
                             <span>思考强度</span>
-                            <input
-                              type="checkbox"
+                            <Switch
                               checked={Boolean(model.supportsReasoningEffort)}
                               disabled={!model.supportsReasoning}
-                              onChange={(e) =>
+                              onChange={(v) =>
                                 updateModel(index, {
-                                  supportsReasoningEffort: e.target.checked,
-                                  defaultReasoningEffort: e.target.checked ? 'medium' : undefined,
+                                  supportsReasoningEffort: v,
+                                  defaultReasoningEffort: v ? 'medium' : undefined,
                                 })
                               }
-                              style={{ accentColor: 'var(--bg-brand)', width: 16, height: 16, cursor: 'pointer' }}
+                              aria-label="思考强度"
                             />
                           </label>
                           <Dropdown
@@ -1103,11 +1038,10 @@ export const AddProviderPage: React.FC = () => {
                           >
                             <Wrench size={14} style={{ color: 'var(--icon-tertiary)' }} />
                             <span>{t('capability.tools')}</span>
-                            <input
-                              type="checkbox"
+                            <Switch
                               checked={Boolean(model.supportsToolCalls)}
-                              onChange={(e) => updateModel(index, { supportsToolCalls: e.target.checked })}
-                              style={{ accentColor: 'var(--bg-brand)', width: 16, height: 16, cursor: 'pointer' }}
+                              onChange={(v) => updateModel(index, { supportsToolCalls: v })}
+                              aria-label={t('capability.tools')}
                             />
                           </label>
                           <label
@@ -1121,11 +1055,10 @@ export const AddProviderPage: React.FC = () => {
                           >
                             <Braces size={14} style={{ color: 'var(--icon-tertiary)' }} />
                             <span>{t('capability.json')}</span>
-                            <input
-                              type="checkbox"
+                            <Switch
                               checked={Boolean(model.supportsJsonMode)}
-                              onChange={(e) => updateModel(index, { supportsJsonMode: e.target.checked })}
-                              style={{ accentColor: 'var(--bg-brand)', width: 16, height: 16, cursor: 'pointer' }}
+                              onChange={(v) => updateModel(index, { supportsJsonMode: v })}
+                              aria-label={t('capability.json')}
                             />
                           </label>
                         </div>
@@ -1275,11 +1208,11 @@ export const AddProviderPage: React.FC = () => {
                           <span
                             style={{
                               color: 'var(--text-tertiary)',
-                              fontSize: 'var(--body-sm-font-size)',
                               marginTop: 32,
+                              display: 'inline-flex',
                             }}
                           >
-                            -&gt;
+                            <ArrowRight size={14} />
                           </span>
                           <FloatingLabelInput
                             label="上游模型名"
@@ -1289,49 +1222,20 @@ export const AddProviderPage: React.FC = () => {
                           />
                           <button
                             type="button"
+                            className="icon-action-btn"
                             aria-label="删除映射"
                             title="删除映射"
                             onClick={() => removeModelMappingEntry(index)}
-                            style={{
-                              width: 32,
-                              height: 32,
-                              marginTop: 24,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 'var(--radius-8)',
-                              border: '1px solid var(--border-neutral-l1)',
-                              background: 'transparent',
-                              color: 'var(--icon-tertiary)',
-                              cursor: 'pointer',
-                            }}
+                            style={{ marginTop: 24 }}
                           >
                             <Trash2 size={14} />
                           </button>
                         </div>
                       ))
                     )}
-                    <button
-                      type="button"
-                      onClick={addModelMappingEntry}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 'var(--spacer-6)',
-                        height: 32,
-                        padding: '0 var(--spacer-12)',
-                        borderRadius: 'var(--radius-8)',
-                        background: 'transparent',
-                        color: 'var(--text-brand)',
-                        border: '1px dashed var(--border-brand)',
-                        cursor: 'pointer',
-                        fontSize: 'var(--body-sm-font-size)',
-                        fontFamily: 'inherit',
-                        alignSelf: 'flex-start',
-                      }}
-                    >
-                      <Plus size={14} /> 添加映射规则
-                    </button>
+                    <Button variant="secondary" size="sm" icon={Plus} onClick={addModelMappingEntry} style={{ alignSelf: 'flex-start' }}>
+                      添加映射规则
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1394,43 +1298,16 @@ export const AddProviderPage: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={testConnectionAction.run}
-                  disabled={testConnectionAction.pending}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 'var(--spacer-6)',
-                    height: 36,
-                    width: '100%',
-                    padding: '0 var(--spacer-16)',
-                    borderRadius: 'var(--radius-8)',
-                    background: testResult === 'success' ? 'var(--status-success-default)' : 'var(--bg-brand)',
-                    color: 'var(--text-onbrand)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: 'var(--body-base-font-size)',
-                    fontFamily: 'inherit',
-                    opacity: testConnectionAction.pending ? 0.7 : 1,
-                  }}
+                {/* 测试连接：interior LoadingButton 四态（pending/success/error 脸 + 弹簧动效）；成功反馈交给 success 脸 + 下方结果横幅 */}
+                <LoadingButton
+                  onAction={handleTestConnection}
+                  pendingLabel={t('providers.status.testing')}
+                  successLabel={t('providers.status.connected')}
+                  errorLabel="重新测试"
+                  className="mh-loading-btn--full"
                 >
-                  {testConnectionAction.pending ? (
-                    <>
-                      <Loader2 size={16} style={{ animation: 'spin 0.6s linear infinite' }} /> {t('providers.status.testing')}
-                    </>
-                  ) : testResult === 'success' ? (
-                      <>
-                        <Check size={16} /> {t('providers.status.connected')}
-                      </>
-                    ) : testResult === 'fail' ? (
-                      <>
-                        <RefreshCw size={16} /> 重新测试
-                      </>
-                    ) : (
-                      <>测试连接</>
-                    )}
-                </button>
+                  测试连接
+                </LoadingButton>
 
                 {testResult === 'success' && (
                   <div

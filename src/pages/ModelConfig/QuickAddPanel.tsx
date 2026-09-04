@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useAggregationStore } from '../../store/aggregationStore';
 import { useProviderStore } from '../../store/providerStore';
-import { Card, SectionTitle, toast, Dropdown } from '../../components/ui';
+import { Card, SectionTitle, toast, Dropdown, Button } from '../../components/ui';
 import type { RouteTarget, RoutingStrategy } from '../../types/aggregation';
 import { useT } from '../../i18n';
 import { RoutingStrategySelect } from './RoutingStrategySelect';
+import { Chip } from '../Providers/chip';
 
 const priorityOptions = [
   { value: 'P0', label: 'P0' },
@@ -171,33 +172,9 @@ export const QuickAddPanel: React.FC = () => {
             <Dropdown options={priorityOptions} value={priority} onChange={setPriority} className="mc-select" />
           </div>
           <div className="mc-quick-add__action" style={{ flexShrink: 0 }}>
-            <button
-              type="submit"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 'var(--spacer-6)',
-                height: 36,
-                padding: '0 var(--spacer-16)',
-                borderRadius: 'var(--radius-8)',
-                fontSize: 'var(--body-base-font-size)',
-                fontWeight: 'var(--body-base-strong-font-weight)',
-                cursor: 'pointer',
-                border: '1px solid var(--border-neutral-l1)',
-                background: 'var(--bg-overlay-l1)',
-                color: 'var(--text-secondary)',
-                fontFamily: 'inherit',
-                transition: 'background var(--transition-fast, 0.12s ease)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--bg-overlay-l2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-              }}
-            >
+            <Button type="submit" variant="secondary">
               添加
-            </button>
+            </Button>
           </div>
         </div>
       </form>
@@ -232,31 +209,16 @@ export const QuickAddPanel: React.FC = () => {
             {allModels.map(({ providerName, model, protocol, key }) => {
               const selected = selectedTargets.includes(key);
               return (
-                <button
+                <Chip
                   key={key}
+                  selected={selected}
                   onClick={() => toggleModel(key)}
-                  type="button"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 'var(--spacer-4)',
-                    height: 28,
-                    padding: '0 var(--spacer-10)',
-                    borderRadius: 'var(--radius-8)',
-                    fontSize: 'var(--body-sm-font-size)',
-                    cursor: 'pointer',
-                    background: selected ? 'var(--bg-brand-popup)' : 'var(--bg-overlay-l1)',
-                    color: selected ? 'var(--text-brand)' : 'var(--text-secondary)',
-                    border: selected ? '1px solid var(--bg-brand)' : '1px solid transparent',
-                    transition: 'all var(--transition-fast, 0.12s ease)',
-                    fontFamily: 'inherit',
-                  }}
-                  title={`${providerName} · ${protocol}`}
                   aria-pressed={selected}
+                  title={`${providerName} · ${protocol}`}
                 >
                   <span>{model}</span>
                   <span style={{ opacity: 0.65 }}>{providerName}</span>
-                </button>
+                </Chip>
               );
             })}
           </div>

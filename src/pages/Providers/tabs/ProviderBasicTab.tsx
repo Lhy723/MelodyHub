@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dropdown } from '../../../components/ui/Dropdown';
+import { TriangleAlert } from 'lucide-react';
 import { LoadingButton } from '../../../components/interior/loading-button';
 import { useIconMorph, MorphGlyph } from '../../../components/interior/icon-morph';
 import { FloatingLabelInput } from '../../../components/interior/floating-label';
@@ -67,8 +68,8 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
   ];
 
   const statusColor = {
-    connected: 'var(--status-success-default, #10b981)',
-    error: 'var(--status-error-default, #ef4444)',
+    connected: 'var(--status-success-default)',
+    error: 'var(--status-error-default)',
     testing: 'var(--text-secondary)',
     configuring: 'var(--text-tertiary)',
     idle: 'var(--text-tertiary)',
@@ -128,8 +129,9 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
           </button>
         </div>
         {apiKeyConfigured && keyCleared && (
-          <div style={{ ...helpStyle, color: 'var(--status-warning-default, #f59e0b)' }}>
-            ⚠ 原有 Key 已清空，保存后将使用新值
+          <div style={{ ...helpStyle, color: 'var(--status-warning-default)', display: 'flex', alignItems: 'center', gap: 'var(--spacer-4)' }}>
+            <TriangleAlert size={14} style={{ flexShrink: 0 }} />
+            <span>原有 Key 已清空，保存后将使用新值</span>
           </div>
         )}
       </div>
@@ -171,7 +173,7 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
           <span
             style={{
               fontSize: 'var(--body-sm-font-size)',
-              color: 'var(--status-error-default, #ef4444)',
+              color: 'var(--status-error-default)',
               marginLeft: 'auto',
               marginRight: 8,
               overflow: 'hidden',

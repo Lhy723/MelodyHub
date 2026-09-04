@@ -466,9 +466,11 @@ export const ProviderDetailPage: React.FC = () => {
                           padding: 'var(--spacer-8)',
                           borderBottom: '1px solid var(--border-neutral-l1)',
                           textAlign: h === 'Token' || h === '延迟' ? 'right' : 'left',
-                          fontSize: 'var(--body-md-font-size)',
+                          fontSize: 'var(--body-xs-font-size)',
                           color: 'var(--text-tertiary)',
-                          fontWeight: 'var(--font-weight-medium)',
+                          fontWeight: 'var(--font-weight-strong)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
                         }}
                       >
                         {h}

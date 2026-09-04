@@ -1,0 +1,85 @@
+/* Providers/ModelConfig 共享 chip — 对齐 interior filter-grid 的 chip 形态：
+   28px 高、radius-6、未选中 transparent + --border-neutral-l1 边、
+   选中 --bg-brand-popup 底（浅色选中态，同 Tag brand 变体）；
+   sm（22px）用于能力标签等紧凑场景；dashed 保留“点击加入”的可用性暗示。 */
+
+.mh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  min-height: 28px;
+  padding: 0 var(--spacer-10);
+  border-radius: var(--radius-6);
+  border: 1px solid var(--border-neutral-l1);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--body-sm-font-size);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+button.mh-chip {
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.mh-chip:hover:not(:disabled):not(.mh-chip--on):not(.mh-chip--muted) {
+  background: var(--bg-overlay-l1);
+}
+
+button.mh-chip:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+button.mh-chip:disabled {
+  cursor: default;
+}
+
+.mh-chip--dashed {
+  border-style: dashed;
+}
+
+.mh-chip--on {
+  background: var(--bg-brand-popup);
+  border-color: transparent;
+  color: var(--text-brand);
+}
+
+.mh-chip--muted {
+  background: var(--bg-overlay-l1);
+  border-color: transparent;
+  color: var(--text-tertiary);
+}
+
+.mh-chip--sm {
+  min-height: 22px;
+  padding: 0 var(--spacer-8);
+  font-size: var(--body-xs-font-size);
+}
+
+/* 图标钮语义态：在 index.css 的 .icon-action-btn（32px/hover overlay/focus-visible）之上叠加。 */
+.icon-action-btn.mh-icon-btn--danger:hover:not(:disabled) {
+  background: var(--status-error-surface-l1);
+  color: var(--status-error-default);
+}
+
+.icon-action-btn.mh-icon-btn--power-on:hover:not(:disabled) {
+  color: var(--status-error-default);
+}
+
+.icon-action-btn.mh-icon-btn--power-off {
+  color: var(--status-success-default);
+}
+
+.icon-action-btn.mh-icon-btn--power-off:hover:not(:disabled) {
+  color: var(--status-success-hover);
+}

@@ -1,0 +1,39 @@
+/* ModelConfig 页面级 interior 收敛样式：
+   - 待保存行 brand 竖条指示器（ModelDetailPage / ModelSourcesTable 共用）
+   - 返回链接 hover（原 JS onMouseEnter/Leave 收敛为伪类）
+   - 聚合表行 hover（原 JS 行内收敛为伪类；斑马纹初始底色仍为行内样式，hover 覆盖需 !important） */
+
+.mh-pending-bar {
+  display: inline-block;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--bg-brand);
+  flex-shrink: 0;
+}
+
+.mh-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: inherit;
+  font-size: var(--body-sm-font-size);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.mh-back-link:hover {
+  color: var(--text-default);
+}
+
+.mc-aggregation-row {
+  transition: background var(--transition-fast);
+}
+
+.mc-aggregation-row:hover {
+  background: var(--bg-overlay-l2) !important;
+}

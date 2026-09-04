@@ -1,0 +1,68 @@
+/* Providers 页面级 interior 收敛样式（hover 全部进伪类，不再走 JS onMouseEnter/Leave）。 */
+
+/* AddProvider 测试连接主 CTA：全宽 LoadingButton */
+.mh-loading-btn--full {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--spacer-16);
+  font-size: var(--body-base-font-size);
+}
+
+/* ProviderModelsTab 批量设置弹层触发钮：次级小按钮形态（覆盖 popover 默认 trigger 铬） */
+.mh-popover__trigger.mh-bulk-trigger {
+  height: 24px;
+  padding: 0 var(--spacer-10);
+  gap: var(--spacer-4);
+  border-color: var(--border-neutral-l1);
+  border-radius: var(--radius-8);
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-medium);
+}
+
+.mh-popover__trigger.mh-bulk-trigger:hover {
+  background: var(--bg-overlay-l2);
+  border-color: var(--border-neutral-l2);
+  color: var(--text-default);
+}
+
+/* ProviderCard：卡片表面 / 展开行 hover */
+.mh-pcard__surface {
+  transition: background-color var(--transition-normal, 0.2s ease);
+}
+
+.mh-pcard__surface:hover {
+  background-color: var(--bg-overlay-l1);
+}
+
+.mh-pcard__toggle {
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.mh-pcard__toggle:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-secondary);
+}
+
+/* ProviderCard Key 复制小钮（20px，不适用 32px .icon-action-btn） */
+.mh-pcard__copybtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--icon-tertiary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.mh-pcard__copybtn:hover {
+  color: var(--icon-brand);
+}

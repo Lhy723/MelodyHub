@@ -9,6 +9,8 @@ import { Pencil, Trash2, Box, Loader2 } from 'lucide-react';
 import { useCopyToClipboard } from '../../components/interior/copy-button';
 import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
 import { TooltipGroup, Tooltip } from '../../components/interior/tooltip-group';
+import './providers.css';
+import { Chip } from './chip';
 
 /** 卡片模型叠堆:按模型名解析真实品牌图标,层叠展示,超出 max 显示 +N。 */
 const CARD_MODEL_STACK_MAX = 5;
@@ -109,12 +111,11 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
     >
       <div
         onClick={() => navigate(`/providers/${provider.id}`)}
-        style={{ height: '100%', transition: 'background-color var(--transition-normal, 0.2s ease)' }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
+        className="mh-pcard__surface"
+        style={{
+          height: '100%',
+          opacity: isDisabled ? 0.7 : 1,
+          cursor: 'pointer',
         }}
       >
       {/* Header */}
@@ -162,7 +163,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
                 color: 'var(--status-primary-default)',
               }}
             >
-              <Loader2 size={10} style={{ animation: 'spin 0.6s linear infinite' }} />
+              <Loader2 size={10} className="animate-spin" />
               {t('providers.status.testing')}
             </span>
           ) : (
@@ -175,32 +176,11 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           <TooltipGroup>
           <Tooltip label={isDisabled ? '启用' : '禁用'} side="bottom">
           <button
-            className="mc-icon-btn"
+            className={`icon-action-btn ${isDisabled ? 'mh-icon-btn--power-off' : 'mh-icon-btn--power-on'}`}
             aria-label={isDisabled ? '启用提供商' : '禁用提供商'}
             onClick={(e) => {
               e.stopPropagation();
               handleToggleEnabled();
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 'var(--radius-6)',
-              border: 'none',
-              background: 'transparent',
-              color: isDisabled ? 'var(--status-success-default)' : 'var(--icon-tertiary)',
-              cursor: 'pointer',
-              transition: 'background var(--transition-fast, 0.12s ease), color var(--transition-fast, 0.12s ease)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-              e.currentTarget.style.color = isDisabled ? 'var(--status-success-hover)' : 'var(--status-error-default)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = isDisabled ? 'var(--status-success-default)' : 'var(--icon-tertiary)';
             }}
           >
             <MorphGlyph slots={powerIcon.slots} rotate={powerIcon.rotate} transition={powerIcon.transition} mode={powerIcon.mode} size={14} />
@@ -208,32 +188,11 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           </Tooltip>
           <Tooltip label={t('models.edit')} side="bottom">
           <button
-            className="mc-icon-btn"
+            className="icon-action-btn"
             aria-label={t('models.edit')}
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/providers/${provider.id}/edit`);
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 'var(--radius-6)',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--icon-tertiary)',
-              cursor: 'pointer',
-              transition: 'background var(--transition-fast, 0.12s ease), color var(--transition-fast, 0.12s ease)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-              e.currentTarget.style.color = 'var(--icon-default)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'var(--icon-tertiary)';
             }}
           >
             <Pencil size={14} />
@@ -241,32 +200,11 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           </Tooltip>
           <Tooltip label={t('models.delete')} side="bottom">
           <button
-            className="mc-icon-btn"
+            className="icon-action-btn mh-icon-btn--danger"
             aria-label={t('models.delete')}
             onClick={(e) => {
               e.stopPropagation();
               setConfirmDelete(true);
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 'var(--radius-6)',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--icon-tertiary)',
-              cursor: 'pointer',
-              transition: 'background var(--transition-fast, 0.12s ease), color var(--transition-fast, 0.12s ease)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--status-error-surface-l1)';
-              e.currentTarget.style.color = 'var(--status-error-default)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'var(--icon-tertiary)';
             }}
           >
             <Trash2 size={14} />
@@ -323,29 +261,10 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
               </span>
               <button
                 title={t('providers.apiKeyCopied')}
+                className="mh-pcard__copybtn"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCopyKey();
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 20,
-                  height: 20,
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--icon-tertiary)',
-                  cursor: 'pointer',
-                  borderRadius: 'var(--radius-4)',
-                  padding: 0,
-                  transition: 'color var(--transition-fast, 0.12s ease)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = 'var(--icon-brand)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'var(--icon-tertiary)';
                 }}
               >
                 <MorphGlyph slots={keyCopyIcon.slots} rotate={keyCopyIcon.rotate} transition={keyCopyIcon.transition} mode={keyCopyIcon.mode} size={12} />
@@ -410,7 +329,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
                       borderRadius: '50%',
                       background: 'var(--bg-overlay-l1)',
                       color: 'var(--text-secondary)',
-                      fontSize: 9,
+                      fontSize: 'var(--body-xs-font-size)',
                       fontWeight: 600,
                       flexShrink: 0,
                     }}
@@ -468,7 +387,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
       {/* Divider + Toggle model list */}
       <div style={{ height: 1, background: 'var(--border-neutral-l1)', margin: '0 var(--spacer-16)' }} />
       <div
-        className="mc-provider-card__toggle"
+        className="mc-provider-card__toggle mh-pcard__toggle"
         onClick={(e) => {
           e.stopPropagation();
           setExpanded(!expanded);
@@ -482,15 +401,6 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           color: 'var(--text-tertiary)',
           fontSize: 'var(--body-xs-font-size)',
           lineHeight: 'var(--body-xs-line-height)',
-          transition: 'color var(--transition-fast, 0.12s ease), background var(--transition-fast, 0.12s ease)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = 'var(--text-secondary)';
-          e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'var(--text-tertiary)';
-          e.currentTarget.style.background = 'transparent';
         }}
       >
         <span className="mc-provider-card__chevron" style={{ display: 'inline-flex' }}>
@@ -534,21 +444,9 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
               <Box size={14} style={{ color: isDisabled ? 'var(--icon-disabled)' : 'var(--icon-tertiary)' }} />
               <span>{model.name}</span>
               {capabilityTags.map((tag) => (
-                <span
-                  key={tag}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    height: 20,
-                    padding: '0 var(--spacer-6)',
-                    borderRadius: 'var(--radius-6)',
-                    background: 'var(--bg-overlay-l1)',
-                    color: isDisabled ? 'var(--text-disabled)' : 'var(--text-tertiary)',
-                    fontSize: 'var(--body-xs-font-size)',
-                  }}
-                >
+                <Chip key={tag} size="sm" muted style={isDisabled ? { color: 'var(--text-disabled)' } : undefined}>
                   {tag}
-                </span>
+                </Chip>
               ))}
             </div>
           );
