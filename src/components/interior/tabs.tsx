@@ -19,6 +19,8 @@ export type TabItem = {
   disabled?: boolean;
   /** 自制 Tabs 迁移带来的扩展：标签旁的数量徽标（上游无，MelodyHub 供应商页需要）。 */
   badge?: ReactNode;
+  /** MelodyHub 扩展：标签前置图标（应用设置页 agent 图标），同时计入幽灵层量宽。 */
+  icon?: ReactNode;
 };
 
 export type TabsActivation = 'automatic' | 'manual';
@@ -164,7 +166,7 @@ export function useTabs({
 
 export type UseTabsReturn = ReturnType<typeof useTabs>;
 
-export type TabsVariant = 'segmented' | 'underline';
+export type TabsVariant = 'merged' | 'segmented' | 'underline';
 
 export type TabsProps = {
   items: TabItem[];
@@ -186,7 +188,7 @@ export function Tabs({
   defaultValue,
   onValueChange,
   activation = 'automatic',
-  variant = 'segmented',
+  variant = 'merged',
   renderPanel,
   label = 'Tabs',
   panelClassName = '',
@@ -222,7 +224,11 @@ export function Tabs({
   }, [selectedIndex, items]);
 
   return (
-    <div className={`mh-tabs ${className}`} data-variant={variant}>
+    <div
+      className={`mh-tabs ${className}`}
+      data-variant={variant}
+      data-standalone={renderPanel ? undefined : 'true'}
+    >
       <div {...tabs.tabListProps} ref={rowRef} aria-label={label} className="mh-tabs__row">
         <motion.span
           layout
@@ -260,9 +266,11 @@ export function Tabs({
             >
               <span className="mh-tabs__tab-label">
                 <span aria-hidden className="mh-tabs__tab-ghost">
+                  {item.icon}
                   {item.label}
                 </span>
                 <span className="mh-tabs__tab-text" data-selected={selected}>
+                  {item.icon}
                   {item.label}
                 </span>
               </span>

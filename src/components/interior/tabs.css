@@ -2,6 +2,8 @@
    行为来自上游 interior tabs.tsx（useTabs + 滑动指示器 + reduced-motion 原样保留），
    样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
 
+/* merged（默认）：文档站 demo 形态。有面板时整包在卡里（卡片壳），白块与面板连体；
+   无面板独立条时去壳，灰条直接坐在页面背景上，白块穿发细线与下方内容衔接。 */
 .mh-tabs {
   width: 100%;
   overflow: hidden;
@@ -9,6 +11,15 @@
   border-radius: var(--radius-12);
   background: var(--bg-white);
   box-shadow: var(--shadow-sm);
+}
+
+.mh-tabs[data-standalone='true'] {
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  margin-bottom: var(--spacer-12);
 }
 
 .mh-tabs__row {
@@ -19,6 +30,11 @@
   border-bottom: 1px solid var(--border-neutral-l2);
   background: var(--bg-base-secondary);
   padding: var(--spacer-4) var(--spacer-4) 0;
+}
+
+.mh-tabs[data-standalone='true'] .mh-tabs__row {
+  border-top-left-radius: var(--radius-10);
+  border-top-right-radius: var(--radius-10);
 }
 
 .mh-tabs__indicator {
@@ -92,10 +108,16 @@
   grid-area: 1 / 1;
   visibility: hidden;
   font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-6);
 }
 
 .mh-tabs__tab-text {
   grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-6);
 }
 
 .mh-tabs__tab-text[data-selected='true'] {

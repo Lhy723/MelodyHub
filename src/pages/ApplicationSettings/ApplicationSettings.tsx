@@ -31,6 +31,7 @@ import {
 } from '../../components/ui';
 import { desktopApi, type AgentAppConfigInput, type AgentAppId, type AgentAppStatus } from '../../lib/desktopApi';
 import { LoadingButton } from '../../components/interior/loading-button';
+import { Tabs } from '../../components/interior/tabs';
 import { useProviderStore } from '../../store/providerStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CodexSettingsEditor } from './CodexSettingsEditor';
@@ -1009,61 +1010,34 @@ export const ApplicationSettings: React.FC = () => {
         </Card>
       ) : (
         <>
-          <div
-            role="tablist"
-            aria-label={t('applications.tabsLabel')}
-            style={{
-              display: 'flex',
-              gap: 'var(--spacer-4)',
-              borderBottom: '1px solid var(--border-neutral-l1)',
-              marginBottom: 'var(--spacer-16)',
-              overflowX: 'auto',
-            }}
-          >
-            {AGENTS.map((agent) => {
+          <Tabs
+            label={t('applications.tabsLabel')}
+            items={AGENTS.map((agent) => {
               const status = statuses[agent.id];
-              const selected = activeAgent.id === agent.id;
               const Icon = agent.icon;
-              return (
-                <button
-                  key={agent.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  onClick={() => setActiveId(agent.id)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 'var(--spacer-8)',
-                    flexShrink: 0,
-                    border: 'none',
-                    borderBottom: `2px solid ${selected ? 'var(--bg-brand)' : 'transparent'}`,
-                    background: 'transparent',
-                    color: selected ? 'var(--text-default)' : 'var(--text-secondary)',
-                    padding: '0 var(--spacer-12) var(--spacer-10)',
-                    fontFamily: 'inherit',
-                    fontSize: 'var(--body-base-font-size)',
-                    fontWeight: selected ? 'var(--font-weight-strong)' : 'var(--font-weight-medium)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Icon size={16} />
-                  <span>{t(agent.nameKey)}</span>
+              return {
+                value: agent.id,
+                icon: <Icon size={16} />,
+                label: t(agent.nameKey),
+                badge: (
                   <span
                     aria-label={
                       status?.configExists ? t('applications.statusDetected') : t('applications.statusNotDetected')
                     }
                     style={{
+                      display: 'inline-block',
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
                       background: status ? statusColor(status) : 'var(--text-tertiary)',
                     }}
                   />
-                </button>
-              );
+                ),
+              };
             })}
-          </div>
+            value={activeId}
+            onValueChange={(v) => setActiveId(v as AgentAppId)}
+          />
 
           {!activeStatus ? (
             <Card padding="var(--spacer-32)" style={{ color: 'var(--text-tertiary)', textAlign: 'center' }}>

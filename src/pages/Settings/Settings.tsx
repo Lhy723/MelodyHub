@@ -1,5 +1,4 @@
 import { AnimatedContent } from '../../components/ui';
-import { SettingsNav } from './SettingsNav';
 import { SettingsForm } from './SettingsForm';
 
 export const Settings: React.FC = () => {
@@ -14,9 +13,6 @@ export const Settings: React.FC = () => {
       }}
     >
       <AnimatedContent distance={6}>
-        <SettingsNav />
-      </AnimatedContent>
-      <AnimatedContent delay={60} distance={6}>
         <SettingsForm />
       </AnimatedContent>
     </div>

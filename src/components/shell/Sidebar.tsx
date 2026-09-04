@@ -177,12 +177,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
                 borderRadius: 'var(--radius-8)',
                 border: 'none',
                 textDecoration: 'none',
-                color: isActive ? 'var(--bg-brand)' : 'var(--text-secondary)',
+                color: isActive ? 'var(--text-default)' : 'var(--text-secondary)',
                 fontSize: 'var(--body-base-font-size)',
-                fontWeight: isActive ? 'var(--font-weight-strong)' : 'var(--body-base-font-weight)',
+                fontWeight: isActive ? 'var(--font-weight-medium)' : 'var(--body-base-font-weight)',
                 lineHeight: 'var(--body-base-line-height)',
                 cursor: 'pointer',
-                background: isActive ? 'var(--brand-100)' : 'transparent',
+                background: isActive ? 'var(--bg-overlay-l1)' : 'transparent',
                 width: '100%',
                 textAlign: 'left',
                 fontFamily: 'inherit',
@@ -202,40 +202,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
                 }
               }}
               onMouseDown={(e) => {
-                e.currentTarget.style.background = isActive ? 'var(--brand-200)' : 'var(--bg-overlay-l2)';
+                e.currentTarget.style.background = 'var(--bg-overlay-l2)';
               }}
               onMouseUp={(e) => {
-                e.currentTarget.style.background = isActive ? 'var(--brand-100)' : 'var(--bg-overlay-l1)';
+                e.currentTarget.style.background = 'var(--bg-overlay-l1)';
               }}
             >
-              {/* Active indicator bar */}
-              {isActive && (
-                <span
-                  className="ds-shell__nav-indicator"
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 3,
-                    height: 16,
-                    borderRadius: '0 var(--radius-4) var(--radius-4) 0',
-                    background: 'var(--bg-brand)',
-                  }}
-                />
-              )}
               <span
                 className="ds-shell__nav-icon"
                 style={{
-                  color: isActive ? 'var(--icon-brand)' : 'var(--icon-tertiary)',
+                  color: isActive ? 'var(--icon-default)' : 'var(--icon-tertiary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: 24,
-                  height: 24,
-                  borderRadius: 'var(--radius-6)',
-                  background: isActive ? 'var(--brand-100)' : 'transparent',
-                  transition: 'color 0.18s cubic-bezier(0.22,1,0.36,1), background 0.18s cubic-bezier(0.22,1,0.36,1)',
+                  width: 20,
+                  height: 20,
+                  transition: 'color 0.18s cubic-bezier(0.22,1,0.36,1)',
                   flexShrink: 0,
                 }}
               >

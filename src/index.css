@@ -987,3 +987,8 @@ button {
   font-family: var(--font-family-mono);
   font-size: var(--body-sm-font-size);
 }
+
+/* 设置页 Tabs 面板：分组已拍平为 section，最后一组去掉分隔线。 */
+.mh-settings-panel > section:last-child {
+  border-bottom: none;
+}

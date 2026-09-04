@@ -8,9 +8,7 @@ import {
   Button,
   Input,
   Switch,
-  Card,
   toast,
-  AnimatedContent,
   ConfirmDialog,
 } from '../../components/ui';
 import { SegmentedControl, type SegmentedOption } from '../../components/interior/segmented-control';
@@ -22,7 +20,10 @@ import { TagInput } from '../../components/interior/tag-input';
 import { ProgressBar } from '../../components/interior/progress-bar';
 import { Modal } from '../../components/interior/modal';
 import { TooltipGroup, Tooltip } from '../../components/interior/tooltip-group';
+import { Tabs } from '../../components/interior/tabs';
+import { Settings as SettingsIcon, Shield, Sliders, Info } from 'lucide-react';
 import { isValidHex, normalizeHex } from '../../lib/colorUtils';
+import type { SettingsCategory } from '../../types/settings';
 import { scheduleLatestProgressFrame } from '../../lib/updateProgress';
 import {
   Sun,
@@ -104,12 +105,9 @@ interface SettingsGroupProps {
 }
 
 const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, isNew, children, style }) => (
-  <Card
-    padding="0"
+  <section
     style={{
-      marginBottom: 16,
-      overflow: 'hidden',
-      background: 'var(--bg-base-default)',
+      borderBottom: '1px solid var(--border-neutral-l1)',
       ...style,
     }}
   >
@@ -132,7 +130,7 @@ const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, isNew, children, s
       </div>
     )}
     {children}
-  </Card>
+  </section>
 );
 
 interface SettingsRowProps {
@@ -263,7 +261,7 @@ export const SettingsForm: React.FC = () => {
     { value: '5', label: translate('settings.retry.times', { n: 5 }) },
   ];
 
-  const { settings, activeCategory, loaded, loadSettings, updateSettings, saveSettingsNow, error, clearError } =
+  const { settings, activeCategory, loaded, loadSettings, setActiveCategory, updateSettings, saveSettingsNow, error, clearError } =
     useSettingsStore();
   // IP 白名单字符串（后端按逗号 split + trim，支持 * 通配符）与 TagInput 数组互转。
   const ipTags = useMemo(
@@ -472,10 +470,23 @@ export const SettingsForm: React.FC = () => {
   };
 
   return (
-    <div>
+    <>
+    <Tabs
+      label={t('settings.navLabel')}
+      items={[
+        { value: 'general', icon: <SettingsIcon size={16} />, label: t('settings.general') },
+        { value: 'security', icon: <Shield size={16} />, label: t('settings.security') },
+        { value: 'proxy', icon: <Globe size={16} />, label: t('settings.proxy') },
+        { value: 'advanced', icon: <Sliders size={16} />, label: t('settings.advanced') },
+        { value: 'about', icon: <Info size={16} />, label: t('settings.about') },
+      ]}
+      value={activeCategory}
+      onValueChange={(v) => setActiveCategory(v as SettingsCategory)}
+      renderPanel={() => (
+        <div className="mh-settings-panel">
       {/* ═══════════════════════════════════════════════════ 通用设置 */}
       {activeCategory === 'general' && (
-        <AnimatedContent>
+        <>
           <SettingsGroup title={translate('settings.appearance')}>
             <SettingsRow label={translate('settings.appearanceLang')}>
               <SegmentedControl
@@ -587,12 +598,12 @@ export const SettingsForm: React.FC = () => {
               <Switch checked={settings.startMinimized} onChange={(v) => updateSettings({ startMinimized: v })} />
             </SettingsRow>
           </SettingsGroup>
-        </AnimatedContent>
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════ 安全与认证 */}
       {activeCategory === 'security' && (
-        <AnimatedContent>
+        <>
           <SettingsGroup title={translate('settings.security.title')}>
             <SettingsRow label={translate('settings.security.token')}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -668,12 +679,12 @@ export const SettingsForm: React.FC = () => {
               />
             </SettingsRow>
           </SettingsGroup>
-        </AnimatedContent>
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════ 网络代理 */}
       {activeCategory === 'proxy' && (
-        <AnimatedContent>
+        <>
           <SettingsGroup title={translate('settings.proxyConfig')}>
             <SettingsRow label={translate('settings.proxyConfigEnable')}>
               <Switch checked={settings.proxyEnabled} onChange={(v) => updateSettings({ proxyEnabled: v })} />
@@ -713,12 +724,12 @@ export const SettingsForm: React.FC = () => {
               />
             </SettingsRow>
           </SettingsGroup>
-        </AnimatedContent>
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════ 高级选项 */}
       {activeCategory === 'advanced' && (
-        <AnimatedContent>
+        <>
           <SettingsGroup title={translate('settings.advanced.title')}>
             <SettingsRow label={translate('settings.advanced.timeout')}>
               <NumberInput value={settings.apiTimeout} onChange={(v) => updateSettings({ apiTimeout: v })} min={1} />
@@ -754,12 +765,12 @@ export const SettingsForm: React.FC = () => {
               </Button>
             </SettingsRow>
           </SettingsGroup>
-        </AnimatedContent>
+        </>
       )}
 
       {/* ═══════════════════════════════════════════════════ 关于 */}
       {activeCategory === 'about' && (
-        <AnimatedContent>
+        <>
           {/* ── About / Update card ────────────────────────── */}
           <SettingsGroup>
             {/* Header row: title + GitHub link */}
@@ -946,8 +957,12 @@ export const SettingsForm: React.FC = () => {
               </Button>
             </SettingsRow>
           </SettingsGroup>
-        </AnimatedContent>
+        </>
       )}
+        </div>
+      )}
+      >
+    </Tabs>
 
       {/* ── Update confirm / install dialog ──
           interior Modal 底座:焦点陷阱/inert/Escape 栈/滚动锁来自 useModal；
@@ -1040,6 +1055,6 @@ export const SettingsForm: React.FC = () => {
         onConfirm={handleConfirmRefreshToken}
         onCancel={() => setConfirmRefreshToken(false)}
       />
-    </div>
+    </>
   );
 };

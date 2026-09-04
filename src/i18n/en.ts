@@ -408,6 +408,7 @@ const en: Record<string, string> = {
 
   // ── Settings ──
   'settings.general': 'General',
+  'settings.navLabel': 'Settings sections',
   'settings.proxy': 'Network Proxy',
   'settings.security': 'Security',
   'settings.advanced': 'Advanced',

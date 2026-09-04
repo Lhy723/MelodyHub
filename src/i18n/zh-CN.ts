@@ -390,6 +390,7 @@ const zh: Record<string, string> = {
 
   // ── 设置 ──
   'settings.general': '通用设置',
+  'settings.navLabel': '设置分组',
   'settings.proxy': '网络代理',
   'settings.security': '安全与认证',
   'settings.advanced': '高级选项',
