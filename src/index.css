@@ -429,39 +429,6 @@ button {
   transform: scale(0.97);
 }
 
-.ds-confirm-overlay {
-  opacity: 1;
-  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.ds-confirm-overlay[data-entering],
-.ds-confirm-overlay[data-exiting] {
-  opacity: 0;
-}
-
-.ds-confirm-overlay[data-exiting] {
-  transition-duration: 160ms;
-}
-
-.ds-confirm-dialog {
-  opacity: 1;
-  transform: scale(1);
-  transform-origin: center;
-  transition:
-    opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.ds-confirm-dialog[data-entering],
-.ds-confirm-dialog[data-exiting] {
-  opacity: 0;
-  transform: scale(0.95);
-}
-
-.ds-confirm-dialog[data-exiting] {
-  transition-duration: 160ms;
-}
-
 /* ── Focus visible for keyboard accessibility ─────────────── */
 :focus-visible {
   outline: 2px solid var(--bg-brand);
@@ -970,17 +937,6 @@ button {
     transform: none !important;
   }
 
-  .ds-confirm-overlay,
-  .ds-confirm-dialog {
-    transition: opacity 200ms ease !important;
-  }
-
-  .ds-confirm-dialog,
-  .ds-confirm-dialog[data-entering],
-  .ds-confirm-dialog[data-exiting] {
-    transform: none !important;
-  }
-
   .ds-dropdown__popup,
   .ds-menu {
     transform: none !important;
@@ -1002,7 +958,6 @@ button {
 
   .ds-dropdown__chevron,
   .ds-switch-thumb,
-  .ds-segmented-control__indicator,
   .mc-provider-card__chevron {
     transition: none !important;
   }
@@ -1020,4 +975,15 @@ button {
   .rb-spotlight-card.is-active {
     transform: none !important;
   }
+}
+
+/* FloatingLabel 右侧有悬浮图标按钮（显隐眼睛）时，给输入留出避让。 */
+.mh-with-trailing-icon .mh-floating-label__input {
+  padding-right: 44px;
+}
+
+/* 映射行里的 FloatingLabel 输入保持等宽字体（模型名易读）。 */
+.mh-mapping-row .mh-floating-label__input {
+  font-family: var(--font-family-mono);
+  font-size: var(--body-sm-font-size);
 }

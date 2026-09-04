@@ -1,21 +1,8 @@
 import React, { useState } from 'react';
 import { Dropdown } from '../../../components/ui/Dropdown';
-import { Button } from '../../../components/ui/Button';
-import { Eye, EyeOff, RefreshCw } from 'lucide-react';
-
-const inputBaseStyle: React.CSSProperties = {
-  width: '100%',
-  height: 36,
-  padding: '0 12px',
-  borderRadius: 8,
-  border: '1px solid var(--border-neutral-l1)',
-  background: 'var(--bg-overlay-l1)',
-  color: 'var(--text-default)',
-  font: 'inherit',
-  fontSize: 'var(--body-base-font-size)',
-  outline: 'none',
-  boxSizing: 'border-box',
-};
+import { LoadingButton } from '../../../components/interior/loading-button';
+import { useIconMorph, MorphGlyph } from '../../../components/interior/icon-morph';
+import { FloatingLabelInput } from '../../../components/interior/floating-label';
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
@@ -39,7 +26,6 @@ interface ProviderBasicTabProps {
   testStatus: 'connected' | 'configuring' | 'error' | 'testing' | 'idle';
   testMessage?: string;
   testTime?: string;
-  testing: boolean;
   onApiBaseChange: (v: string) => void;
   onApiKeyChange: (v: string) => void;
   onApiFlavorChange: (v: string) => void;
@@ -54,7 +40,6 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
   testStatus,
   testMessage,
   testTime,
-  testing,
   onApiBaseChange,
   onApiKeyChange,
   onApiFlavorChange,
@@ -62,6 +47,7 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
 }) => {
   const [showKey, setShowKey] = useState(false);
   const [keyCleared, setKeyCleared] = useState(false);
+  const keyEye = useIconMorph({ preset: 'eye', active: showKey });
 
   const handleKeyFocus = () => {
     if (!keyCleared && apiKeyConfigured) {
@@ -99,27 +85,25 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '24px 0', maxWidth: 520 }}>
       <div>
-        <label style={labelStyle}>API Base URL</label>
-        <input
-          type="text"
+        <FloatingLabelInput
+          label="API Base URL"
           value={apiBase}
-          onChange={(e) => onApiBaseChange(e.target.value)}
-          placeholder="https://api.openai.com/v1"
-          style={inputBaseStyle}
+          onChange={onApiBaseChange}
+          hint="填写完整 Base URL（含版本路径，如 /v1）"
+          autoComplete="url"
         />
-        <div style={helpStyle}>填写完整 Base URL（含版本路径，如 /v1）</div>
       </div>
 
       <div>
-        <label style={labelStyle}>API Key</label>
-        <div style={{ position: 'relative' }}>
-          <input
+        <div style={{ position: 'relative' }} className="mh-with-trailing-icon">
+          <FloatingLabelInput
+            label="API Key"
             type={showKey ? 'text' : 'password'}
             value={apiKey}
-            onChange={(e) => handleKeyChange(e.target.value)}
+            onChange={handleKeyChange}
             onFocus={handleKeyFocus}
-            placeholder={apiKeyConfigured && !keyCleared ? '••••••••••••（已设置，点击修改）' : 'sk-...'}
-            style={{ ...inputBaseStyle, paddingRight: 44 }}
+            hint={apiKeyConfigured && !keyCleared ? '已设置 Key，点击输入框直接修改' : 'sk-...'}
+            autoComplete="off"
           />
           <button
             type="button"
@@ -140,7 +124,7 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
               color: 'var(--text-tertiary)',
             }}
           >
-            {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+            <MorphGlyph slots={keyEye.slots} rotate={keyEye.rotate} transition={keyEye.transition} mode={keyEye.mode} size={16} />
           </button>
         </div>
         {apiKeyConfigured && keyCleared && (
@@ -199,16 +183,12 @@ export const ProviderBasicTab: React.FC<ProviderBasicTabProps> = ({
             {testMessage}
           </span>
         )}
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          loading={testing}
-          onClick={onTestConnection}
-          style={{ marginLeft: 'auto' }}
-        >
-          测试连接
-        </Button>
+        {/* onTestConnection 本就是 async（返回 promise），LoadingButton 直接拥有进行态；父级 testing 只保留给状态文案。 */}
+        <div style={{ marginLeft: 'auto' }}>
+          <LoadingButton onAction={onTestConnection} pendingLabel="测试中" successLabel="已连接" errorLabel="重试测试">
+            测试连接
+          </LoadingButton>
+        </div>
       </div>
     </div>
   );

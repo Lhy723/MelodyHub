@@ -1,0 +1,92 @@
+/* MelodyHub interior copy-button —换肤样式
+   行为来自上游 interior copy-button.tsx（hook 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  height: 28px;
+  padding: 0 var(--spacer-12);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-8);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-copy-btn:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-copy-btn:active:not(:disabled) {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-copy-btn:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-copy-btn[data-status='copied'] {
+  border-color: var(--status-success-default);
+  color: var(--status-success-default);
+}
+
+.mh-copy-btn[data-status='error'] {
+  border-color: var(--status-error-default);
+  color: var(--status-error-default);
+}
+
+.mh-copy-btn__icon {
+  display: grid;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.mh-copy-btn__icon svg {
+  grid-area: 1 / 1;
+  width: 14px;
+  height: 14px;
+}
+
+.mh-copy-btn__labels {
+  position: relative;
+  display: grid;
+}
+
+.mh-copy-btn__labels > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.mh-copy-btn__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-copy-btn {
+    transition: none;
+  }
+}

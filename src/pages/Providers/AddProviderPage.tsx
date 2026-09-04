@@ -2,7 +2,17 @@ import { useT } from '../../i18n';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
-import { Stepper, Step, Dropdown, toast, ProviderLogo, Switch } from '../../components/ui';
+import { Dropdown, toast, ProviderLogo, Switch } from '../../components/ui';
+import { WizardSteps } from '../../components/interior/wizard-steps';
+import { LoadingButton, useAsyncAction } from '../../components/interior/loading-button';
+import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
+import { FloatingLabelInput } from '../../components/interior/floating-label';
+
+// 远端模型行内加号→✓：map 回调里不能调 hook，包一层行级组件持有变形状态。
+function AddedGlyph({ added }: { added: boolean }) {
+  const icon = useIconMorph({ preset: 'plus-check', active: added });
+  return <MorphGlyph slots={icon.slots} rotate={icon.rotate} transition={icon.transition} mode={icon.mode} size={12} />;
+}
 import type { DropdownOption } from '../../components/ui';
 import type { Model } from '../../types/provider';
 import { buildModelFromName } from '../../lib/modelPresets';
@@ -12,7 +22,6 @@ import {
   Check,
   Loader2,
   RefreshCw,
-  Download,
   Plus,
   Trash2,
   Eye,
@@ -20,8 +29,6 @@ import {
   SlidersHorizontal,
   Wrench,
   Braces,
-  ChevronDown,
-  ChevronRight,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────
@@ -230,11 +237,9 @@ export const AddProviderPage: React.FC = () => {
   const [apiFlavor, setApiFlavor] = useState('openai-compatible');
   const [models, setModels] = useState<Model[]>([]);
   const [remoteModels, setRemoteModels] = useState<RemoteModelEntry[]>([]);
-  const [fetchingModels, setFetchingModels] = useState(false);
   const [modelFetchMessage, setModelFetchMessage] = useState('');
   const [manualModelName, setManualModelName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'success' | 'fail'>('idle');
   const [testMessage, setTestMessage] = useState('');
   const [nameError, setNameError] = useState(false);
@@ -251,6 +256,7 @@ export const AddProviderPage: React.FC = () => {
   // Model mapping & proxy state
   const [modelMappingEntries, setModelMappingEntries] = useState<Array<{ key: string; value: string }>>([]);
   const [modelMappingExpanded, setModelMappingExpanded] = useState(false);
+  const mappingChevron = useIconMorph({ preset: 'chevron', active: modelMappingExpanded });
   const [proxyEnabled, setProxyEnabled] = useState(false);
   const [proxyUrl, setProxyUrl] = useState('');
 
@@ -368,12 +374,12 @@ export const AddProviderPage: React.FC = () => {
     setManualModelName('');
   };
 
+  // 进行态由 LoadingButton 拥有。语义收敛：原来 !success 时发 info toast，现在统一走 error（按钮 error 脸要求真实失败信号；服务端原文保留）。
   const handleFetchModels = async () => {
     if (!apiBase.trim() || !apiKey.trim()) {
       toast('请先填写 API Base URL 和 API Key', 'error');
-      return;
+      throw new Error('missing credentials');
     }
-    setFetchingModels(true);
     setModelFetchMessage('');
     try {
       const result = await invoke<FetchModelsResult>('fetch_provider_models', {
@@ -383,20 +389,19 @@ export const AddProviderPage: React.FC = () => {
       });
       setRemoteModels(result.models ?? []);
       setModelFetchMessage(result.message);
-      toast(result.message, result.success ? 'success' : 'info');
+      if (!result.success) throw new Error(result.message);
+      toast(result.message, 'success');
     } catch (e: unknown) {
       const message = errorMessage(e, '拉取模型失败');
       setModelFetchMessage(message);
       toast(message, 'error');
-    } finally {
-      setFetchingModels(false);
+      throw e;
     }
   };
 
   // ── Test connection ──────────────────────────────────────
 
   const handleTestConnection = async () => {
-    setTesting(true);
     setTestResult('idle');
     setTestMessage('');
     try {
@@ -423,10 +428,11 @@ export const AddProviderPage: React.FC = () => {
       setTestResult('fail');
       setTestMessage(errorMessage(e, '连接测试失败'));
       toast(errorMessage(e, '连接测试失败'), 'error');
-    } finally {
-      setTesting(false);
     }
   };
+
+  // 测试按钮保留主 CTA 铬（全宽品牌色 + 成功变绿四态），进行态改由 useAsyncAction 拥有（防重入 + 竞态保护）；testResult 保留（向导门禁用 + 结果面板依赖）。
+  const testConnectionAction = useAsyncAction({ action: handleTestConnection });
 
   // ── Final submit ─────────────────────────────────────────
 
@@ -566,20 +572,23 @@ export const AddProviderPage: React.FC = () => {
           padding: 'var(--spacer-12) var(--spacer-24) var(--spacer-24)',
         }}
       >
-        <Stepper
+        <WizardSteps
           key={stepperKey}
-          initialStep={retryStep}
-          onStepChange={(step) => setCurrentStep(step)}
-          onFinalStepCompleted={handleFinish}
-          backButtonText="返回"
-          nextButtonText="下一步"
-          completeButtonText={saving ? t('providers.add.saving') : finishError ? '重试添加' : '完成添加'}
-          disableStepIndicators
-          nextButtonProps={{ disabled: !canProceed || saving }}
-          backButtonProps={currentStep === 1 ? { style: { display: 'none' } } : undefined}
-        >
-          {/* ── Step 1: Choose Type ──────────────────────── */}
-          <Step>
+          defaultIndex={retryStep - 1}
+          index={currentStep - 1}
+          onIndexChange={(i) => setCurrentStep(i + 1)}
+          onComplete={handleFinish}
+          canNext={canProceed && !saving}
+          height="auto"
+          bare
+          railNavigation={false}
+          backLabel="返回"
+          nextLabel="下一步"
+          finishLabel={saving ? t('providers.add.saving') : finishError ? '重试添加' : '完成添加'}
+          label={t('providers.add.save')}
+          steps={[
+          // ── Step 1: Choose Type ──
+          { id: 'type', label: t('providers.add.step1'), content: (
             <div
               style={{
                 display: 'flex',
@@ -611,37 +620,24 @@ export const AddProviderPage: React.FC = () => {
                 </span>
               </div>
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  {t('providers.add.name')} <span style={{ color: 'var(--status-error-default)' }}>*</span>
-                </label>
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  placeholder="例如: OpenAI, Anthropic, DeepSeek"
+                <FloatingLabelInput
+                  label={t('providers.add.name')}
+                  required
+                  inputRef={nameInputRef}
                   value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
+                  onChange={(v) => {
+                    setName(v);
                     if (nameError) setNameError(false);
                   }}
-                  style={{
-                    ...inputBaseStyle,
-                    borderColor: nameError ? 'var(--status-error-default)' : 'var(--border-neutral-l1)',
-                  }}
+                  invalid={nameError}
+                  hint={nameError ? '请输入提供商名称' : '例如 OpenAI、Anthropic、DeepSeek，用于在列表中区分不同的 AI 服务提供商'}
                 />
-                {nameError && (
-                  <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--status-error-default)' }}>
-                    请输入提供商名称
-                  </span>
-                )}
-                <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)' }}>
-                  输入一个可识别的名称，用于在列表中区分不同的 AI 服务提供商
-                </span>
               </div>
             </div>
-          </Step>
+          )},
 
-          {/* ── Step 2: Credentials ──────────────────────── */}
-          <Step>
+          // ── Step 2: Credentials ──
+          { id: 'credentials', label: t('providers.add.step2'), content: (
             <div
               style={{
                 display: 'flex',
@@ -651,54 +647,38 @@ export const AddProviderPage: React.FC = () => {
               }}
             >
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  {t('providers.add.apiBase')} <span style={{ color: 'var(--status-error-default)' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="完整地址，含 /v1，如 https://api.openai.com/v1"
+                <FloatingLabelInput
+                  label={t('providers.add.apiBase')}
+                  required
                   value={apiBase}
-                  onChange={(e) => {
-                    setApiBase(e.target.value);
+                  onChange={(v) => {
+                    setApiBase(v);
                     if (apiBaseError) setApiBaseError(false);
                   }}
-                  style={{
-                    ...inputBaseStyle,
-                    borderColor: apiBaseError ? 'var(--status-error-default)' : 'var(--border-neutral-l1)',
-                  }}
+                  invalid={apiBaseError}
+                  hint={
+                    apiBaseError
+                      ? '请输入有效的 API Base URL'
+                      : '完整地址，含 /v1，如 https://api.openai.com/v1。系统不会自动补全 /v1。'
+                  }
+                  autoComplete="url"
                 />
-                {apiBaseError && (
-                  <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--status-error-default)' }}>
-                    请输入有效的 API Base URL
-                  </span>
-                )}
-                <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)' }}>
-                  填写完整 Base URL（含版本路径，如 /v1）。系统不会自动补全 /v1。
-                </span>
               </div>
 
               <div style={fieldStyle}>
-                <label style={labelStyle}>
-                  {t('providers.add.apiKey')} <span style={{ color: 'var(--status-error-default)' }}>*</span>
-                </label>
-                <input
+                <FloatingLabelInput
+                  label={t('providers.add.apiKey')}
+                  required
                   type="password"
-                  placeholder="sk-..."
                   value={apiKey}
-                  onChange={(e) => {
-                    setApiKey(e.target.value);
+                  onChange={(v) => {
+                    setApiKey(v);
                     if (apiKeyError) setApiKeyError(false);
                   }}
-                  style={{
-                    ...inputBaseStyle,
-                    borderColor: apiKeyError ? 'var(--status-error-default)' : 'var(--border-neutral-l1)',
-                  }}
+                  invalid={apiKeyError}
+                  hint={apiKeyError ? '请输入 API Key' : 'sk-...'}
+                  autoComplete="off"
                 />
-                {apiKeyError && (
-                  <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--status-error-default)' }}>
-                    请输入 API Key
-                  </span>
-                )}
               </div>
 
               <div style={fieldStyle}>
@@ -728,20 +708,20 @@ export const AddProviderPage: React.FC = () => {
                   <Switch checked={proxyEnabled} onChange={setProxyEnabled} />
                 </div>
                 {proxyEnabled && (
-                  <input
-                    type="text"
-                    placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080"
+                  <FloatingLabelInput
+                    label="代理地址"
                     value={proxyUrl}
-                    onChange={(e) => setProxyUrl(e.target.value)}
-                    style={inputBaseStyle}
+                    onChange={setProxyUrl}
+                    hint="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080"
+                    autoComplete="url"
                   />
                 )}
               </div>
             </div>
-          </Step>
+          )},
 
-          {/* ── Step 3: Models (with alias mapping) ─────── */}
-          <Step>
+          // ── Step 3: Models (with alias mapping) ──
+          { id: 'models', label: t('providers.add.step3'), content: (
             <div
               style={{
                 display: 'flex',
@@ -778,35 +758,14 @@ export const AddProviderPage: React.FC = () => {
                     OpenAI 兼容接口会请求 /models；不支持列表接口时仍可手动添加
                   </span>
                 </div>
-                <button
-                  onClick={handleFetchModels}
-                  disabled={fetchingModels}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 'var(--spacer-6)',
-                    height: 32,
-                    padding: '0 var(--spacer-16)',
-                    borderRadius: 'var(--radius-8)',
-                    background: 'var(--bg-base-default)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border-neutral-l1)',
-                    cursor: 'pointer',
-                    fontSize: 'var(--body-sm-font-size)',
-                    fontFamily: 'inherit',
-                    opacity: fetchingModels ? 0.7 : 1,
-                  }}
+                <LoadingButton
+                  onAction={handleFetchModels}
+                  pendingLabel="拉取中"
+                  successLabel="已拉取"
+                  errorLabel="重新拉取"
                 >
-                  {fetchingModels ? (
-                    <>
-                      <Loader2 size={14} style={{ animation: 'spin 0.6s linear infinite' }} /> 拉取中
-                    </>
-                  ) : (
-                    <>
-                      <Download size={14} /> 拉取模型
-                    </>
-                  )}
-                </button>
+                  拉取模型
+                </LoadingButton>
               </div>
 
               {modelFetchMessage && (
@@ -883,7 +842,7 @@ export const AddProviderPage: React.FC = () => {
                             fontFamily: 'var(--font-family-mono)',
                           }}
                         >
-                          {added ? <Check size={12} /> : <Plus size={12} />}
+                          <AddedGlyph added={added} />
                           {displayName}
                         </button>
                       );
@@ -901,20 +860,20 @@ export const AddProviderPage: React.FC = () => {
                   alignItems: 'end',
                 }}
               >
-                <div style={fieldStyle}>
-                  <label style={labelStyle}>{t('providers.form.manualAddModel')}</label>
-                  <input
-                    type="text"
-                    placeholder="例如: gpt-4o, claude-3-5-sonnet-20241022"
+                <div
+                  style={fieldStyle}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addManualModel();
+                    }
+                  }}
+                >
+                  <FloatingLabelInput
+                    label={t('providers.form.manualAddModel')}
                     value={manualModelName}
-                    onChange={(e) => setManualModelName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addManualModel();
-                      }
-                    }}
-                    style={inputBaseStyle}
+                    onChange={setManualModelName}
+                    hint="例如 gpt-4o、claude-3-5-sonnet-20241022"
                   />
                 </div>
                 <button
@@ -1270,7 +1229,7 @@ export const AddProviderPage: React.FC = () => {
                       将客户端请求的模型名映射到上游实际模型名（支持通配符 *）
                     </span>
                   </div>
-                  {modelMappingExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  <MorphGlyph slots={mappingChevron.slots} rotate={mappingChevron.rotate} transition={mappingChevron.transition} mode={mappingChevron.mode} size={16} />
                 </button>
                 {modelMappingExpanded && (
                   <div
@@ -1299,39 +1258,34 @@ export const AddProviderPage: React.FC = () => {
                       modelMappingEntries.map((entry, index) => (
                         <div
                           key={index}
+                          className="mh-mapping-row"
                           style={{
                             display: 'grid',
                             gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr) auto',
                             gap: 'var(--spacer-8)',
-                            alignItems: 'center',
+                            alignItems: 'start',
                           }}
                         >
-                          <input
-                            type="text"
-                            placeholder="逻辑模型名，如 gpt-4 或 claude-*"
+                          <FloatingLabelInput
+                            label="逻辑模型名"
                             value={entry.key}
-                            onChange={(e) => updateModelMappingEntry(index, { key: e.target.value })}
-                            style={{
-                              ...inputBaseStyle,
-                              height: 32,
-                              fontFamily: 'var(--font-family-mono)',
-                              fontSize: 'var(--body-sm-font-size)',
-                            }}
+                            onChange={(v) => updateModelMappingEntry(index, { key: v })}
+                            hint="支持 * 通配符"
                           />
-                          <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--body-sm-font-size)' }}>
+                          <span
+                            style={{
+                              color: 'var(--text-tertiary)',
+                              fontSize: 'var(--body-sm-font-size)',
+                              marginTop: 32,
+                            }}
+                          >
                             -&gt;
                           </span>
-                          <input
-                            type="text"
-                            placeholder="上游模型名，如 gpt-4o-2024-08-06"
+                          <FloatingLabelInput
+                            label="上游模型名"
                             value={entry.value}
-                            onChange={(e) => updateModelMappingEntry(index, { value: e.target.value })}
-                            style={{
-                              ...inputBaseStyle,
-                              height: 32,
-                              fontFamily: 'var(--font-family-mono)',
-                              fontSize: 'var(--body-sm-font-size)',
-                            }}
+                            onChange={(v) => updateModelMappingEntry(index, { value: v })}
+                            hint="如 gpt-4o-2024-08-06"
                           />
                           <button
                             type="button"
@@ -1341,6 +1295,7 @@ export const AddProviderPage: React.FC = () => {
                             style={{
                               width: 32,
                               height: 32,
+                              marginTop: 24,
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1381,10 +1336,10 @@ export const AddProviderPage: React.FC = () => {
                 )}
               </div>
             </div>
-          </Step>
+          )},
 
-          {/* ── Step 4: Test Connection ──────────────────── */}
-          <Step>
+          // ── Step 4: Test Connection ──
+          { id: 'test', label: t('providers.add.step4'), content: (
             <div
               style={{
                 display: 'flex',
@@ -1440,8 +1395,8 @@ export const AddProviderPage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={handleTestConnection}
-                  disabled={testing}
+                  onClick={testConnectionAction.run}
+                  disabled={testConnectionAction.pending}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -1457,10 +1412,10 @@ export const AddProviderPage: React.FC = () => {
                     cursor: 'pointer',
                     fontSize: 'var(--body-base-font-size)',
                     fontFamily: 'inherit',
-                    opacity: testing ? 0.7 : 1,
+                    opacity: testConnectionAction.pending ? 0.7 : 1,
                   }}
                 >
-                  {testing ? (
+                  {testConnectionAction.pending ? (
                     <>
                       <Loader2 size={16} style={{ animation: 'spin 0.6s linear infinite' }} /> {t('providers.status.testing')}
                     </>
@@ -1518,10 +1473,10 @@ export const AddProviderPage: React.FC = () => {
                 测试连接将通过选定的 API Base 发送一个轻量请求以验证配置
               </span>
             </div>
-          </Step>
+          )},
 
-          {/* ── Step 5: Complete ─────────────────────────── */}
-          <Step>
+          // ── Step 5: Complete ──
+          { id: 'review', label: t('providers.add.step5'), content: (
             <div
               style={{
                 display: 'flex',
@@ -1624,8 +1579,9 @@ export const AddProviderPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </Step>
-        </Stepper>
+          )},
+          ]}
+        />
       </div>
     </div>
   );

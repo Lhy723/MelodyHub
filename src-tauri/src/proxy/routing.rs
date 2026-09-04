@@ -702,7 +702,10 @@ pub async fn aggregation_route_plan(
     }
 
     let mut targets = aggregation.targets.clone();
-    targets.sort_by_key(|right| std::cmp::Reverse(right.priority));
+    // Manual 策略按用户拖拽的配置顺序直试，不做数字排序。
+    if strategy != RoutingStrategy::Manual {
+        targets.sort_by_key(|right| std::cmp::Reverse(right.priority));
+    }
     let mut routes = Vec::new();
     for target in targets
         .iter()
@@ -883,6 +886,8 @@ fn select_candidate_index(
         RoutingStrategy::Priority
         | RoutingStrategy::Fusion
         | RoutingStrategy::Pipeline => priority_first(),
+        // 手动优先级：永远从配置顺序第一位开始，故障转移沿数组顺序走。
+        RoutingStrategy::Manual => 0,
         RoutingStrategy::FillFirst => {
             // When quota telemetry exists, keep filling a target with
             // positive headroom; if all targets are exhausted or telemetry is
@@ -1596,6 +1601,17 @@ mod tests {
                 &caps
             ),
             1
+        );
+        // 手动优先级：无视数字 priority，永远取配置顺序第一位。
+        assert_eq!(
+            select_candidate_index(
+                RoutingStrategy::Manual,
+                "agg",
+                &candidates,
+                &mut cfg,
+                &caps
+            ),
+            0
         );
         assert_eq!(
             select_candidate_index(

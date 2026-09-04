@@ -1,0 +1,146 @@
+/* MelodyHub interior sticky-header —换肤样式
+   行为来自上游 interior sticky-header.tsx（useCondense + useSpring 收缩动画原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-sticky-header {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-md);
+}
+
+.mh-sticky-header__scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  outline: none;
+  scrollbar-gutter: stable;
+}
+
+.mh-sticky-header__scroll:focus-visible {
+  background: var(--status-primary-surface-l1);
+  box-shadow: inset 0 0 0 1px var(--status-primary-default);
+}
+
+.mh-sticky-header__bottom-fade {
+  pointer-events: none;
+  position: sticky;
+  bottom: 0;
+  height: var(--spacer-24);
+  margin-top: calc(var(--spacer-24) * -1);
+  background: linear-gradient(to top, var(--bg-white), transparent);
+}
+
+.mh-sticky-header__bar {
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+}
+
+.mh-sticky-header__plate {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  transform-origin: top;
+  background: var(--bg-white);
+}
+
+.mh-sticky-header__edge-shadow {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  box-shadow: var(--shadow-md);
+}
+
+.mh-sticky-header__edge-glow {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: var(--spacer-20);
+  background: linear-gradient(to bottom, var(--bg-white), transparent);
+}
+
+.mh-sticky-header__edge-line {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: var(--border-neutral-l2);
+}
+
+.mh-sticky-header__row {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacer-10);
+  padding: var(--spacer-12) var(--spacer-16) 0;
+}
+
+.mh-sticky-header__leading {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  height: var(--spacer-24);
+  flex-shrink: 0;
+}
+
+.mh-sticky-header__titles {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+
+.mh-sticky-header__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-family-heading);
+  font-size: var(--heading-md-font-size);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: var(--text-default);
+}
+
+.mh-sticky-header__subtitle {
+  margin-top: var(--spacer-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-sticky-header__title-compact {
+  position: absolute;
+  inset-inline: 0;
+  top: var(--spacer-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--heading-xs-font-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--heading-xs-line-height);
+  color: var(--text-secondary);
+}
+
+.mh-sticky-header__actions {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  height: var(--spacer-24);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-sticky-header__scroll:focus-visible {
+    transition: none;
+  }
+}

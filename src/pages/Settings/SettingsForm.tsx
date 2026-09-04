@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { flushSync } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { getVersion } from '@tauri-apps/api/app';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -12,11 +11,17 @@ import {
   Card,
   toast,
   AnimatedContent,
-  SegmentedControl,
   ConfirmDialog,
 } from '../../components/ui';
-import type { SegmentOption } from '../../components/ui/SegmentedControl';
+import { SegmentedControl, type SegmentedOption } from '../../components/interior/segmented-control';
 import { desktopApi, onUpdateAvailable, type UpdateMetadata } from '../../lib/desktopApi';
+import { LoadingButton, useAsyncAction } from '../../components/interior/loading-button';
+import { useCopyToClipboard } from '../../components/interior/copy-button';
+import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
+import { TagInput } from '../../components/interior/tag-input';
+import { ProgressBar } from '../../components/interior/progress-bar';
+import { Modal } from '../../components/interior/modal';
+import { TooltipGroup, Tooltip } from '../../components/interior/tooltip-group';
 import { isValidHex, normalizeHex } from '../../lib/colorUtils';
 import { scheduleLatestProgressFrame } from '../../lib/updateProgress';
 import {
@@ -24,10 +29,6 @@ import {
   Moon,
   Monitor,
   RefreshCw,
-  Copy,
-  Eye,
-  EyeOff,
-  Check,
   Download,
   HelpCircle,
   Rss,
@@ -66,12 +67,12 @@ function generateAuthToken(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-const languageOptions: SegmentOption[] = [
+const languageOptions: SegmentedOption[] = [
   { value: 'zh-CN', label: '简体中文' },
   { value: 'en', label: 'English' },
 ];
 
-const concurrencyOptions: SegmentOption[] = [
+const concurrencyOptions: SegmentedOption[] = [
   { value: '1', label: '1' },
   { value: '5', label: '5' },
   { value: '10', label: '10' },
@@ -79,14 +80,14 @@ const concurrencyOptions: SegmentOption[] = [
   { value: '50', label: '50' },
 ];
 
-const pageSizeOptions: SegmentOption[] = [
+const pageSizeOptions: SegmentedOption[] = [
   { value: '10', label: '10' },
   { value: '20', label: '20' },
   { value: '50', label: '50' },
   { value: '100', label: '100' },
 ];
 
-const proxyProtocolOptions: SegmentOption[] = [
+const proxyProtocolOptions: SegmentedOption[] = [
   { value: 'http', label: 'HTTP' },
   { value: 'socks5', label: 'SOCKS5' },
 ];
@@ -242,20 +243,20 @@ const TextInput: React.FC<{
 export const SettingsForm: React.FC = () => {
   const translate = useT();
 
-  const themeOptions: SegmentOption[] = [
+  const themeOptions: SegmentedOption[] = [
     { value: 'light', label: translate('settings.theme.light'), icon: <Sun size={15} /> },
     { value: 'dark', label: translate('settings.theme.dark'), icon: <Moon size={15} /> },
     { value: 'system', label: translate('settings.theme.system'), icon: <Monitor size={15} /> },
   ];
 
-  const rateLimitOptions: SegmentOption[] = [
+  const rateLimitOptions: SegmentedOption[] = [
     { value: '0', label: translate('settings.rateLimit.none') },
     { value: '60', label: translate('settings.rateLimit.perMin', { n: 60 }) },
     { value: '30', label: translate('settings.rateLimit.perMin', { n: 30 }) },
     { value: '10', label: translate('settings.rateLimit.perMin', { n: 10 }) },
   ];
 
-  const retryOptions: SegmentOption[] = [
+  const retryOptions: SegmentedOption[] = [
     { value: '0', label: translate('settings.retry.none') },
     { value: '1', label: translate('settings.retry.times', { n: 1 }) },
     { value: '3', label: translate('settings.retry.times', { n: 3 }) },
@@ -264,12 +265,35 @@ export const SettingsForm: React.FC = () => {
 
   const { settings, activeCategory, loaded, loadSettings, updateSettings, saveSettingsNow, error, clearError } =
     useSettingsStore();
+  // IP 白名单字符串（后端按逗号 split + trim，支持 * 通配符）与 TagInput 数组互转。
+  const ipTags = useMemo(
+    () => settings.ipWhitelist.split(',').map((s) => s.trim()).filter(Boolean),
+    [settings.ipWhitelist],
+  );
   const [exporting, setExporting] = useState(false);
   const [openingDir, setOpeningDir] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [copied, setCopied] = useState(false);
+  // 令牌复制改走 interior（fallback + 错误态 + 自动复位，修掉手写版无 fallback 与 setTimeout 泄漏）。
+  const tokenCopy = useCopyToClipboard({
+    onCopy: () => toast(t('settings.update.tokenCopied'), 'success'),
+    onError: () => toast(t('settings.update.copyFailed'), 'error'),
+  });
+  // 双图标切换统一走路径变形：显隐眼睛、复制→✓（受控，语义不变）。
+  const tokenEye = useIconMorph({ preset: 'eye', active: showToken });
+  const tokenCopyIcon = useIconMorph({ preset: 'copy-check', active: tokenCopy.copied });
   const [confirmRefreshToken, setConfirmRefreshToken] = useState(false);
-  const [refreshingToken, setRefreshingToken] = useState(false);
+  const [confirmResetData, setConfirmResetData] = useState(false);
+  // 令牌刷新是纯图标按钮，保留铬、外壳不动，进行态交给 useAsyncAction（防重入 + 自动复位）。
+  const refreshTokenAction = useAsyncAction({
+    action: async () => {
+      try {
+        await saveSettingsNow({ authToken: generateAuthToken() });
+        toast(t('settings.update.tokenRefreshed'), 'success');
+      } catch (e: unknown) {
+        toast(errorMessage(e, t('settings.update.saveFailed')), 'error');
+      }
+    },
+  });
 
   // ── Updater state ──
   // `checking` = in-flight check; `pendingUpdate` = update metadata
@@ -335,8 +359,8 @@ export const SettingsForm: React.FC = () => {
     };
   }, []);
 
+  // 检查更新的进行态由 LoadingButton 内部状态机拥有；`checking` 仅保留给“安装更新”按钮的联动禁用。
   const handleCheckUpdates = async () => {
-    setChecking(true);
     try {
       const meta = await desktopApi.checkForUpdates();
       if (!meta) {
@@ -347,8 +371,7 @@ export const SettingsForm: React.FC = () => {
       }
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'error');
-    } finally {
-      setChecking(false);
+      throw e;
     }
   };
 
@@ -435,34 +458,17 @@ export const SettingsForm: React.FC = () => {
   };
 
   const handleRefreshToken = () => {
-    if (!loaded || refreshingToken) return;
+    if (!loaded || refreshTokenAction.pending) return;
     setConfirmRefreshToken(true);
   };
 
-  const handleConfirmRefreshToken = async () => {
-    if (refreshingToken) return;
+  const handleConfirmRefreshToken = () => {
     setConfirmRefreshToken(false);
-    setRefreshingToken(true);
-    try {
-      await saveSettingsNow({ authToken: generateAuthToken() });
-      toast(t('settings.update.tokenRefreshed'), 'success');
-    } catch (e: unknown) {
-      toast(errorMessage(e, t('settings.update.saveFailed')), 'error');
-    } finally {
-      setRefreshingToken(false);
-    }
+    refreshTokenAction.run();
   };
 
-  const handleCopyToken = async () => {
-    if (!settings.authToken) return;
-    try {
-      await navigator.clipboard.writeText(settings.authToken);
-      setCopied(true);
-      toast(t('settings.update.tokenCopied'), 'success');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast(t('settings.update.copyFailed'), 'error');
-    }
+  const handleCopyToken = () => {
+    if (settings.authToken) void tokenCopy.copy(settings.authToken);
   };
 
   return (
@@ -473,16 +479,18 @@ export const SettingsForm: React.FC = () => {
           <SettingsGroup title={translate('settings.appearance')}>
             <SettingsRow label={translate('settings.appearanceLang')}>
               <SegmentedControl
+                label={translate('settings.appearanceLang')}
                 options={languageOptions}
                 value={settings.language}
-                onChange={(v) => updateSettings({ language: v })}
+                onValueChange={(v) => updateSettings({ language: v })}
               />
             </SettingsRow>
             <SettingsRow label={translate('settings.appearanceTheme')}>
               <SegmentedControl
+                label={translate('settings.appearanceTheme')}
                 options={themeOptions}
                 value={settings.theme}
-                onChange={(v) => updateSettings({ theme: v })}
+                onValueChange={(v) => updateSettings({ theme: v })}
               />
             </SettingsRow>
             <SettingsRow label={translate('settings.appearanceAccent')}>
@@ -541,9 +549,10 @@ export const SettingsForm: React.FC = () => {
             </SettingsRow>
             <SettingsRow label={translate('settings.appearancePageSize')} isLast>
               <SegmentedControl
+                label={translate('settings.appearancePageSize')}
                 options={pageSizeOptions}
                 value={settings.pageSize.toString()}
-                onChange={(v) => updateSettings({ pageSize: parseInt(v) })}
+                onValueChange={(v) => updateSettings({ pageSize: parseInt(v) })}
                 size="sm"
               />
             </SettingsRow>
@@ -561,9 +570,10 @@ export const SettingsForm: React.FC = () => {
             </SettingsRow>
             <SettingsRow label={translate('settings.basicMaxConcurrency')} isLast>
               <SegmentedControl
+                label={translate('settings.basicMaxConcurrency')}
                 options={concurrencyOptions}
                 value={settings.maxConcurrency.toString()}
-                onChange={(v) => updateSettings({ maxConcurrency: parseInt(v) })}
+                onValueChange={(v) => updateSettings({ maxConcurrency: parseInt(v) })}
                 size="sm"
               />
             </SettingsRow>
@@ -598,52 +608,62 @@ export const SettingsForm: React.FC = () => {
                   }}
                   style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13 }}
                 />
+                <TooltipGroup>
+                <Tooltip label={showToken ? translate('settings.security.hideToken') : translate('settings.security.showToken')}>
                 <button
                   type="button"
                   className="icon-action-btn"
                   onClick={() => setShowToken((v) => !v)}
                   aria-label={showToken ? translate('settings.security.hideToken') : translate('settings.security.showToken')}
-                  title={showToken ? translate('settings.security.hideToken') : translate('settings.security.showToken')}
                 >
-                  {showToken ? <EyeOff size={18} /> : <Eye size={18} />}
+                  <MorphGlyph slots={tokenEye.slots} rotate={tokenEye.rotate} transition={tokenEye.transition} mode={tokenEye.mode} size={18} />
                 </button>
+                </Tooltip>
+                <Tooltip label={translate('settings.security.copyTokenAria')}>
                 <button
                   type="button"
                   className="icon-action-btn"
                   onClick={handleCopyToken}
                   disabled={!settings.authToken}
                   aria-label={translate('settings.security.copyTokenAria')}
-                  title={translate('settings.security.copyTokenAria')}
                 >
-                  {copied ? <Check size={18} /> : <Copy size={18} />}
+                  <MorphGlyph slots={tokenCopyIcon.slots} rotate={tokenCopyIcon.rotate} transition={tokenCopyIcon.transition} mode={tokenCopyIcon.mode} size={18} />
                 </button>
+                </Tooltip>
+                <Tooltip label={translate('settings.security.refreshTokenTitle')}>
                 <button
                   type="button"
                   className="icon-action-btn"
                   onClick={handleRefreshToken}
-                  disabled={!loaded || refreshingToken}
+                  disabled={!loaded || refreshTokenAction.pending}
                   aria-label={translate('settings.security.refreshTokenAria')}
-                  title={translate('settings.security.refreshTokenTitle')}
                 >
-                  <RefreshCw size={18} className={refreshingToken ? 'animate-spin' : undefined} />
+                  <RefreshCw size={18} className={refreshTokenAction.pending ? 'animate-spin' : undefined} />
                 </button>
+                </Tooltip>
+                </TooltipGroup>
               </div>
             </SettingsRow>
             <SettingsRow label={translate('settings.security.ipWhitelist')}>
-              <TextInput
-                value={settings.ipWhitelist}
-                onChange={(v) => updateSettings({ ipWhitelist: v })}
-                placeholder={translate('settings.security.ipPlaceholder')}
-              />
+              <div style={{ width: '100%' }}>
+                <TagInput
+                  value={ipTags}
+                  onChange={(tags) => updateSettings({ ipWhitelist: tags.join(', ') })}
+                  separators={[',', ' ']}
+                  placeholder={translate('settings.security.ipPlaceholder')}
+                  hint={translate('settings.security.ipHint')}
+                />
+              </div>
             </SettingsRow>
             <SettingsRow label={translate('settings.security.cors')}>
               <Switch checked={settings.corsEnabled} onChange={(v) => updateSettings({ corsEnabled: v })} />
             </SettingsRow>
             <SettingsRow label={translate('settings.security.rateLimit')} isLast>
               <SegmentedControl
+                label={translate('settings.security.rateLimit')}
                 options={rateLimitOptions}
                 value={settings.rateLimit}
-                onChange={(v) => updateSettings({ rateLimit: v })}
+                onValueChange={(v) => updateSettings({ rateLimit: v })}
                 size="sm"
               />
             </SettingsRow>
@@ -670,9 +690,10 @@ export const SettingsForm: React.FC = () => {
             </SettingsRow>
             <SettingsRow label={translate('settings.proxyConfigProtocol')}>
               <SegmentedControl
+                label={translate('settings.proxyConfigProtocol')}
                 options={proxyProtocolOptions}
                 value={settings.proxyProtocol}
-                onChange={(v) => updateSettings({ proxyProtocol: v })}
+                onValueChange={(v) => updateSettings({ proxyProtocol: v })}
                 size="sm"
               />
             </SettingsRow>
@@ -704,9 +725,10 @@ export const SettingsForm: React.FC = () => {
             </SettingsRow>
             <SettingsRow label={translate('settings.advanced.retries')} isLast>
               <SegmentedControl
+                label={translate('settings.advanced.retries')}
                 options={retryOptions}
                 value={settings.maxRetries}
-                onChange={(v) => updateSettings({ maxRetries: v })}
+                onValueChange={(v) => updateSettings({ maxRetries: v })}
                 size="sm"
               />
             </SettingsRow>
@@ -853,16 +875,22 @@ export const SettingsForm: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                icon={RefreshCw}
-                loading={checking}
-                onClick={handleCheckUpdates}
+              <LoadingButton
+                onAction={async () => {
+                  setChecking(true);
+                  try {
+                    await handleCheckUpdates();
+                  } finally {
+                    setChecking(false);
+                  }
+                }}
+                pendingLabel={translate('settings.about.checking')}
+                successLabel={translate('settings.about.checked')}
+                errorLabel={translate('settings.about.checkFailed')}
                 disabled={installing}
-                size="md"
               >
-                {checking ? translate('settings.about.checking') : translate('settings.about.checkUpdate')}
-              </Button>
+                {translate('settings.about.checkUpdate')}
+              </LoadingButton>
             </div>
 
             {/* Divider */}
@@ -913,14 +941,7 @@ export const SettingsForm: React.FC = () => {
               <Button variant="secondary" onClick={() => toast(t('settings.dataManagement.importToast'), 'info')}>
                 {translate('settings.dataManagement.import')}
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  if (window.confirm(t('settings.dataManagement.resetConfirm'))) {
-                    toast(t('settings.dataManagement.resetToast'), 'info');
-                  }
-                }}
-              >
+              <Button variant="secondary" onClick={() => setConfirmResetData(true)}>
                 {translate('settings.dataManagement.reset')}
               </Button>
             </SettingsRow>
@@ -929,92 +950,35 @@ export const SettingsForm: React.FC = () => {
       )}
 
       {/* ── Update confirm / install dialog ──
-          Rendered as a portal-like overlay whenever `pendingUpdate`
-          is set. During install, shows a progress bar and disables
-          dismiss actions. */}
-      <AnimatePresence>
-        {pendingUpdate && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.6)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000,
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) handleDismissUpdate();
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 8 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 8 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              style={{
-                background: 'var(--bg-base-default)',
-                border: '1px solid var(--border-neutral-l1)',
-                borderRadius: 'var(--radius-12)',
-                padding: 'var(--spacer-24)',
-                width: 440,
-                maxWidth: '90vw',
-                boxShadow: '0 24px 48px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08)',
-              }}
+          interior Modal 底座:焦点陷阱/inert/Escape 栈/滚动锁来自 useModal；
+          安装中禁用全部关闭入口。 */}
+      <Modal
+        open={!!pendingUpdate}
+        onClose={handleDismissUpdate}
+        title={translate('settings.update.title')}
+        description={pendingUpdate ? `v${pendingUpdate.currentVersion} → v${pendingUpdate.version}` : undefined}
+        showClose={!installing}
+        closeOnEscape={!installing}
+        closeOnBackdrop={!installing}
+        footer={
+          <>
+            <Button variant="secondary" onClick={handleDismissUpdate} disabled={installing}>
+              {translate('settings.update.later')}
+            </Button>
+            <Button
+              variant="brand"
+              icon={Download}
+              loading={installing}
+              onClick={handleInstallUpdate}
+              disabled={checking}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--spacer-12)',
-                  marginBottom: 'var(--spacer-20)',
-                }}
-              >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 'var(--radius-10)',
-                    background: 'var(--bg-brand)',
-                    color: 'var(--text-onbrand)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Download size={20} />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: 'var(--body-lg-font-size)',
-                      fontWeight: 'var(--font-weight-strong)',
-                      color: 'var(--text-default)',
-                    }}
-                  >
-                    {translate('settings.update.title')}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 'var(--body-sm-font-size)',
-                      color: 'var(--text-tertiary)',
-                      marginTop: 2,
-                    }}
-                  >
-                    v{pendingUpdate.currentVersion} → v{pendingUpdate.version}
-                  </div>
-                </div>
-              </div>
+              {installing ? translate('settings.update.installing') : translate('settings.update.downloadInstall')}
+            </Button>
+          </>
+        }
+      >
 
-              {pendingUpdate.body && (
+              {pendingUpdate?.body && (
                 <div
                   style={{
                     marginBottom: 'var(--spacer-20)',
@@ -1030,125 +994,39 @@ export const SettingsForm: React.FC = () => {
                     lineHeight: 1.6,
                   }}
                 >
-                  {pendingUpdate.body}
+                  {pendingUpdate?.body}
                 </div>
               )}
 
               {installing && (
                 <div style={{ marginBottom: 'var(--spacer-16)' }}>
-                  <div
-                    style={{
-                      height: 8,
-                      background: 'var(--bg-overlay-l1)',
-                      borderRadius: 'var(--radius-full)',
-                      overflow: 'hidden',
-                      position: 'relative',
-                    }}
-                  >
-                    {installTotalKnown ? (
-                      <motion.div
-                        animate={{ width: `${Math.round(installProgress * 100)}%` }}
-                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                        style={{
-                          height: '100%',
-                          background: 'linear-gradient(90deg, var(--bg-brand), var(--bg-brand-hover))',
-                          borderRadius: 'var(--radius-full)',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          animation: installProgress >= 1 ? 'progressDonePulse 0.9s ease-out' : 'none',
-                        }}
-                      >
-                        {installProgress < 1 && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              inset: 0,
-                              background:
-                                'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%)',
-                              transform: 'translateX(-120%)',
-                              animation: 'progressShimmer 1.4s ease-in-out infinite',
-                              pointerEvents: 'none',
-                            }}
-                          />
-                        )}
-                      </motion.div>
-                    ) : (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          bottom: 0,
-                          width: '36%',
-                          borderRadius: 'var(--radius-full)',
-                          background: 'linear-gradient(90deg, var(--bg-brand), var(--bg-brand-hover))',
-                          animation: 'progressIndeterminate 1.1s ease-in-out infinite',
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 'var(--spacer-10)',
-                      display: 'flex',
-                      alignItems: 'baseline',
-                      justifyContent: 'center',
-                      gap: 'var(--spacer-4)',
-                    }}
-                  >
-                    <motion.span
-                      key={installTotalKnown ? Math.round(installProgress * 100) : 'downloading'}
-                      initial={{ opacity: 0.4, y: -2 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.18 }}
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 'var(--font-weight-strong)',
-                        color: installProgress >= 1 ? 'var(--bg-brand)' : 'var(--text-default)',
-                        fontVariantNumeric: 'tabular-nums',
-                        fontFeatureSettings: '"tnum"',
-                      }}
-                    >
-                      {installTotalKnown ? Math.round(installProgress * 100) : translate('settings.update.downloading')}
-                    </motion.span>
-                    {installTotalKnown && (
-                      <span
-                        style={{
-                          fontSize: 'var(--body-xs-font-size)',
-                          color: 'var(--text-tertiary)',
-                        }}
-                      >
-                        {installProgress >= 1 ? translate('settings.update.installingTip') : '%'}
-                      </span>
-                    )}
-                  </div>
+                  <ProgressBar
+                    value={installTotalKnown ? installProgress * 100 : null}
+                    label={
+                      installTotalKnown && installProgress >= 1
+                        ? translate('settings.update.installing')
+                        : translate('settings.update.downloading')
+                    }
+                    pendingLabel={translate('settings.update.downloading')}
+                    completeLabel={translate('settings.update.installing')}
+                  />
                 </div>
               )}
+            </Modal>
 
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 'var(--spacer-8)',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <Button variant="secondary" onClick={handleDismissUpdate} disabled={installing}>
-                  {translate('settings.update.later')}
-                </Button>
-                <Button
-                  variant="brand"
-                  icon={Download}
-                  loading={installing}
-                  onClick={handleInstallUpdate}
-                  disabled={checking}
-                >
-                  {installing ? translate('settings.update.installing') : translate('settings.update.downloadInstall')}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      <ConfirmDialog
+        open={confirmResetData}
+        title={translate('settings.dataManagement.reset')}
+        message={translate('settings.dataManagement.resetConfirm')}
+        variant="danger"
+        confirmLabel={translate('common.confirm')}
+        cancelLabel={translate('common.cancel')}
+        onConfirm={() => {
+          setConfirmResetData(false);
+          toast(translate('settings.dataManagement.resetToast'), 'info');
+        }}
+        onCancel={() => setConfirmResetData(false)}
+      />
       <ConfirmDialog
         open={confirmRefreshToken}
         title={translate('settings.security.refreshTokenTitle')}
@@ -1159,7 +1037,7 @@ export const SettingsForm: React.FC = () => {
         }
         confirmLabel={translate('common.confirm')}
         cancelLabel={translate('common.cancel')}
-        onConfirm={() => void handleConfirmRefreshToken()}
+        onConfirm={handleConfirmRefreshToken}
         onCancel={() => setConfirmRefreshToken(false)}
       />
     </div>

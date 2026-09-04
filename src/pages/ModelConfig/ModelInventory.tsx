@@ -1,12 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
 import { useAggregationStore } from '../../store/aggregationStore';
 import type { Aggregation } from '../../types/aggregation';
 import type { Model } from '../../types/provider';
-import { SpotlightCard } from '../../components/ui';
+import { FilterGrid, type FilterDefinition } from '../../components/interior/filter-grid';
+import { ModelLogo } from '../../components/ui';
 import { useT } from '../../i18n';
-import { Box, ChevronRight, Eye, Brain, SlidersHorizontal, Wrench, Braces } from 'lucide-react';
+import { ChevronRight, Eye, Brain, SlidersHorizontal, Wrench, Braces } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -32,6 +33,26 @@ interface AggMapping {
 
 type MappingSource = DirectMapping | AggMapping;
 
+/** 各能力在该入口下是否成立（聚合来源无模型参数，视为不具备）。 */
+function entryCaps(entry: ExposedEntry): {
+  vision: boolean;
+  reasoning: boolean;
+  effort: boolean;
+  tools: boolean;
+  json: boolean;
+} {
+  const params = entry.sources
+    .filter((s): s is DirectMapping => s.kind === 'direct' || s.kind === 'alias')
+    .map((s) => s.model);
+  return {
+    vision: params.length > 0 && params.every((m) => m.supportsVision),
+    reasoning: params.length > 0 && params.every((m) => m.supportsReasoning),
+    effort: params.some((m) => m.supportsReasoningEffort),
+    tools: params.length > 0 && params.every((m) => m.supportsToolCalls),
+    json: params.length > 0 && params.every((m) => m.supportsJsonMode),
+  };
+}
+
 interface ExposedEntry {
   name: string;
   sources: MappingSource[];
@@ -44,7 +65,6 @@ export const ModelInventory: React.FC = () => {
   const t = useT();
   const providers = useProviderStore((s) => s.providers);
   const aggregations = useAggregationStore((s) => s.aggregations);
-  const [showAll, setShowAll] = useState(false);
 
   const kindLabel = (sources: MappingSource[]): string => {
     const hasDirect = sources.some((s) => s.kind === 'direct');
@@ -132,9 +152,104 @@ export const ModelInventory: React.FC = () => {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [providers, aggregations]);
 
-  const MAX_VISIBLE = 12;
-  const visible = showAll ? entries : entries.slice(0, MAX_VISIBLE);
-  const hasMore = entries.length > MAX_VISIBLE;
+  // FilterGrid 筛选：全部 + 五种能力（单选；聚合来源无模型参数，能力筛选中不出现）。
+  const gridFilters: FilterDefinition<ExposedEntry>[] = useMemo<FilterDefinition<ExposedEntry>[]>(
+    () => [
+      { id: 'all', label: t('models.inventory.filterAll'), match: () => true },
+      { id: 'vision', label: t('capability.vision'), match: (e) => entryCaps(e).vision },
+      { id: 'reasoning', label: t('capability.reasoning'), match: (e) => entryCaps(e).reasoning },
+      { id: 'effort', label: t('capability.effort'), match: (e) => entryCaps(e).effort },
+      { id: 'tools', label: t('capability.tools'), match: (e) => entryCaps(e).tools },
+      { id: 'json', label: t('capability.json'), match: (e) => entryCaps(e).json },
+    ],
+    [t],
+  );
+
+  // 正方形格子内容（三行：名称 / 元信息 / 能力图标，不换行，垂直居中）。
+  const renderEntry = (entry: ExposedEntry): React.ReactNode => {
+    const caps = entryCaps(entry);
+    const paramSources = entry.sources.filter(
+      (s): s is DirectMapping => s.kind === 'direct' || s.kind === 'alias',
+    );
+    const maxCtx = Math.max(0, ...paramSources.map((s) => s.model.contextWindow || 0));
+    const icons: Array<{ icon: React.ReactNode; label: string }> = [];
+    if (caps.vision) icons.push({ icon: <Eye size={13} />, label: t('capability.vision') });
+    if (caps.reasoning) icons.push({ icon: <Brain size={13} />, label: t('capability.reasoning') });
+    if (caps.effort) icons.push({ icon: <SlidersHorizontal size={13} />, label: t('capability.effort') });
+    if (caps.tools) icons.push({ icon: <Wrench size={13} />, label: t('capability.tools') });
+    if (caps.json) icons.push({ icon: <Braces size={13} />, label: t('capability.json') });
+    const meta = `${kindLabel(entry.sources)} · ${t('models.inventory.sourceCount', { n: entry.sources.length })}${maxCtx > 0 ? ` · ${maxCtx.toLocaleString()} ctx` : ''}`;
+    return (
+      <button
+        type="button"
+        onClick={() => navigate(`/models/${encodeURIComponent(entry.name)}`)}
+        aria-label={entry.name}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: 'var(--spacer-10)',
+          padding: 0,
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          textAlign: 'left',
+          fontFamily: 'inherit',
+        }}
+      >
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--spacer-8)',
+            color: 'var(--text-default)',
+          }}
+        >
+          <ModelLogo
+            modelName={paramSources[0]?.modelName || entry.name}
+            providerId={paramSources[0]?.providerId || ''}
+            name={entry.name}
+            size={18}
+          />
+          <span
+            style={{
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'var(--body-base-font-size)',
+              fontWeight: 'var(--font-weight-strong)',
+              fontFamily: 'var(--font-family-mono)',
+            }}
+          >
+            {entry.name}
+          </span>
+          <ChevronRight size={15} style={{ color: 'var(--icon-tertiary)', flexShrink: 0 }} />
+        </span>
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontSize: 'var(--body-xs-font-size)',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          {meta}
+        </span>
+        <span aria-hidden style={{ display: 'flex', gap: 'var(--spacer-8)', height: 16, color: 'var(--text-tertiary)' }}>
+          {icons.map((c) => (
+            <span key={c.label} title={c.label} style={{ display: 'inline-flex' }}>
+              {c.icon}
+            </span>
+          ))}
+        </span>
+      </button>
+    );
+  };
 
   if (entries.length === 0) return null;
 
@@ -172,186 +287,18 @@ export const ModelInventory: React.FC = () => {
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: 'var(--spacer-16)',
-        }}
-      >
-        {visible.map((entry) => {
-          // Only direct/alias sources have model params
-          const paramSources = entry.sources.filter(
-            (s): s is DirectMapping => s.kind === 'direct' || s.kind === 'alias',
-          );
-          const allVision = paramSources.length > 0 && paramSources.every((s) => s.model.supportsVision);
-          const allReasoning = paramSources.length > 0 && paramSources.every((s) => s.model.supportsReasoning);
-          const anyEffort = paramSources.some((s) => s.model.supportsReasoningEffort);
-          const allToolCalls = paramSources.length > 0 && paramSources.every((s) => s.model.supportsToolCalls);
-          const allJsonMode = paramSources.length > 0 && paramSources.every((s) => s.model.supportsJsonMode);
-          const maxCtx = Math.max(0, ...paramSources.map((s) => s.model.contextWindow || 0));
-          const maxOut = Math.max(0, ...paramSources.map((s) => s.model.maxOutputTokens || 0));
-
-          const chips: { icon: React.ReactNode; label: string }[] = [];
-          if (allVision) chips.push({ icon: <Eye size={12} />, label: t('capability.vision') });
-          if (allReasoning) chips.push({ icon: <Brain size={12} />, label: t('capability.reasoning') });
-          if (anyEffort) chips.push({ icon: <SlidersHorizontal size={12} />, label: t('capability.effort') });
-          if (allToolCalls) chips.push({ icon: <Wrench size={12} />, label: t('capability.tools') });
-          if (allJsonMode) chips.push({ icon: <Braces size={12} />, label: t('capability.json') });
-          if (maxCtx > 0) chips.push({ icon: null, label: `${maxCtx.toLocaleString()} ctx` });
-          if (maxOut > 0) chips.push({ icon: null, label: `${maxOut.toLocaleString()} out` });
-
-          return (
-            <SpotlightCard key={entry.name} padding="0" variant="neutral" style={{ overflow: 'hidden' }}>
-              <div
-                style={{
-                  cursor: 'pointer',
-                  height: '100%',
-                  transition: 'background-color var(--transition-normal, 0.2s ease)',
-                }}
-                onClick={() => navigate(`/models/${encodeURIComponent(entry.name)}`)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                {/* ── Title row ── */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 'var(--spacer-10)',
-                    padding: 'var(--spacer-16) var(--spacer-16)',
-                  }}
-                >
-                  <Box size={16} style={{ color: 'var(--icon-tertiary)', flexShrink: 0, marginTop: 2 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 'var(--body-base-font-size)',
-                        fontWeight: 'var(--font-weight-strong)',
-                        color: 'var(--text-default)',
-                        fontFamily: 'var(--font-family-mono)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {entry.name}
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--spacer-8)',
-                        marginTop: 'var(--spacer-6)',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          height: 20,
-                          padding: '0 var(--spacer-6)',
-                          borderRadius: 'var(--radius-4)',
-                          background: 'var(--bg-overlay-l1)',
-                          color: 'var(--text-secondary)',
-                          fontSize: 'var(--body-xs-font-size)',
-                        }}
-                      >
-                        {kindLabel(entry.sources)}
-                      </span>
-                      <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)' }}>
-                        {t('models.inventory.sourceCount', { n: entry.sources.length })}
-                      </span>
-                      {maxCtx > 0 && (
-                        <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)' }}>
-                          {maxCtx.toLocaleString()} ctx
-                        </span>
-                      )}
-                    </div>
-                    {/* ── Capability chips ── */}
-                    {chips.length > 0 && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: 'var(--spacer-6)',
-                          marginTop: 'var(--spacer-10)',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        {chips.map((chip) => (
-                          <span
-                            key={chip.label}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 'var(--spacer-4)',
-                              height: 22,
-                              padding: '0 var(--spacer-8)',
-                              borderRadius: 'var(--radius-6)',
-                              background: 'var(--bg-overlay-l1)',
-                              color: 'var(--text-tertiary)',
-                              fontSize: 'var(--body-xs-font-size)',
-                            }}
-                          >
-                            {chip.icon} {chip.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      color: 'var(--icon-tertiary)',
-                      flexShrink: 0,
-                      marginTop: 2,
-                    }}
-                  >
-                    <ChevronRight size={16} />
-                  </span>
-                </div>
-              </div>
-            </SpotlightCard>
-          );
-        })}
-      </div>
-
-      {/* ── Show more / collapse ── */}
-      {hasMore && (
-        <div style={{ textAlign: 'center', marginTop: 'var(--spacer-16)' }}>
-          <button
-            onClick={() => setShowAll(!showAll)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--spacer-4)',
-              height: 32,
-              padding: '0 var(--spacer-16)',
-              borderRadius: 'var(--radius-8)',
-              border: '1px solid var(--border-neutral-l1)',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: 'var(--body-sm-font-size)',
-              fontFamily: 'inherit',
-              transition: 'background var(--transition-fast, 0.12s ease)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            {showAll ? `${t('models.inventory.collapseShow')} ${MAX_VISIBLE} 个` : `${t('models.inventory.expandAll')} ${entries.length} 个${t('models.inventory.expandAllSuffix')}`}
-          </button>
-        </div>
-      )}
+      <FilterGrid
+        items={entries}
+        filters={gridFilters}
+        getKey={(e) => e.name}
+        renderItem={renderEntry}
+        label={t('models.inventory.filterLabel')}
+        columns={3}
+        rowHeight={132}
+        maxRows={4}
+        gap={16}
+        emptyLabel={t('models.inventory.emptyFilter')}
+      />
     </div>
   );
 };

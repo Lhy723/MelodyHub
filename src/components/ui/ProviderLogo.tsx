@@ -253,6 +253,14 @@ const LOGOS: Record<string, LogoData> = {
       'M21.68 7.58398L11.296 29.68L4 29.6L12.144 15.584L21.68 7.58398ZM22.8 9.32798L36 32.416H11.584L26.464 29.76L18.672 20.496L22.8 9.32798Z',
     ],
   },
+  gemini: {
+    viewBox: '0 0 24 24',
+    paths: [
+      'M9.8132 15.9038L9 18.75L8.1868 15.9038C7.75968 14.4089 6.59112 13.2403 5.09619 12.8132L2.25 12L5.09619 11.1868C6.59113 10.7597 7.75968 9.59112 8.1868 8.09619L9 5.25L9.8132 8.09619C10.2403 9.59113 11.4089 10.7597 12.9038 11.1868L15.75 12L12.9038 12.8132C11.4089 13.2403 10.2403 14.4089 9.8132 15.9038Z',
+      'M18.2589 8.71454L18 9.75L17.7411 8.71454C17.4388 7.50533 16.4947 6.56117 15.2855 6.25887L14.25 6L15.2855 5.74113C16.4947 5.43883 17.4388 4.49467 17.7411 3.28546L18 2.25L18.2589 3.28546C18.5612 4.49467 19.5053 5.43883 20.7145 5.74113L21.75 6L20.7145 6.25887C19.5053 6.56117 18.5612 7.50533 18.2589 8.71454Z',
+      'M16.8942 20.5673L16.5 21.75L16.1058 20.5673C15.8818 19.8954 15.3546 19.3682 14.6827 19.1442L13.5 18.75L14.6827 18.3558C15.3546 18.1318 15.8818 17.6046 16.1058 16.9327L16.5 15.75L16.8942 16.9327C17.1182 17.6046 17.6454 18.1318 18.3173 18.3558L19.5 18.75L18.3173 19.1442C17.6454 19.3682 17.1182 19.8954 16.8942 20.5673Z',
+    ],
+  },
   'google-vertex': {
     viewBox: '0 0 24 24',
     paths: [
@@ -349,7 +357,124 @@ export interface ProviderLogoProps {
  * available for the given provider id.
  */
 export const ProviderLogo: React.FC<ProviderLogoProps> = ({ providerId, name, size = 16, className, style }) => {
-  const logoId = resolveLogoId(providerId);
+  return (
+    <LogoMark
+      logoId={resolveLogoId(providerId)}
+      fallbackLabel={name || providerId}
+      size={size}
+      className={className}
+      style={style}
+    />
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// Model → vendor resolution — a model served by a third-party
+// provider (proxy/aggregator) still shows its own brand mark.
+// ═══════════════════════════════════════════════════════════════
+
+// [match, logoId]: checked in order against the lowercased model name
+// (OpenRouter-style "vendor/model" prefixes are stripped first).
+const MODEL_PREFIXES: Array<[string, string]> = [
+  ['deepseek', 'deepseek'],
+  ['claude', 'anthropic'],
+  ['gemini', 'gemini'],
+  ['gemma', 'gemini'],
+  ['gpt', 'openai'],
+  ['chatgpt', 'openai'],
+  ['dall-e', 'openai'],
+  ['whisper', 'openai'],
+  ['sora', 'openai'],
+  ['text-embedding', 'openai'],
+  ['ada', 'openai'],
+  ['babbage', 'openai'],
+  ['curie', 'openai'],
+  ['davinci', 'openai'],
+  ['qwen', 'alibaba'],
+  ['qwq', 'alibaba'],
+  ['llama', 'llama'],
+  ['mistral', 'mistral'],
+  ['mixtral', 'mistral'],
+  ['kimi', 'moonshotai'],
+  ['moonshot', 'moonshotai'],
+  ['minimax', 'minimax'],
+  ['glm', 'zai'],
+  ['grok', 'xai'],
+  ['command', 'cohere'],
+  ['embed-english', 'cohere'],
+  ['embed-multilingual', 'cohere'],
+  ['sonar', 'perplexity'],
+  ['cogview', 'zai'],
+  ['cogvideo', 'zai'],
+];
+
+/** Resolve a model name to a logo id (key into LOGOS), if recognizable. */
+export function resolveModelLogoId(modelName: string): string | undefined {
+  const raw = modelName.toLowerCase().trim();
+  if (!raw) return undefined;
+  // Strip OpenRouter-style "vendor/model" prefix: match against the model part.
+  const slash = raw.lastIndexOf('/');
+  const name = slash >= 0 ? raw.slice(slash + 1) : raw;
+  for (const [match, logoId] of MODEL_PREFIXES) {
+    if (name.startsWith(match) && LOGOS[logoId]) return logoId;
+  }
+  // OpenAI o-series (o1, o3, o4-mini, …): ^o\d at the start.
+  if (/^o\d([-. ]|$)/.test(name)) return 'openai';
+  return undefined;
+}
+
+export interface ModelLogoProps {
+  /** Model name, e.g. 'deepseek-chat' or 'DeepSeek V4 Flash'. */
+  modelName: string;
+  /** Provider id used when the model name is not recognizable. */
+  providerId: string;
+  /** Optional display name used for the fallback letter avatar. */
+  name?: string;
+  /** Pixel size of the rendered logo (square). Default 16. */
+  size?: number;
+  /** Optional className for the wrapper. */
+  className?: string;
+  /** Optional inline style for the wrapper. */
+  style?: React.CSSProperties;
+}
+
+/**
+ * Renders a model's brand mark: resolved from the model name first
+ * (so a DeepSeek model served by a proxy still shows DeepSeek),
+ * falling back to the provider logo, then to a letter avatar.
+ */
+export const ModelLogo: React.FC<ModelLogoProps> = ({
+  modelName,
+  providerId,
+  name,
+  size = 16,
+  className,
+  style,
+}) => {
+  return (
+    <LogoMark
+      logoId={resolveModelLogoId(modelName) ?? resolveLogoId(providerId)}
+      fallbackLabel={name || modelName || providerId}
+      size={size}
+      className={className}
+      style={style}
+    />
+  );
+};
+
+function LogoMark({
+  logoId,
+  fallbackLabel,
+  size,
+  className,
+  style,
+}: {
+  logoId: string | undefined;
+  fallbackLabel: string;
+  size: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const logo = logoId ? LOGOS[logoId] : undefined;
 
   if (logo) {
@@ -370,7 +495,7 @@ export const ProviderLogo: React.FC<ProviderLogoProps> = ({ providerId, name, si
   }
 
   // Fallback: first-letter avatar.
-  const letter = (name || providerId).trim().charAt(0).toUpperCase() || '?';
+  const letter = fallbackLabel.trim().charAt(0).toUpperCase() || '?';
   const fontSize = Math.max(9, Math.round(size * 0.6));
   return (
     <span

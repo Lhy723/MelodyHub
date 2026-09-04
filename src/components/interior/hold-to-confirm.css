@@ -1,0 +1,98 @@
+/* MelodyHub interior hold-to-confirm —换肤样式
+   行为来自上游 interior hold-to-confirm.tsx（useHoldToConfirm 按住进度 +
+   阈值确认/松开回退 + swept 扫过填充 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-hold-to-confirm {
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  place-items: center;
+  height: 40px;
+  padding: 0 var(--spacer-16);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--heading-xs-font-size);
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  overflow: hidden;
+  outline: none;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-hold-to-confirm[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mh-hold-to-confirm:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+/* 扫过填充层：随 swept motion value 的 clipPath 从左向右揭示，
+   反色（bg-invert 配 base 色文字）表达按住进度，深色由 var 自然适配。 */
+.mh-hold-to-confirm__fill {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--spacer-16);
+  background: var(--bg-invert);
+  color: var(--bg-base-default);
+}
+
+.mh-hold-to-confirm__faces {
+  display: grid;
+  grid-column-start: 1;
+  grid-row-start: 1;
+}
+
+.mh-hold-to-confirm__face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column-start: 1;
+  grid-row-start: 1;
+  white-space: nowrap;
+}
+
+.mh-hold-to-confirm__face--confirm {
+  gap: var(--spacer-6);
+}
+
+.mh-hold-to-confirm__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+}
+
+.mh-hold-to-confirm__icon svg {
+  display: block;
+}
+
+.mh-hold-to-confirm__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-hold-to-confirm {
+    transition: none;
+  }
+}

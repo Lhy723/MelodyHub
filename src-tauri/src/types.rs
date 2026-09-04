@@ -22,6 +22,7 @@ pub enum RoutingStrategy {
     #[default]
     RoundRobin,
     Priority,
+    Manual,
     Weighted,
     ContextRelay,
     FillFirst,
@@ -49,6 +50,7 @@ impl RoutingStrategy {
         match value {
             "round-robin" => RoutingStrategy::RoundRobin,
             "priority" | "sequential" => RoutingStrategy::Priority,
+            "manual" => RoutingStrategy::Manual,
             "weighted" => RoutingStrategy::Weighted,
             "context-relay" => RoutingStrategy::ContextRelay,
             "fill-first" => RoutingStrategy::FillFirst,
@@ -81,6 +83,7 @@ impl RoutingStrategy {
         match self {
             RoutingStrategy::RoundRobin => "round-robin",
             RoutingStrategy::Priority => "priority",
+            RoutingStrategy::Manual => "manual",
             RoutingStrategy::Weighted => "weighted",
             RoutingStrategy::ContextRelay => "context-relay",
             RoutingStrategy::FillFirst => "fill-first",

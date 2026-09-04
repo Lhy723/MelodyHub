@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStatsStore } from '../../store/statsStore';
 import { Card, EChart, getCssVar, useThemeVersion } from '../../components/ui';
 import type { EChartsOption } from '../../components/ui';
@@ -24,6 +24,42 @@ export const UsageHeatmap: React.FC = () => {
   const t = useT();
   const dailyUsage = useStatsStore((s) => s.dailyUsage);
   const themeVersion = useThemeVersion();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // 正方形格子：边长按卡片实测宽度推导（52 周均分，减去右侧 visualMap 预留 40px）。
+  // ECharts 的 cellSize 不支持 auto 等比，只能用 JS 量一次 + 跟随窗口变化。
+  const [cell, setCell] = useState(12);
+  // 有数据时格子 div 才挂载：effect 跟随 hasData，数据回来后才开始量宽度。
+  // （启动时数据异步到达，空 deps 只会在无数据时空跑一次，导致首屏一直长方形。）
+  const hasData = dailyUsage.length > 0;
+  useEffect(() => {
+    if (!hasData) return;
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      if (w <= 0) return;
+      setCell((prev) => {
+        const next = Math.max(5, Math.min(18, Math.floor((w - 40) / WEEKS)));
+        return prev === next ? prev : next;
+      });
+    };
+    measure();
+    // 挂载后布局可能还没稳定（侧栏动画/字体加载），500ms 后再量一次兜底。
+    const settleTimer = window.setTimeout(measure, 500);
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measure);
+      ro.observe(el);
+    }
+    // 兜底：RO 不触发时（后台标签页等）窗口 resize 也能跟上。
+    window.addEventListener('resize', measure);
+    return () => {
+      window.clearTimeout(settleTimer);
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [hasData]);
+  const heatHeight = 40 + DAYS * cell + 14;
 
   // Date → real request count lookup for the tooltip and coloring.
   const countByDate = useMemo(() => {
@@ -136,7 +172,7 @@ export const UsageHeatmap: React.FC = () => {
         left: 0,
         right: 40,
         bottom: 5,
-        cellSize: ['auto', 11],
+        cellSize: [cell, cell],
         range,
         itemStyle: {
           color: heatColors[0],
@@ -176,14 +212,12 @@ export const UsageHeatmap: React.FC = () => {
         },
       ],
     };
-  }, [themeVersion, resolveCellDate, countByDate, maxCount]);
-
-  const hasData = dailyUsage.length > 0;
+  }, [themeVersion, resolveCellDate, countByDate, maxCount, cell]);
 
   return (
     <Card padding="var(--spacer-20)" style={{ marginBottom: 'var(--spacer-24)' }}>
       {hasData ? (
-        <div style={{ height: 140 }}>
+        <div ref={wrapRef} style={{ height: heatHeight }}>
           <EChart option={option} />
         </div>
       ) : (

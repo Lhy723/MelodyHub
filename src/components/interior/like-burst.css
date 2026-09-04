@@ -1,0 +1,151 @@
+/* MelodyHub interior like-burst —换肤样式
+   行为来自上游 interior like-burst.tsx（hook 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-like-burst {
+  display: inline-flex;
+  align-items: center;
+}
+
+.mh-like-burst__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  height: 36px;
+  padding: 0 var(--spacer-12);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-like-burst__button:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-like-burst__button:active:not(:disabled) {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-like-burst__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-like-burst__button:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-like-burst__button[data-liked='true'] {
+  border-color: var(--status-error-default);
+  color: var(--status-error-default);
+}
+
+.mh-like-burst__heart {
+  position: relative;
+  display: block;
+  width: var(--icon-size-20);
+  height: var(--icon-size-20);
+  flex-shrink: 0;
+}
+
+.mh-like-burst__heart-outline,
+.mh-like-burst__heart-filled {
+  position: absolute;
+  inset: 0;
+  width: var(--icon-size-20);
+  height: var(--icon-size-20);
+}
+
+.mh-like-burst__heart-outline {
+  color: var(--icon-tertiary);
+}
+
+.mh-like-burst__button[data-liked='true'] .mh-like-burst__heart-outline {
+  color: var(--status-error-default);
+}
+
+.mh-like-burst__heart-filled {
+  color: var(--status-error-default);
+}
+
+.mh-like-burst__sparks {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 0;
+  height: 0;
+}
+
+.mh-like-burst__spark {
+  position: absolute;
+  display: block;
+  border-radius: var(--radius-2);
+  background: var(--status-error-default);
+}
+
+.mh-like-burst__labels {
+  display: grid;
+}
+
+.mh-like-burst__label {
+  grid-column-start: 1;
+  grid-row-start: 1;
+  white-space: nowrap;
+}
+
+.mh-like-burst__count {
+  display: grid;
+  overflow: hidden;
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.mh-like-burst__button[data-liked='true'] .mh-like-burst__count {
+  color: var(--status-error-default);
+}
+
+.mh-like-burst__count-sizer {
+  visibility: hidden;
+  grid-column-start: 1;
+  grid-row-start: 1;
+}
+
+.mh-like-burst__count-value {
+  grid-column-start: 1;
+  grid-row-start: 1;
+  justify-self: end;
+}
+
+.mh-like-burst__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-like-burst__button {
+    transition: none;
+  }
+}

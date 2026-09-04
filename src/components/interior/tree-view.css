@@ -1,0 +1,121 @@
+/* MelodyHub interior tree-view —换肤样式
+   行为来自上游 interior tree-view.tsx（useTreeView 展开/选中、roving tabindex、
+   键盘导航、role=tree ARIA、reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-tree-view {
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-12);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacer-6);
+}
+
+.mh-tree-view__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mh-tree-view__node {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mh-tree-view__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  height: 28px;
+  padding: 0 var(--spacer-6);
+  border-radius: var(--radius-8);
+  color: var(--text-secondary);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-tree-view__row:hover {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-tree-view__row:focus-visible {
+  background: var(--status-primary-surface-l1);
+  box-shadow: inset 0 0 0 1px var(--status-primary-default);
+}
+
+.mh-tree-view__row[data-selected='true'] {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-tree-view__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-size-16);
+  height: var(--icon-size-16);
+  color: var(--icon-tertiary);
+}
+
+.mh-tree-view__spacer {
+  flex-shrink: 0;
+  width: var(--icon-size-16);
+  height: var(--icon-size-16);
+}
+
+.mh-tree-view__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+}
+
+.mh-tree-view__label[data-selected='true'] {
+  font-weight: var(--font-weight-medium);
+}
+
+.mh-tree-view__meta {
+  flex-shrink: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-sm-font-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--icon-tertiary);
+}
+
+.mh-tree-view__group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.mh-tree-view__indent {
+  margin-left: 13px;
+  padding-left: 7px;
+  border-left: 1px solid var(--border-neutral-l2);
+}
+
+.mh-tree-view__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-tree-view__row {
+    transition: none;
+  }
+}

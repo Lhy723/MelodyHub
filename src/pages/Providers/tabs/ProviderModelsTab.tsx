@@ -5,7 +5,17 @@ import { Dropdown } from '../../../components/ui/Dropdown';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { toast } from '../../../components/ui/Toast';
 import { desktopApi } from '../../../lib/desktopApi';
-import { Plus, Trash2, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { LoadingButton } from '../../../components/interior/loading-button';
+import { useIconMorph, MorphGlyph } from '../../../components/interior/icon-morph';
+import { FloatingLabelInput } from '../../../components/interior/floating-label';
+import { ModelLogo } from '../../../components/ui/ProviderLogo';
+
+// 行内展开箭头：map 回调里不能调 hook，包一层行级组件持有变形状态。
+function RowChevron({ expanded, size }: { expanded: boolean; size: number }) {
+  const icon = useIconMorph({ preset: 'chevron', active: expanded });
+  return <MorphGlyph slots={icon.slots} rotate={icon.rotate} transition={icon.transition} mode={icon.mode} size={size} />;
+}
 import type { Model } from '../../../types/provider';
 
 const inputBaseStyle: React.CSSProperties = {
@@ -34,6 +44,8 @@ interface ProviderModelsTabProps {
   apiBase: string;
   apiKey: string;
   apiFlavor: string;
+  providerId: string;
+  providerName: string;
   onModelsChange: (models: Model[]) => void;
 }
 
@@ -76,13 +88,14 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
   apiBase,
   apiKey,
   apiFlavor,
+  providerId,
+  providerName,
   onModelsChange,
 }) => {
   const [newModelName, setNewModelName] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [remoteModels, setRemoteModels] = useState<string[]>([]);
-  const [fetchingRemote, setFetchingRemote] = useState(false);
   const [bulkPopoverOpen, setBulkPopoverOpen] = useState(false);
   const [bulkValues, setBulkValues] = useState<Record<BulkCapKey, boolean | null>>({
     supportsVision: null,
@@ -164,19 +177,18 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
     setConfirmDelete(null);
   };
 
+  // 进行态由 LoadingButton 拥有；失败时 toast 说明原因后继续 throw，让按钮进入 error 脸（成功脸只在真成功时出现）。
   const fetchRemoteModels = async () => {
-    setFetchingRemote(true);
     try {
       const result = await desktopApi.fetchProviderModels(apiFlavor || 'openai-compatible', apiBase, apiKey);
       if (result.success) {
         setRemoteModels(result.models.map((m) => m.name));
-      } else {
-        toast(`拉取模型失败: ${result.message}`, 'error');
+        return;
       }
+      throw new Error(result.message);
     } catch (e) {
       toast(`拉取模型失败: ${e instanceof Error ? e.message : String(e)}`, 'error');
-    } finally {
-      setFetchingRemote(false);
+      throw e;
     }
   };
 
@@ -253,30 +265,27 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
               ? 'OpenAI 兼容接口会请求 /models 端点获取可用模型列表'
               : 'Responses API 会请求 /models 端点获取可用模型列表'}
         </span>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          loading={fetchingRemote}
-          onClick={fetchRemoteModels}
+        <LoadingButton
+          onAction={fetchRemoteModels}
+          pendingLabel="拉取中"
+          successLabel="已拉取"
+          errorLabel="重新拉取"
           disabled={apiFlavor === 'anthropic'}
         >
           拉取模型
-        </Button>
+        </LoadingButton>
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          type="text"
-          value={newModelName}
-          onChange={(e) => setNewModelName(e.target.value)}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <div
+          style={{ flex: 1 }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') addModel();
           }}
-          placeholder="手动添加模型名称，如 gpt-4o"
-          style={{ ...inputBaseStyle, flex: 1, height: 34 }}
-        />
-        <Button variant="primary" size="sm" icon={Plus} onClick={addModel}>
+        >
+          <FloatingLabelInput label="手动添加模型名称" value={newModelName} onChange={setNewModelName} hint="如 gpt-4o" />
+        </div>
+        <Button variant="primary" size="sm" icon={Plus} onClick={addModel} style={{ marginTop: 6 }}>
           添加
         </Button>
       </div>
@@ -464,8 +473,9 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
                         flexShrink: 0,
                       }}
                     >
-                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      <RowChevron expanded={isExpanded} size={14} />
                     </button>
+                    <ModelLogo modelName={m.name} providerId={providerId} name={providerName} size={16} />
                     <input
                       type="text"
                       value={m.name}

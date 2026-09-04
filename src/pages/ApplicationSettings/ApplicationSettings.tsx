@@ -12,7 +12,6 @@ import {
   FileText,
   Loader2,
   MessageSquare,
-  RefreshCw,
   RotateCcw,
   Search,
   Terminal,
@@ -31,6 +30,7 @@ import {
   toast,
 } from '../../components/ui';
 import { desktopApi, type AgentAppConfigInput, type AgentAppId, type AgentAppStatus } from '../../lib/desktopApi';
+import { LoadingButton } from '../../components/interior/loading-button';
 import { useProviderStore } from '../../store/providerStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CodexSettingsEditor } from './CodexSettingsEditor';
@@ -630,7 +630,6 @@ export const ApplicationSettings: React.FC = () => {
   const [customModelById, setCustomModelById] = useState<Partial<Record<AgentAppId, boolean>>>({});
   const [activeId, setActiveId] = useState<AgentAppId>('codex');
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [restoringId, setRestoringId] = useState<AgentAppId | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -712,8 +711,8 @@ export const ApplicationSettings: React.FC = () => {
 
   const loadAgents = useCallback(
     async (showRefreshState = false) => {
-      if (showRefreshState) setRefreshing(true);
-      else setLoading(true);
+      // 刷新进行态由 LoadingButton 拥有；初次加载仍走 loading 骨架。
+      if (!showRefreshState) setLoading(true);
       setLoadError(null);
       try {
         const nextStatuses = await desktopApi.loadAgentApps();
@@ -743,7 +742,6 @@ export const ApplicationSettings: React.FC = () => {
         setLoadError(errorMessage(error, translate('applications.loadFailed')));
       } finally {
         setLoading(false);
-        setRefreshing(false);
       }
     },
     [fallbackEndpoint],
@@ -978,16 +976,15 @@ export const ApplicationSettings: React.FC = () => {
             {t('applications.securityHint')}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="md"
-          icon={RefreshCw}
-          loading={refreshing}
-          onClick={() => void loadAgents(true)}
+        <LoadingButton
+          onAction={() => loadAgents(true)}
+          pendingLabel={t('applications.refreshing')}
+          successLabel={t('applications.refreshed')}
+          errorLabel={t('applications.refreshFailed')}
           disabled={loading}
         >
           {t('applications.refresh')}
-        </Button>
+        </LoadingButton>
       </div>
 
       {loadError && (

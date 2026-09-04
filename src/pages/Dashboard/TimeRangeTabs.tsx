@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStatsStore } from '../../store/statsStore';
 import type { TimeRange } from '../../types/stats';
+import { Tabs } from '../../components/interior/tabs';
 import { useT } from '../../i18n';
 
 export const TimeRangeTabs: React.FC = () => {
@@ -16,56 +17,18 @@ export const TimeRangeTabs: React.FC = () => {
   const fetchRequests = useStatsStore((s) => s.fetchRequests);
 
   return (
-    <div
-      className="ds-tabs"
-      style={{
-        display: 'flex',
-        gap: 'var(--spacer-8)',
-        marginBottom: 'var(--spacer-24)',
-        borderBottom: '1px solid var(--border-neutral-l1)',
-        paddingBottom: 0,
-      }}
-    >
-      {rangeOptions.map((opt) => {
-        const isActive = opt.key === activeRange;
-        return (
-          <button
-            key={opt.key}
-            className={`ds-tab ${isActive ? 'is-active' : ''}`}
-            onClick={() => {
-              setTimeRange(opt.key);
-              void fetchStats();
-              void fetchRequests();
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: 'var(--spacer-10) var(--spacer-20)',
-              borderRadius: 'var(--radius-8) var(--radius-8) 0 0',
-              border: 'none',
-              borderBottom: isActive ? '2px solid var(--bg-brand)' : '2px solid transparent',
-              textDecoration: 'none',
-              color: isActive ? 'var(--bg-brand)' : 'var(--text-secondary)',
-              fontSize: 'var(--body-base-font-size)',
-              fontWeight: isActive ? 'var(--font-weight-strong)' : 'var(--body-base-font-weight)',
-              lineHeight: 'var(--body-base-line-height)',
-              cursor: 'pointer',
-              background: 'transparent',
-              fontFamily: 'inherit',
-              transition: 'color 0.18s cubic-bezier(0.22,1,0.36,1), border-color 0.18s cubic-bezier(0.22,1,0.36,1)',
-              marginBottom: '-1px',
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) e.currentTarget.style.color = 'var(--text-default)';
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
-            <span style={{ whiteSpace: 'nowrap' }}>{opt.label}</span>
-          </button>
-        );
-      })}
+    <div style={{ marginBottom: 'var(--spacer-24)' }}>
+      <Tabs
+        items={rangeOptions.map((opt) => ({ value: opt.key, label: opt.label }))}
+        value={activeRange}
+        onValueChange={(next) => {
+          setTimeRange(next as TimeRange);
+          void fetchStats();
+          void fetchRequests();
+        }}
+        variant="underline"
+        label={t('dashboard.tabs.label')}
+      />
     </div>
   );
 };

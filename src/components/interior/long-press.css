@@ -1,0 +1,88 @@
+/* MelodyHub interior long-press —换肤样式
+   行为来自上游 interior long-press.tsx（useLongPress 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-long-press {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--spacer-14);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--body-base-font-size);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-long-press:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-long-press:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-long-press[data-holding='true'] {
+  transform: translateY(1px);
+  background: var(--bg-overlay-l1);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-long-press[data-fired='true'] {
+  border-color: var(--border-brand);
+  background: var(--status-success-surface-l1);
+  color: var(--text-default);
+}
+
+.mh-long-press[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-long-press__labels {
+  position: relative;
+  display: grid;
+}
+
+.mh-long-press__label {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.mh-long-press__label--base {
+  color: var(--text-secondary);
+}
+
+.mh-long-press__label--progress {
+  color: var(--text-brand);
+}
+
+.mh-long-press__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-long-press {
+    transition: none;
+  }
+}

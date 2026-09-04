@@ -1,0 +1,34 @@
+/* MelodyHub interior text-reveal —换肤样式
+   行为来自上游 interior text-reveal.tsx（useTextReveal 拆分/stagger/reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars（深色由 var 体系适配）。 */
+
+.mh-text-reveal {
+  color: var(--text-secondary);
+}
+
+.mh-text-reveal__word {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+.mh-text-reveal__unit {
+  display: inline-block;
+  vertical-align: baseline;
+  will-change: opacity, transform, filter;
+}
+
+.mh-text-reveal__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-text-reveal__unit {
+    will-change: auto;
+  }
+}

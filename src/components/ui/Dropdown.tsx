@@ -19,6 +19,8 @@ export interface DropdownOption {
   label: string;
   /** Optional group header; options sharing a group render under it. */
   group?: string;
+  /** Disabled options render dimmed, are skipped by keyboard nav and cannot be selected. */
+  disabled?: boolean;
 }
 
 interface DropdownProps {
@@ -71,6 +73,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const popupRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
+  // Ported from interior dropdown: distinguish keyboard vs pointer navigation
+  // (only keyboard nav auto-scrolls), plus a typeahead buffer.
+  const viaKey = useRef(false);
+  const typeBuffer = useRef('');
+  const typeTimer = useRef<number | null>(null);
 
   const selected = options.find((o) => o.value === value);
 
@@ -120,6 +127,23 @@ export const Dropdown: React.FC<DropdownProps> = ({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open, closeDropdown]);
 
+  // Close when the window loses focus (e.g. Tauri window blur, alt-tab).
+  // Ported from interior dropdown.
+  useEffect(() => {
+    if (!open) return;
+    const onBlur = () => closeDropdown(false);
+    window.addEventListener('blur', onBlur);
+    return () => window.removeEventListener('blur', onBlur);
+  }, [open, closeDropdown]);
+
+  // Clear the typeahead buffer timer on unmount.
+  useEffect(
+    () => () => {
+      if (typeTimer.current !== null) window.clearTimeout(typeTimer.current);
+    },
+    [],
+  );
+
   // Measure trigger position and reposition on scroll/resize while rendered,
   // including while an exit transition is completing.
   const updatePosition = useCallback(() => {
@@ -143,26 +167,84 @@ export const Dropdown: React.FC<DropdownProps> = ({
     return;
   }, [renderPopup, updatePosition]);
 
+  // Step to the next/previous *enabled* option, wrapping around.
+  // Ported from interior dropdown.
+  const step = useCallback(
+    (from: number, dir: 1 | -1) => {
+      const n = flatSelectable.length;
+      if (n === 0) return -1;
+      let i = from;
+      for (let k = 0; k < n; k++) {
+        i = (i + dir + n) % n;
+        if (!flatSelectable[i].disabled) return i;
+      }
+      return from;
+    },
+    [flatSelectable],
+  );
+
+  // Prefix typeahead over the filtered options (skips disabled).
+  // Ported from interior dropdown; ignored while typing in the search box.
+  const typeahead = useCallback(
+    (char: string) => {
+      if (typeTimer.current !== null) window.clearTimeout(typeTimer.current);
+      typeBuffer.current += char.toLowerCase();
+      typeTimer.current = window.setTimeout(() => {
+        typeBuffer.current = '';
+      }, 600);
+      const q = typeBuffer.current;
+      const n = flatSelectable.length;
+      if (n === 0) return;
+      const from = activeIndex < 0 ? 0 : activeIndex;
+      const start = q.length > 1 ? from : from + 1;
+      for (let k = 0; k < n; k++) {
+        const i = (start + k) % n;
+        const it = flatSelectable[i];
+        if (!it.disabled && it.label.toLowerCase().startsWith(q)) {
+          viaKey.current = true;
+          setActiveIndex(i);
+          return;
+        }
+      }
+    },
+    [flatSelectable, activeIndex],
+  );
+
   // Reset active index when opening / when filter changes.
+  // Lands on the selected option, or the first enabled one.
   useEffect(() => {
     if (open) {
-      const idx = options.findIndex((o) => o.value === value);
-      setActiveIndex(idx >= 0 ? idx : 0);
+      let idx = options.findIndex((o) => o.value === value);
+      if (idx < 0 || options[idx].disabled) {
+        idx = options.findIndex((o) => !o.disabled);
+      }
+      setActiveIndex(idx);
       setQuery('');
     }
   }, [open, options, value]);
 
-  // Scroll active item into view.
+  // Scroll active item into view — only for keyboard navigation.
   useEffect(() => {
-    if (!open || activeIndex < 0) return;
+    if (!open || activeIndex < 0 || !viaKey.current) return;
+    viaKey.current = false;
     const el = listRef.current?.querySelector<HTMLElement>(`[data-idx="${activeIndex}"]`);
     el?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex, open]);
 
+  const selectIndex = useCallback(
+    (index: number) => {
+      const item = flatSelectable[index];
+      if (!item || item.disabled) return;
+      onChange(item.value);
+      closeDropdown(false);
+    },
+    [flatSelectable, onChange, closeDropdown],
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!open) {
-        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           openDropdown(false);
         }
@@ -171,34 +253,45 @@ export const Dropdown: React.FC<DropdownProps> = ({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setActiveIndex((i) => Math.min(i + 1, flatSelectable.length - 1));
+          viaKey.current = true;
+          setActiveIndex((i) => step(i, 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setActiveIndex((i) => Math.max(i - 1, 0));
+          viaKey.current = true;
+          setActiveIndex((i) => step(i, -1));
           break;
         case 'Home':
           e.preventDefault();
-          setActiveIndex(0);
+          viaKey.current = true;
+          setActiveIndex(step(-1, 1));
           break;
         case 'End':
           e.preventDefault();
-          setActiveIndex(flatSelectable.length - 1);
+          viaKey.current = true;
+          setActiveIndex(step(flatSelectable.length, -1));
           break;
         case 'Enter':
+        case ' ':
           e.preventDefault();
-          if (activeIndex >= 0 && activeIndex < flatSelectable.length) {
-            onChange(flatSelectable[activeIndex].value);
-            closeDropdown(false);
-          }
+          selectIndex(activeIndex);
           break;
         case 'Escape':
           e.preventDefault();
           closeDropdown(false);
           break;
+        default: {
+          // Single-character typeahead (skipped while typing in the search box).
+          if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            const target = e.target as HTMLElement | null;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+            e.preventDefault();
+            typeahead(e.key);
+          }
+        }
       }
     },
-    [open, activeIndex, flatSelectable, onChange, openDropdown, closeDropdown],
+    [open, activeIndex, flatSelectable, step, typeahead, selectIndex, openDropdown, closeDropdown],
   );
 
   // Render grouped: preserve option order, insert group headers.
@@ -226,8 +319,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
           </div>,
         );
       }
-      const isActive = i === activeIndex;
+      const isActive = i === activeIndex && !opt.disabled;
       const isSelected = opt.value === value;
+      const isDisabled = !!opt.disabled;
       items.push(
         <div
           key={opt.value}
@@ -235,11 +329,17 @@ export const Dropdown: React.FC<DropdownProps> = ({
           id={`${listboxId}-option-${i}`}
           role="option"
           aria-selected={isSelected}
+          aria-disabled={isDisabled || undefined}
           onClick={() => {
+            if (isDisabled) return;
             onChange(opt.value);
             closeDropdown(true);
           }}
-          onMouseEnter={() => setActiveIndex(i)}
+          onMouseEnter={() => {
+            if (isDisabled) return;
+            viaKey.current = false;
+            setActiveIndex(i);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -249,9 +349,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
             borderRadius: 'var(--radius-6)',
             fontSize: 'var(--body-base-font-size)',
             lineHeight: 'var(--body-base-line-height)',
-            color: isSelected ? 'var(--text-brand)' : 'var(--text-default)',
+            color: isDisabled ? 'var(--text-disabled)' : isSelected ? 'var(--text-brand)' : 'var(--text-default)',
             background: isActive ? 'var(--bg-overlay-l1)' : isSelected ? 'var(--bg-brand-popup)' : 'transparent',
-            cursor: 'pointer',
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            opacity: isDisabled ? 0.55 : 1,
             transition: 'background var(--transition-fast)',
             userSelect: 'none',
           }}

@@ -1,0 +1,140 @@
+/* MelodyHub interior task-steps —换肤样式
+   行为来自上游 interior task-steps.tsx（useTaskSteps 状态推导 + sentence +
+   状态交叉淡入 + active shimmer + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色靠 var 体系适配。 */
+
+.mh-task-steps {
+  width: 100%;
+}
+
+.mh-task-steps__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mh-task-steps__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-10);
+  height: 28px;
+  padding: 0 var(--spacer-4);
+}
+
+.mh-task-steps__marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.mh-task-steps__badge {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+}
+
+.mh-task-steps__badge--done {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-4);
+  background: var(--status-success-surface-l1);
+  color: var(--status-success-default);
+}
+
+.mh-task-steps__badge--error {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-4);
+  background: var(--status-error-surface-l1);
+  color: var(--status-error-default);
+}
+
+.mh-task-steps__badge--active {
+  color: var(--icon-secondary);
+}
+
+.mh-task-steps__spinner {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+}
+
+.mh-task-steps__badge--pending {
+  width: 5px;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--border-neutral-l3);
+}
+
+.mh-task-steps__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-disabled);
+  transition: color var(--transition-normal);
+}
+
+.mh-task-steps__row[data-status='done'] .mh-task-steps__label {
+  color: var(--text-secondary);
+}
+
+.mh-task-steps__row[data-status='active'] .mh-task-steps__label {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-default);
+}
+
+.mh-task-steps__row[data-status='error'] .mh-task-steps__label {
+  font-weight: var(--font-weight-medium);
+  color: var(--status-error-default);
+}
+
+.mh-task-steps__label--shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--text-tertiary) 38%,
+    var(--text-default) 50%,
+    var(--text-tertiary) 62%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mh-task-steps__meta {
+  flex-shrink: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-xs-font-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.mh-task-steps__row[data-status='done'] .mh-task-steps__meta {
+  opacity: 1;
+}
+
+.mh-task-steps__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-task-steps__label,
+  .mh-task-steps__meta {
+    transition: none;
+  }
+}

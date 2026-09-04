@@ -1,0 +1,139 @@
+/* MelodyHub interior pagination — 换肤样式
+   行为来自上游 interior pagination.tsx（paginate + usePagination 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-pagination {
+  display: inline-block;
+}
+
+.mh-pagination__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+}
+
+.mh-pagination__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-8);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-pagination__arrow[data-enabled='true'] {
+  color: var(--text-tertiary);
+}
+
+.mh-pagination__arrow[data-enabled='true']:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-pagination__arrow[data-enabled='false'] {
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.mh-pagination__arrow:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 1px;
+}
+
+.mh-pagination__slots {
+  position: relative;
+}
+
+.mh-pagination__thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: var(--radius-8);
+  background: var(--bg-invert);
+}
+
+.mh-pagination__list {
+  position: relative;
+  display: flex;
+  gap: var(--spacer-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mh-pagination__gap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  font-size: var(--body-sm-font-size);
+  color: var(--text-tertiary);
+}
+
+.mh-pagination__page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-8);
+  background: transparent;
+  font-size: var(--body-sm-font-size);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-pagination__page:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: -1px;
+}
+
+.mh-pagination__page[data-selected='true'] {
+  font-weight: var(--font-weight-strong);
+  color: var(--bg-base-default);
+}
+
+.mh-pagination__page[data-selected='false'] {
+  color: var(--text-secondary);
+}
+
+.mh-pagination__page[data-selected='false']:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+/* 选中数字压在滑块上：滑块用 --bg-invert，数字用 --bg-base-default，
+   浅色/深色主题下两者正好互为反色，保证对比度。 */
+.mh-pagination__thumb + .mh-pagination__list .mh-pagination__page[data-selected='true'] {
+  color: var(--bg-base-default);
+}
+
+.mh-pagination__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-pagination__thumb,
+  .mh-pagination__page {
+    transition: none;
+  }
+}

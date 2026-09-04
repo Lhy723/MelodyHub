@@ -1,0 +1,74 @@
+/* MelodyHub interior icon-morph —换肤样式
+   行为来自上游 interior icon-morph.tsx（useIconMorph 路径变形 + 旋转 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。深色模式由 var 体系自动适配。 */
+
+.mh-icon-morph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacer-8);
+  height: 36px;
+  width: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-8);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-icon-morph--with-label {
+  width: auto;
+  padding: 0 var(--spacer-12);
+}
+
+.mh-icon-morph:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-icon-morph:active:not(:disabled) {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-icon-morph:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-icon-morph:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-icon-morph__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.mh-icon-morph__labels {
+  display: grid;
+}
+
+.mh-icon-morph__label {
+  grid-column-start: 1;
+  grid-row-start: 1;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-icon-morph {
+    transition: none;
+  }
+}

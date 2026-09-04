@@ -1,0 +1,155 @@
+/* MelodyHub interior collapsible-banner —换肤样式
+   行为来自上游 interior collapsible-banner.tsx（useCollapsibleBanner 折叠/关闭、
+   disclose 高度动画、Escape 折叠、reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-collapsible-banner {
+  border-radius: var(--radius-10);
+}
+
+.mh-collapsible-banner__card {
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-collapsible-banner__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-10);
+  padding: var(--spacer-10);
+}
+
+.mh-collapsible-banner__icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--radius-8);
+  background: var(--bg-overlay-l1);
+  color: var(--icon-tertiary);
+}
+
+.mh-collapsible-banner__icon svg {
+  display: block;
+}
+
+.mh-collapsible-banner__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: background var(--transition-fast);
+}
+
+.mh-collapsible-banner__toggle:hover {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-collapsible-banner__toggle:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-collapsible-banner__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--heading-xs-font-size);
+  line-height: var(--heading-xs-line-height);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.mh-collapsible-banner__caret {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--icon-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.mh-collapsible-banner__caret svg {
+  display: block;
+}
+
+.mh-collapsible-banner__toggle:hover .mh-collapsible-banner__caret {
+  color: var(--icon-secondary);
+}
+
+.mh-collapsible-banner__dismiss {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--icon-tertiary);
+  cursor: pointer;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-collapsible-banner__dismiss svg {
+  display: block;
+}
+
+.mh-collapsible-banner__dismiss:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-collapsible-banner__dismiss:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-collapsible-banner__body-inner {
+  /* 左缩进与上游 pl-[46px] 等效：header padding + icon 宽 + 间距 */
+  padding: 0 var(--spacer-10) var(--spacer-10) calc(var(--spacer-10) + 26px + var(--spacer-10));
+}
+
+.mh-collapsible-banner__description {
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-collapsible-banner__action {
+  margin-top: var(--spacer-8);
+}
+
+.mh-collapsible-banner__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-collapsible-banner__toggle,
+  .mh-collapsible-banner__caret,
+  .mh-collapsible-banner__dismiss {
+    transition: none;
+  }
+}

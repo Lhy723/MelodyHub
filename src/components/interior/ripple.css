@@ -1,0 +1,71 @@
+/* MelodyHub interior ripple — 换肤样式
+   行为来自上游 interior ripple.tsx（useRipple 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-ripple {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacer-8);
+  padding: var(--spacer-8) var(--spacer-14);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--body-md-font-size);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-ripple:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-ripple:active:not(:disabled) {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-ripple:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-ripple:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-ripple__layer {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.mh-ripple__tint {
+  position: absolute;
+  display: block;
+  border-radius: var(--radius-full);
+  background: var(--bg-overlay-l4);
+}
+
+.mh-ripple__content {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-ripple {
+    transition: none;
+  }
+}

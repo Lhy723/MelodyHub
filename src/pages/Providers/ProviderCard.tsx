@@ -4,8 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
 import type { Model } from '../../types/provider';
 import type { ProviderHealthSnapshot } from '../../lib/desktopApi';
-import { ConfirmDialog, SpotlightCard, Tag, toast, ProviderLogo } from '../../components/ui';
-import { ChevronRight, Pencil, Trash2, Box, Copy, Power, PowerOff, Loader2 } from 'lucide-react';
+import { ConfirmDialog, SpotlightCard, Tag, toast, ProviderLogo, ModelLogo } from '../../components/ui';
+import { Pencil, Trash2, Box, Loader2 } from 'lucide-react';
+import { useCopyToClipboard } from '../../components/interior/copy-button';
+import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
+import { TooltipGroup, Tooltip } from '../../components/interior/tooltip-group';
+
+/** 卡片模型叠堆:按模型名解析真实品牌图标,层叠展示,超出 max 显示 +N。 */
+const CARD_MODEL_STACK_MAX = 5;
 
 const describeModelCapabilities = (model: Model, t: ReturnType<typeof useT>) => {
   const tags: string[] = [];
@@ -46,6 +52,12 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
   const updateProvider = useProviderStore((s) => s.updateProvider);
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Key 复制改走 interior（fallback + 自动复位，之前无已复制反馈）；电源/展开箭头走路径变形。
+  const keyCopy = useCopyToClipboard({
+    onCopy: () => toast(t('providers.apiKeyCopied'), 'success'),
+    onError: () => toast(t('providers.copyFailed'), 'error'),
+  });
+  const keyCopyIcon = useIconMorph({ preset: 'copy-check', active: keyCopy.copied });
 
   if (!provider) return null;
 
@@ -56,16 +68,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
   const tagLabel = healthCfg?.label ?? statusCfg.label;
 
   const handleCopyKey = () => {
-    if (provider.apiKey) {
-      navigator.clipboard
-        .writeText(provider.apiKey)
-        .then(() => {
-          toast(t('providers.apiKeyCopied'), 'success');
-        })
-        .catch(() => {
-          toast(t('providers.copyFailed'), 'error');
-        });
-    }
+    if (provider?.apiKey) void keyCopy.copy(provider.apiKey);
   };
 
   const handleDelete = async () => {
@@ -89,6 +92,8 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
   };
 
   const isDisabled = provider.status === 'disabled';
+  const powerIcon = useIconMorph({ preset: 'power', active: isDisabled });
+  const expandIcon = useIconMorph({ preset: 'chevron', active: expanded });
 
   return (
     <SpotlightCard
@@ -167,10 +172,11 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           )}
         </div>
         <div style={{ display: 'flex', gap: 'var(--spacer-4)' }}>
+          <TooltipGroup>
+          <Tooltip label={isDisabled ? '启用' : '禁用'} side="bottom">
           <button
             className="mc-icon-btn"
             aria-label={isDisabled ? '启用提供商' : '禁用提供商'}
-            title={isDisabled ? '启用' : '禁用'}
             onClick={(e) => {
               e.stopPropagation();
               handleToggleEnabled();
@@ -197,12 +203,13 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
               e.currentTarget.style.color = isDisabled ? 'var(--status-success-default)' : 'var(--icon-tertiary)';
             }}
           >
-            {isDisabled ? <PowerOff size={14} /> : <Power size={14} />}
+            <MorphGlyph slots={powerIcon.slots} rotate={powerIcon.rotate} transition={powerIcon.transition} mode={powerIcon.mode} size={14} />
           </button>
+          </Tooltip>
+          <Tooltip label={t('models.edit')} side="bottom">
           <button
             className="mc-icon-btn"
             aria-label={t('models.edit')}
-            title={t('models.edit')}
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/providers/${provider.id}/edit`);
@@ -231,10 +238,11 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           >
             <Pencil size={14} />
           </button>
+          </Tooltip>
+          <Tooltip label={t('models.delete')} side="bottom">
           <button
             className="mc-icon-btn"
             aria-label={t('models.delete')}
-            title={t('models.delete')}
             onClick={(e) => {
               e.stopPropagation();
               setConfirmDelete(true);
@@ -263,6 +271,8 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           >
             <Trash2 size={14} />
           </button>
+          </Tooltip>
+        </TooltipGroup>
         </div>
       </div>
 
@@ -338,7 +348,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
                   e.currentTarget.style.color = 'var(--icon-tertiary)';
                 }}
               >
-                <Copy size={12} />
+                <MorphGlyph slots={keyCopyIcon.slots} rotate={keyCopyIcon.rotate} transition={keyCopyIcon.transition} mode={keyCopyIcon.mode} size={12} />
               </button>
             </div>
           ) : (
@@ -364,9 +374,56 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)', flexShrink: 0 }}>
             模型数量
           </span>
-          <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-secondary)' }}>
-            {provider.models.length}
-          </span>
+          {provider.models.length === 0 ? (
+            <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-secondary)' }}>0</span>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-6)' }}>
+              <span
+                role="img"
+                aria-label={`${provider.name}共 ${provider.models.length} 个模型`}
+                title={provider.models.map((m) => m.name).join('、')}
+                style={{ display: 'inline-flex', alignItems: 'center' }}
+              >
+                {provider.models.slice(0, CARD_MODEL_STACK_MAX).map((m, i) => (
+                  <span key={m.id} title={m.name} style={{ marginLeft: i === 0 ? 0 : -6, display: 'inline-flex' }}>
+                    <ModelLogo
+                      modelName={m.name}
+                      providerId={provider.id}
+                      name={provider.name}
+                      size={22}
+                    />
+                  </span>
+                ))}
+                {provider.models.length > CARD_MODEL_STACK_MAX && (
+                  <span
+                    title={provider.models
+                      .slice(CARD_MODEL_STACK_MAX)
+                      .map((m) => m.name)
+                      .join('、')}
+                    style={{
+                      marginLeft: -6,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      background: 'var(--bg-overlay-l1)',
+                      color: 'var(--text-secondary)',
+                      fontSize: 9,
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                  >
+                    +{provider.models.length - CARD_MODEL_STACK_MAX}
+                  </span>
+                )}
+              </span>
+              <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-secondary)' }}>
+                {provider.models.length}
+              </span>
+            </span>
+          )}
         </div>
 
         {/* Error summary for failed status */}
@@ -436,15 +493,8 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           e.currentTarget.style.background = 'transparent';
         }}
       >
-        <span
-          className="mc-provider-card__chevron"
-          style={{
-            display: 'inline-flex',
-            transition: 'transform var(--transition-normal, 0.2s ease)',
-            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-          }}
-        >
-          <ChevronRight size={12} />
+        <span className="mc-provider-card__chevron" style={{ display: 'inline-flex' }}>
+          <MorphGlyph slots={expandIcon.slots} rotate={expandIcon.rotate} transition={expandIcon.transition} mode={expandIcon.mode} size={12} />
         </span>
         <span>{expanded ? t('providers.collapseModels') : t('providers.expandModels')}</span>
       </div>

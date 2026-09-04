@@ -1,0 +1,152 @@
+/* MelodyHub interior slider-detents —换肤样式
+   行为来自上游 interior slider-detents.tsx（useSliderDetents 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。深色靠 var 体系自动适配。 */
+
+.mh-slider-detents {
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mh-slider-detents__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacer-12);
+  margin-bottom: var(--spacer-10);
+}
+
+.mh-slider-detents__label {
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-slider-detents__value {
+  display: grid;
+  justify-items: start;
+}
+
+.mh-slider-detents__value-sizer,
+.mh-slider-detents__value-text {
+  grid-area: 1 / 1;
+  white-space: pre;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-sm-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.mh-slider-detents__value-sizer {
+  visibility: hidden;
+}
+
+.mh-slider-detents__value-text {
+  color: var(--text-default);
+}
+
+.mh-slider-detents__value-suffix {
+  color: var(--text-tertiary);
+}
+
+.mh-slider-detents__track {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  border-radius: var(--radius-10);
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mh-slider-detents__track[data-dragging] {
+  cursor: grabbing;
+}
+
+.mh-slider-detents__track[data-disabled] {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.mh-slider-detents__track:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--border-brand);
+}
+
+.mh-slider-detents__rail {
+  position: absolute;
+  inset-inline: 0;
+  top: 9px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-6);
+  background: var(--bg-overlay-l2);
+  pointer-events: none;
+}
+
+.mh-slider-detents__rail-inset {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.mh-slider-detents__fill-mover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.mh-slider-detents__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 2000px;
+  background: var(--text-default);
+}
+
+.mh-slider-detents__ticks,
+.mh-slider-detents__thumb-lane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.mh-slider-detents__tick {
+  position: absolute;
+  top: 26px;
+  display: block;
+  width: 2px;
+  height: 5px;
+  transform: translateX(-50%);
+  background: var(--icon-tertiary);
+  opacity: 0.55;
+  border-radius: var(--radius-2);
+}
+
+.mh-slider-detents__thumb-mover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.mh-slider-detents__thumb {
+  position: absolute;
+  top: 4px;
+  width: 18px;
+  height: 20px;
+  border-radius: var(--radius-6);
+  border: 2px solid var(--bg-base-default);
+  background: var(--text-default);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-slider-detents__track {
+    transition: none;
+  }
+}

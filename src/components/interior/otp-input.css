@@ -1,0 +1,139 @@
+/* MelodyHub interior otp-input —换肤样式
+   行为来自上游 interior otp-input.tsx（useOtpInput + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色靠 var 体系适配。 */
+
+.mh-otp-input {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.mh-otp-input__cells {
+  position: relative;
+  display: flex;
+  gap: var(--spacer-8);
+}
+
+.mh-otp-input__slot {
+  position: relative;
+  height: 48px;
+  width: 40px;
+}
+
+.mh-otp-input__slot--gap {
+  margin-left: var(--spacer-12);
+}
+
+.mh-otp-input__cell {
+  height: 48px;
+  width: 40px;
+  border-radius: var(--radius-10);
+  border: 2px solid var(--border-neutral-l2);
+  background: var(--bg-base-secondary);
+  box-shadow: inset 0 1px 2px var(--bg-overlay-l1);
+  color: transparent;
+  caret-color: transparent;
+  font-size: var(--body-base-font-size);
+  text-align: center;
+  outline: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-otp-input__cell::selection {
+  background: transparent;
+}
+
+.mh-otp-input__cell:focus-visible {
+  outline: none;
+}
+
+.mh-otp-input__cell:disabled {
+  opacity: 0.5;
+}
+
+.mh-otp-input__cell[data-state='filled'] {
+  border-color: var(--border-neutral-l3);
+  background: var(--bg-white);
+  box-shadow: none;
+}
+
+.mh-otp-input__cell[data-state='active'] {
+  border-color: var(--border-brand);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 3px var(--bg-brand-popup);
+}
+
+.mh-otp-input__cell[data-state='error'] {
+  border-color: var(--status-error-default);
+  background: var(--bg-white);
+  box-shadow: none;
+}
+
+.mh-otp-input__cell[data-state='success'] {
+  border-color: var(--status-success-default);
+  background: var(--bg-white);
+  box-shadow: none;
+}
+
+.mh-otp-input__ghost {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.mh-otp-input__char {
+  grid-area: 1 / 1;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-base-font-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-default);
+}
+
+.mh-otp-input__caret {
+  grid-area: 1 / 1;
+  display: block;
+  height: 17px;
+  width: 1.5px;
+  border-radius: 1px;
+  background: var(--text-default);
+}
+
+.mh-otp-input__message {
+  display: grid;
+  margin-top: var(--spacer-8);
+  height: 16px;
+  font-size: var(--body-sm-font-size);
+  line-height: 16px;
+}
+
+.mh-otp-input__message-text {
+  grid-area: 1 / 1;
+  color: var(--text-tertiary);
+}
+
+.mh-otp-input__message-text[data-tone='error'] {
+  color: var(--status-error-default);
+}
+
+.mh-otp-input__message-text[data-tone='success'] {
+  color: var(--status-success-default);
+}
+
+.mh-otp-input__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-otp-input__cell {
+    transition: none;
+  }
+}

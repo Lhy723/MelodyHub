@@ -1,20 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../../../components/ui/Button';
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
-
-const inputBaseStyle: React.CSSProperties = {
-  height: 32,
-  padding: '0 10px',
-  borderRadius: 8,
-  border: '1px solid var(--border-neutral-l1)',
-  background: 'var(--bg-overlay-l1)',
-  color: 'var(--text-default)',
-  font: 'inherit',
-  fontSize: 'var(--body-sm-font-size)',
-  outline: 'none',
-  boxSizing: 'border-box',
-  fontFamily: 'var(--font-family-mono)',
-};
+import { Plus, Trash2 } from 'lucide-react';
+import { useIconMorph, MorphGlyph } from '../../../components/interior/icon-morph';
+import { FloatingLabelInput } from '../../../components/interior/floating-label';
 
 interface ProviderMappingsTabProps {
   mappings: Record<string, string>;
@@ -23,6 +11,7 @@ interface ProviderMappingsTabProps {
 
 export const ProviderMappingsTab: React.FC<ProviderMappingsTabProps> = ({ mappings, onChange }) => {
   const [expanded, setExpanded] = useState(true);
+  const expandIcon = useIconMorph({ preset: 'chevron', active: expanded });
   const entries = Object.entries(mappings);
 
   const updateEntry = (idx: number, key: string, value: string) => {
@@ -61,7 +50,7 @@ export const ProviderMappingsTab: React.FC<ProviderMappingsTabProps> = ({ mappin
           fontWeight: 500,
         }}
       >
-        {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <MorphGlyph slots={expandIcon.slots} rotate={expandIcon.rotate} transition={expandIcon.transition} mode={expandIcon.mode} size={16} />
         <span>模型映射</span>
         <span
           style={{
@@ -83,28 +72,30 @@ export const ProviderMappingsTab: React.FC<ProviderMappingsTabProps> = ({ mappin
       {expanded && (
         <div style={{ paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {entries.map(([key, value], idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="text"
-                value={key}
-                onChange={(e) => updateEntry(idx, e.target.value, value)}
-                placeholder="逻辑模型名 (支持 * 通配符)"
-                style={{ ...inputBaseStyle, flex: 1 }}
-              />
-              <span style={{ color: 'var(--text-tertiary)' }}>→</span>
-              <input
-                type="text"
-                value={value}
-                onChange={(e) => updateEntry(idx, key, e.target.value)}
-                placeholder="上游模型名"
-                style={{ ...inputBaseStyle, flex: 1 }}
-              />
+            <div key={idx} className="mh-mapping-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <FloatingLabelInput
+                  label="逻辑模型名"
+                  value={key}
+                  onChange={(v) => updateEntry(idx, v, value)}
+                  hint="支持 * 通配符"
+                />
+              </div>
+              <span style={{ color: 'var(--text-tertiary)', marginTop: 32 }}>→</span>
+              <div style={{ flex: 1 }}>
+                <FloatingLabelInput
+                  label="上游模型名"
+                  value={value}
+                  onChange={(v) => updateEntry(idx, key, v)}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => removeEntry(idx)}
                 style={{
                   width: 32,
                   height: 32,
+                  marginTop: 24,
                   display: 'grid',
                   placeItems: 'center',
                   background: 'none',
