@@ -1,0 +1,14 @@
+/* 设置页专属样式（interior 基调：扁平 + 发丝线 + 克制）。 */
+
+/* 强调色 swatch：尺寸/底色/描边内联在 SettingsForm（选中态动态色），
+   这里只承载静态交互层：transition 与键盘焦点环。 */
+.mh-accent-swatch {
+  transition: box-shadow var(--transition-fast);
+}
+
+.mh-accent-swatch:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-base-default),
+    0 0 0 4px var(--text-brand);
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { flushSync } from 'react-dom';
+import './settings.css';
 import { getVersion } from '@tauri-apps/api/app';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -100,11 +101,13 @@ const errorMessage = (e: unknown, fallback: string) => (e instanceof Error ? e.m
 interface SettingsGroupProps {
   title?: string;
   isNew?: boolean;
+  /** 标题行右侧附加内容（如「关于」组的 GitHub 入口），随 title 复用同一渲染。 */
+  extra?: React.ReactNode;
   children: React.ReactNode;
   style?: React.CSSProperties;
 }
 
-const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, isNew, children, style }) => (
+const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, isNew, extra, children, style }) => (
   <section
     style={{
       borderBottom: '1px solid var(--border-neutral-l1)',
@@ -114,19 +117,34 @@ const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, isNew, children, s
     {title && (
       <div
         style={{
-          padding: '16px 20px',
-          fontSize: 16,
-          fontWeight: 600,
-          lineHeight: 1.4,
+          padding: 'var(--spacer-16) var(--spacer-20)',
+          fontSize: 'var(--heading-sm-font-size)',
+          fontWeight: 'var(--font-weight-strong)',
+          lineHeight: 'var(--heading-sm-line-height)',
           color: 'var(--text-default)',
-          borderBottom: '1px solid var(--border-neutral-l1)',
+          // 组内分隔靠行间发丝线 + 组级 borderBottom，标题自身不再压线，避免双发丝线。
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--spacer-8)',
         }}
       >
         {title}
-        {isNew && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bg-brand)' }}>New</span>}
+        {isNew && (
+          <span
+            style={{
+              // 形态对齐 interior tabs badge：radius-full + overlay 底；颜色走文字态品牌 token。
+              fontSize: 'var(--body-xs-font-size)',
+              fontWeight: 'var(--font-weight-medium)',
+              color: 'var(--text-brand)',
+              padding: '1px var(--spacer-6)',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-overlay-l2)',
+            }}
+          >
+            New
+          </span>
+        )}
+        {extra && <span style={{ marginLeft: 'auto', display: 'inline-flex' }}>{extra}</span>}
       </div>
     )}
     {children}
@@ -134,7 +152,8 @@ const SettingsGroup: React.FC<SettingsGroupProps> = ({ title, isNew, children, s
 );
 
 interface SettingsRowProps {
-  label: string;
+  /** 空/undefined 时不渲染左列（无标签变体，如纯按钮行），不影响右列右侧对齐。 */
+  label?: string;
   children: React.ReactNode;
   hint?: string;
   isLast?: boolean;
@@ -146,18 +165,21 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, children, hint, isLast
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '13px 20px',
+      padding: 'var(--spacer-12) var(--spacer-20)',
+      // 48px 保证仅图标/开关控件行也有可点击的舒适高度，与行分隔线节奏一致。
       minHeight: 48,
       boxSizing: 'border-box',
       borderBottom: isLast ? 'none' : '1px solid var(--border-neutral-l1)',
-      gap: 16,
+      gap: 'var(--spacer-16)',
     }}
   >
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
-      <span style={{ fontSize: 15, color: 'var(--text-default)' }}>{label}</span>
-      {hint && <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{hint}</span>}
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>{children}</div>
+    {label && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacer-2)', flexShrink: 0 }}>
+        <span style={{ fontSize: 'var(--body-base-font-size)', lineHeight: 'var(--body-base-line-height)', color: 'var(--text-default)' }}>{label}</span>
+        {hint && <span style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)' }}>{hint}</span>}
+      </div>
+    )}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-8)', marginLeft: 'auto' }}>{children}</div>
   </div>
 );
 
@@ -179,8 +201,8 @@ const AboutLinkRow: React.FC<AboutLinkRowProps> = ({ icon, label, actionLabel, o
       display: 'flex',
       alignItems: 'center',
       gap: 'var(--spacer-12)',
-      padding: '13px 20px',
-      minHeight: 48,
+      padding: 'var(--spacer-12) var(--spacer-20)',
+      minHeight: 48, // 与 SettingsRow 同节奏，保证链接行可点击高度一致。
       boxSizing: 'border-box',
       borderBottom: isLast ? 'none' : '1px solid var(--border-neutral-l1)',
     }}
@@ -195,7 +217,7 @@ const AboutLinkRow: React.FC<AboutLinkRowProps> = ({ icon, label, actionLabel, o
     >
       {icon}
     </span>
-    <span style={{ fontSize: 15, color: 'var(--text-default)', flex: 1 }}>{label}</span>
+    <span style={{ fontSize: 'var(--body-base-font-size)', lineHeight: 'var(--body-base-line-height)', color: 'var(--text-default)', flex: 1 }}>{label}</span>
     <Button variant="secondary" size="sm" onClick={onClick}>
       {actionLabel}
     </Button>
@@ -513,19 +535,22 @@ export const SettingsForm: React.FC = () => {
                       <button
                         key={color}
                         type="button"
+                        className="mh-accent-swatch"
                         onClick={() => updateSettings({ accentColor: normalizeHex(color) })}
                         style={{
+                          // 28px 色块：单行内多色并列的最小可点击尺寸，保持不变。
                           width: 28,
                           height: 28,
                           borderRadius: '50%',
                           background: color,
                           border: isSelected ? `2px solid ${color}` : '2px solid transparent',
+                          // 固定双环写法：外圈 2px 页面底色 + 再外圈 2px 自身色，形成选中描边；
+                          // 未选中时仅 1px 中性描边。两态叠序不可调换，否则环色被盖住。
                           boxShadow: isSelected
                             ? `0 0 0 2px var(--bg-base-default), 0 0 0 4px ${color}`
                             : '0 0 0 1px var(--border-neutral-l2)',
                           cursor: 'pointer',
                           padding: 0,
-                          transition: 'box-shadow 0.15s ease',
                         }}
                         aria-label={translate('settings.appearanceAccentAria', { color })}
                       />
@@ -550,7 +575,7 @@ export const SettingsForm: React.FC = () => {
                   }}
                   wrapperStyle={{ width: 96 }}
                   style={{
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                    fontFamily: 'var(--font-family-mono)',
                     fontSize: 13,
                     textAlign: 'center',
                   }}
@@ -614,10 +639,10 @@ export const SettingsForm: React.FC = () => {
                   placeholder={translate('settings.security.tokenPlaceholder')}
                   wrapperStyle={{
                     width: 280,
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                    fontFamily: 'var(--font-family-mono)',
                     fontSize: 13,
                   }}
-                  style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13 }}
+                  style={{ fontFamily: 'var(--font-family-mono)', fontSize: 13 }}
                 />
                 <TooltipGroup>
                 <Tooltip label={showToken ? translate('settings.security.hideToken') : translate('settings.security.showToken')}>
@@ -772,26 +797,9 @@ export const SettingsForm: React.FC = () => {
       {activeCategory === 'about' && (
         <>
           {/* ── About / Update card ────────────────────────── */}
-          <SettingsGroup>
-            {/* Header row: title + GitHub link */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  lineHeight: 1.4,
-                  color: 'var(--text-default)',
-                }}
-              >
-                {translate('settings.about.title')}
-              </span>
+          <SettingsGroup
+            title={translate('settings.about.title')}
+            extra={
               <button
                 type="button"
                 onClick={() => openUrl('https://github.com/Lhy723/MelodyHub').catch(() => {})}
@@ -821,18 +829,18 @@ export const SettingsForm: React.FC = () => {
               >
                 <GithubMark size={20} />
               </button>
-            </div>
-
-            {/* Divider */}
-            <div style={{ height: 1, background: 'var(--border-neutral-l1)' }} />
-
-            {/* Hero row: logo + name/slogan/version + check-update button */}
+            }
+          >
+            {/* Hero row: logo + name/slogan/version + check-update button.
+                上缘发丝线承接组标题（原手写 divider 改为边框），下缘发丝线与自动更新行分隔。 */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'var(--spacer-16)',
                 padding: 'var(--spacer-24) var(--spacer-20)',
+                borderTop: '1px solid var(--border-neutral-l1)',
+                borderBottom: '1px solid var(--border-neutral-l1)',
               }}
             >
               <img
@@ -843,7 +851,7 @@ export const SettingsForm: React.FC = () => {
                 style={{
                   width: 72,
                   height: 72,
-                  borderRadius: 16,
+                  borderRadius: 'var(--radius-16)',
                   flexShrink: 0,
                   userSelect: 'none',
                 }}
@@ -872,13 +880,14 @@ export const SettingsForm: React.FC = () => {
                 <div style={{ marginTop: 8, display: 'inline-flex' }}>
                   <span
                     style={{
+                      // 版本徽章中性化对齐 interior tabs badge 形态：radius-full + overlay 底 + 发丝边。
                       fontSize: 'var(--body-sm-font-size)',
                       fontWeight: 'var(--font-weight-medium)',
-                      color: 'var(--bg-brand)',
+                      color: 'var(--text-secondary)',
                       padding: '2px 10px',
-                      border: '1px solid color-mix(in srgb, var(--bg-brand) 40%, transparent)',
-                      borderRadius: 'var(--radius-6)',
-                      background: 'color-mix(in srgb, var(--bg-brand) 10%, transparent)',
+                      border: '1px solid var(--border-neutral-l1)',
+                      borderRadius: 'var(--radius-full)',
+                      background: 'var(--bg-overlay-l1)',
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
@@ -904,10 +913,7 @@ export const SettingsForm: React.FC = () => {
               </LoadingButton>
             </div>
 
-            {/* Divider */}
-            <div style={{ height: 1, background: 'var(--border-neutral-l1)' }} />
-
-            {/* Auto-update row */}
+            {/* Auto-update row（与 hero 的分隔线由 hero borderBottom 承担） */}
             <SettingsRow label={translate('settings.about.autoUpdate')} isLast>
               <Switch
                 checked={settings.checkUpdatesOnStart}
@@ -1001,12 +1007,13 @@ export const SettingsForm: React.FC = () => {
                     background: 'var(--bg-base-secondary)',
                     border: '1px solid var(--border-neutral-l1)',
                     borderRadius: 'var(--radius-8)',
+                    // maxHeight 160 ≈ 8 行 changelog 预览，超出内滚，弹窗高度可控。
                     maxHeight: 160,
                     overflowY: 'auto',
                     fontSize: 'var(--body-sm-font-size)',
                     color: 'var(--text-default)',
                     whiteSpace: 'pre-wrap',
-                    lineHeight: 1.6,
+                    lineHeight: 'var(--body-base-line-height)',
                   }}
                 >
                   {pendingUpdate?.body}
