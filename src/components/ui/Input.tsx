@@ -22,7 +22,7 @@ export const Input = forwardRef<HTMLDivElement, InputProps>(
           borderRadius: 'var(--radius-8)',
           color: 'var(--text-default)',
           width: '100%',
-          fontFamily: 'var(--body-base-font-family)',
+          fontFamily: 'var(--font-family-base)',
           fontSize: 'var(--body-base-font-size)',
           lineHeight: 'var(--body-base-line-height)',
           ...wrapperStyle,

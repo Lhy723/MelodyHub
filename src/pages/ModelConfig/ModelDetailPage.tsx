@@ -501,7 +501,7 @@ export const ModelDetailPage: React.FC = () => {
             <h1
               style={{
                 fontSize: 'var(--heading-lg-font-size)',
-                fontWeight: 'var(--heading-lg-font-weight)',
+                fontWeight: 'var(--font-weight-strong)',
                 lineHeight: 'var(--heading-lg-line-height)',
                 color: 'var(--text-default)',
                 fontFamily: 'var(--font-family-mono)',
@@ -552,7 +552,7 @@ export const ModelDetailPage: React.FC = () => {
                 <h2
                   style={{
                     fontSize: 'var(--heading-xs-font-size)',
-                    fontWeight: 'var(--heading-xs-font-weight)',
+                    fontWeight: 'var(--font-weight-strong)',
                     color: 'var(--text-default)',
                     margin: 0,
                   }}
@@ -1024,7 +1024,7 @@ export const ModelDetailPage: React.FC = () => {
           <h2
             style={{
               fontSize: 'var(--heading-xs-font-size)',
-              fontWeight: 'var(--heading-xs-font-weight)',
+              fontWeight: 'var(--font-weight-strong)',
               color: 'var(--text-default)',
               margin: '0 0 var(--spacer-16) 0',
               paddingBottom: 'var(--spacer-12)',
@@ -1082,7 +1082,7 @@ export const ModelDetailPage: React.FC = () => {
             <h2
               style={{
                 fontSize: 'var(--heading-xs-font-size)',
-                fontWeight: 'var(--heading-xs-font-weight)',
+                fontWeight: 'var(--font-weight-strong)',
                 color: 'var(--text-default)',
                 margin: '0 0 var(--spacer-16) 0',
                 paddingBottom: 'var(--spacer-12)',

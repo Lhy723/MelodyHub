@@ -541,9 +541,9 @@ export const AddProviderPage: React.FC = () => {
         <div>
           <h2
             style={{
-              fontFamily: 'var(--heading-lg-font-family)',
+              fontFamily: 'var(--font-family-heading)',
               fontSize: 'var(--heading-lg-font-size)',
-              fontWeight: 'var(--heading-lg-font-weight)',
+              fontWeight: 'var(--font-weight-strong)',
               lineHeight: 'var(--heading-lg-line-height)',
               color: 'var(--text-default)',
               margin: 0,
@@ -995,7 +995,7 @@ export const AddProviderPage: React.FC = () => {
                           style={{
                             width: 32,
                             height: 32,
-                            marginTop: 'var(--spacer-18)',
+                            marginTop: 'var(--spacer-16)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',

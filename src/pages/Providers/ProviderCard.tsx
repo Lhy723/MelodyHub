@@ -139,9 +139,9 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
           />
           <span
             style={{
-              fontFamily: 'var(--heading-xs-font-family)',
+              fontFamily: 'var(--font-family-heading)',
               fontSize: 'var(--heading-xs-font-size)',
-              fontWeight: 'var(--heading-xs-font-weight)',
+              fontWeight: 'var(--font-weight-strong)',
               lineHeight: 'var(--heading-xs-line-height)',
               color: isDisabled ? 'var(--text-disabled)' : 'var(--text-default)',
               transition: 'color var(--transition-normal, 0.2s ease)',
@@ -299,7 +299,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               maxWidth: 200,
-              fontFamily: 'var(--code-terminal-font-family)',
+              fontFamily: 'var(--font-family-mono)',
             }}
           >
             {provider.apiBase}
@@ -316,7 +316,7 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
                   fontSize: 'var(--body-xs-font-size)',
                   color: 'var(--text-secondary)',
                   textAlign: 'right',
-                  fontFamily: 'var(--code-terminal-font-family)',
+                  fontFamily: 'var(--font-family-mono)',
                 }}
               >
                 {provider.apiKey ? `${provider.apiKey.slice(0, 8)}...` : ''}

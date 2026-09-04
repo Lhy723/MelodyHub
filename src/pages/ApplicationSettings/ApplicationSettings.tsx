@@ -592,7 +592,7 @@ function MultiSelectDropdown({
                           justifyContent: 'center',
                           width: 16,
                           height: 16,
-                          borderRadius: 'var(--radius-3)',
+                          borderRadius: 'var(--radius-4)',
                           border: checked ? 'none' : '1px solid var(--border-neutral-l2)',
                           background: checked ? 'var(--bg-brand)' : 'transparent',
                           flexShrink: 0,
@@ -1240,7 +1240,7 @@ export const ApplicationSettings: React.FC = () => {
                                 gap: 4,
                                 color: 'var(--text-tertiary)',
                                 fontSize: 'var(--body-xs-font-size)',
-                                fontWeight: 'var(--font-weight-normal)',
+                                fontWeight: 'var(--font-weight-default)',
                               }}
                             >
                               {t('applications.modelCustom')}

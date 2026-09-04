@@ -1008,7 +1008,7 @@ export function CodexSettingsEditor({ settings, onSettingChange, t, managed = fa
             <section key={group} style={{ borderBottom: '1px solid var(--border-neutral-l1)' }}>
               <button type="button" onClick={() => setOpenGroups((current) => ({ ...current, [group]: !current[group] }))} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', border: 'none', background: 'transparent', padding: 'var(--spacer-14) 0', color: 'var(--text-default)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--body-sm-font-size)', fontWeight: 'var(--font-weight-strong)', textAlign: 'left' }}>
                 <span>{t(`applications.codexSettings.group.${group}`)}</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)', fontWeight: 'var(--font-weight-normal)' }}>{groupSpecs.length}<ChevronDown size={14} style={{ transform: opened ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 160ms ease' }} /></span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)', fontWeight: 'var(--font-weight-default)' }}>{groupSpecs.length}<ChevronDown size={14} style={{ transform: opened ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 160ms ease' }} /></span>
               </button>
               {opened && (
                 <div>

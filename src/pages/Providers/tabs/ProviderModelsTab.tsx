@@ -359,7 +359,7 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
                       top: '100%',
                       marginTop: 4,
                       zIndex: 20,
-                      background: 'var(--bg-elevated)',
+                      background: 'var(--bg-base-default)',
                       border: '1px solid var(--border-neutral-l1)',
                       borderRadius: 10,
                       padding: 12,

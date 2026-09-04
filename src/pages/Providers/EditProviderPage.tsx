@@ -20,9 +20,9 @@ type TabKey = 'basic' | 'models' | 'mappings' | 'proxy';
 
 
 const headerInputStyle: React.CSSProperties = {
-  fontSize: 'var(--title-md-font-size)',
+  fontSize: 'var(--heading-md-font-size)',
   fontWeight: 600,
-  lineHeight: 'var(--title-md-line-height)',
+  lineHeight: 'var(--heading-md-line-height)',
   color: 'var(--text-default)',
   background: 'transparent',
   border: '1px solid transparent',
@@ -212,7 +212,7 @@ export const EditProviderPage: React.FC = () => {
       <div
         style={{
           padding: '16px 24px 0',
-          background: 'var(--bg-primary)',
+          background: 'var(--bg-base-default)',
           flexShrink: 0,
         }}
       >

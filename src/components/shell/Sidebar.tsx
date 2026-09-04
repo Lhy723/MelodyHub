@@ -136,9 +136,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
         <span
           className="ds-shell__brand-name"
           style={{
-            fontFamily: 'var(--heading-sm-font-family)',
+            fontFamily: 'var(--font-family-heading)',
             fontSize: 'var(--heading-sm-font-size)',
-            fontWeight: 'var(--heading-sm-font-weight)',
+            fontWeight: 'var(--font-weight-strong)',
             lineHeight: 'var(--heading-sm-line-height)',
             color: 'var(--text-default)',
             whiteSpace: 'nowrap',
@@ -279,7 +279,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
         <span
           className="ds-shell__version"
           style={{
-            fontFamily: 'var(--code-terminal-font-family)',
+            fontFamily: 'var(--font-family-mono)',
             fontSize: 'var(--body-xs-font-size)',
             lineHeight: 'var(--body-xs-line-height)',
             color: 'var(--text-tertiary)',

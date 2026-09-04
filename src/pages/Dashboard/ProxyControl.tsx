@@ -441,7 +441,7 @@ export const ProxyControl: React.FC = () => {
                 justifyContent: 'center',
                 gap: 'var(--spacer-8)',
                 height: 44,
-                padding: '0 var(--spacer-28)',
+                padding: '0 var(--spacer-24)',
                 borderRadius: 'var(--radius-10)',
                 border: '1px solid',
                 cursor: toggleAction.pending ? 'not-allowed' : 'pointer',

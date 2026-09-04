@@ -37,7 +37,7 @@ export const Shell: React.FC = () => {
         height: '100vh',
         background: 'var(--bg-base-default)',
         color: 'var(--text-default)',
-        fontFamily: 'var(--body-base-font-family)',
+        fontFamily: 'var(--font-family-base)',
         fontSize: 'var(--body-base-font-size)',
         lineHeight: 'var(--body-base-line-height)',
         ['--sidebar-width' as string]: '220px',
@@ -148,7 +148,7 @@ export const Shell: React.FC = () => {
             >
               <h1
                 style={{
-                  fontFamily: 'var(--heading-md-font-family)',
+                  fontFamily: 'var(--font-family-heading)',
                   fontSize: 'var(--heading-md-font-size)',
                   fontWeight: 700,
                   lineHeight: 'var(--heading-md-line-height)',

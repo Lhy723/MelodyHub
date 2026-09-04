@@ -12,7 +12,7 @@ interface AvatarProps {
 
 const sizeMap: Record<AvatarSize, { width: number; height: number; fontSize: string }> = {
   sm: { width: 24, height: 24, fontSize: 'var(--body-sm-font-size)' },
-  md: { width: 32, height: 32, fontSize: 'var(--body-base-strong-font-size)' },
+  md: { width: 32, height: 32, fontSize: 'var(--body-base-font-size)' },
   lg: { width: 40, height: 40, fontSize: 'var(--body-base-font-size)' },
 };
 
@@ -48,10 +48,10 @@ export const Avatar: React.FC<AvatarProps> = ({ children, size = 'md', src, alt,
         borderRadius: 'var(--radius-full)',
         background: 'var(--bg-overlay-l3)',
         color: 'var(--text-default)',
-        fontFamily: 'var(--body-base-strong-font-family)',
+        fontFamily: 'var(--font-family-base)',
         fontSize: dims.fontSize,
         fontWeight: 'var(--body-base-strong-font-weight)',
-        lineHeight: 'var(--body-base-strong-line-height)',
+        lineHeight: 'var(--body-base-line-height)',
         flexShrink: 0,
         ...style,
       }}

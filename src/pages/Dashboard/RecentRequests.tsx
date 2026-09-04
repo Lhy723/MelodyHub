@@ -100,7 +100,7 @@ export const RecentRequests: React.FC = () => {
           <span
             style={{
               fontSize: 'var(--heading-xs-font-size)',
-              fontWeight: 'var(--heading-xs-font-weight)',
+              fontWeight: 'var(--font-weight-strong)',
               color: 'var(--text-default)',
             }}
           >
@@ -130,7 +130,7 @@ export const RecentRequests: React.FC = () => {
         <div
           style={{
             fontSize: 'var(--heading-xs-font-size)',
-            fontWeight: 'var(--heading-xs-font-weight)',
+            fontWeight: 'var(--font-weight-strong)',
             color: 'var(--text-default)',
             lineHeight: 'var(--heading-xs-line-height)',
           }}
@@ -302,7 +302,7 @@ export const RecentRequests: React.FC = () => {
                         style={{
                           padding: 'var(--spacer-12) var(--spacer-8)',
                           borderBottom: '1px solid var(--border-neutral-l1)',
-                          fontFamily: 'var(--code-terminal-font-family)',
+                          fontFamily: 'var(--font-family-mono)',
                           fontSize: 'var(--body-md-font-size)',
                           color: 'var(--text-default)',
                         }}
@@ -426,7 +426,7 @@ export const RecentRequests: React.FC = () => {
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-8)' }}>
                     <code
                       style={{
-                        fontFamily: 'var(--code-terminal-font-family)',
+                        fontFamily: 'var(--font-family-mono)',
                         fontSize: 'var(--body-sm-font-size)',
                         color: 'var(--text-default)',
                         wordBreak: 'break-all',

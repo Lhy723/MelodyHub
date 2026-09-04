@@ -268,7 +268,7 @@ export const ModelInventory: React.FC = () => {
           <h3
             style={{
               fontSize: 'var(--heading-xs-font-size)',
-              fontWeight: 'var(--heading-xs-font-weight)',
+              fontWeight: 'var(--font-weight-strong)',
               color: 'var(--text-default)',
               margin: 0,
             }}

@@ -81,7 +81,7 @@ const getStatusTagConfig = (
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 'var(--heading-xs-font-size)',
-  fontWeight: 'var(--heading-xs-font-weight)',
+  fontWeight: 'var(--font-weight-strong)',
   color: 'var(--text-default)',
   lineHeight: 'var(--heading-xs-line-height)',
   display: 'flex',
@@ -108,7 +108,7 @@ const infoLabelStyle: React.CSSProperties = {
 const infoValueStyle: React.CSSProperties = {
   fontSize: 'var(--body-base-font-size)',
   color: 'var(--text-default)',
-  fontFamily: 'var(--code-terminal-font-family)',
+  fontFamily: 'var(--font-family-mono)',
   maxWidth: 300,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -143,7 +143,7 @@ const statCardStyle: React.CSSProperties = {
 
 const statValueStyle: React.CSSProperties = {
   fontSize: 'var(--heading-lg-font-size)',
-  fontWeight: 'var(--heading-lg-font-weight)',
+  fontWeight: 'var(--font-weight-strong)',
   color: 'var(--text-default)',
   fontFamily: 'var(--font-family-metric)',
   lineHeight: 1.2,
@@ -328,7 +328,7 @@ export const ProviderDetailPage: React.FC = () => {
             <h1
               style={{
                 fontSize: 'var(--heading-lg-font-size)',
-                fontWeight: 'var(--heading-lg-font-weight)',
+                fontWeight: 'var(--font-weight-strong)',
                 color: 'var(--text-default)',
                 margin: 0,
               }}
@@ -373,7 +373,7 @@ export const ProviderDetailPage: React.FC = () => {
           style={{
             padding: 'var(--spacer-12) var(--spacer-16)',
             borderRadius: 'var(--radius-8)',
-            background: testResult.success ? 'var(--status-success-bg)' : 'var(--status-error-bg)',
+            background: testResult.success ? 'var(--status-success-surface-l1)' : 'var(--status-error-surface-l1)',
             color: testResult.success ? 'var(--status-success-default)' : 'var(--status-error-default)',
             fontSize: 'var(--body-base-font-size)',
             display: 'flex',
@@ -483,7 +483,7 @@ export const ProviderDetailPage: React.FC = () => {
                         style={{
                           padding: 'var(--spacer-8)',
                           borderBottom: '1px solid var(--border-neutral-l1)',
-                          fontFamily: 'var(--code-terminal-font-family)',
+                          fontFamily: 'var(--font-family-mono)',
                           fontSize: 'var(--body-md-font-size)',
                           color: 'var(--text-secondary)',
                         }}
@@ -611,7 +611,7 @@ export const ProviderDetailPage: React.FC = () => {
                     borderRadius: 'var(--radius-8)',
                     background: 'var(--bg-overlay-l1)',
                     fontSize: 'var(--body-sm-font-size)',
-                    fontFamily: 'var(--code-terminal-font-family)',
+                    fontFamily: 'var(--font-family-mono)',
                   }}
                 >
                   <span style={{ color: 'var(--text-secondary)' }}>{key}</span>

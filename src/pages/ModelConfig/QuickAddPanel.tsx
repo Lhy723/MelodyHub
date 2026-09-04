@@ -105,7 +105,7 @@ export const QuickAddPanel: React.FC = () => {
             <label
               style={{
                 fontSize: 'var(--body-sm-font-size)',
-                fontWeight: 'var(--body-sm-strong-font-weight)',
+                fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-tertiary)',
               }}
             >
@@ -147,7 +147,7 @@ export const QuickAddPanel: React.FC = () => {
             <label
               style={{
                 fontSize: 'var(--body-sm-font-size)',
-                fontWeight: 'var(--body-sm-strong-font-weight)',
+                fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-tertiary)',
               }}
             >
@@ -162,7 +162,7 @@ export const QuickAddPanel: React.FC = () => {
             <label
               style={{
                 fontSize: 'var(--body-sm-font-size)',
-                fontWeight: 'var(--body-sm-strong-font-weight)',
+                fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-tertiary)',
               }}
             >

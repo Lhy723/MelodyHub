@@ -37,7 +37,7 @@ export const CardTitle: React.FC<{ children: React.ReactNode; style?: React.CSSP
     style={{
       fontSize: 'var(--heading-sm-font-size)',
       lineHeight: 'var(--heading-sm-line-height)',
-      fontWeight: 'var(--heading-sm-font-weight)',
+      fontWeight: 'var(--font-weight-strong)',
       marginBottom: 'var(--spacer-8)',
       ...style,
     }}

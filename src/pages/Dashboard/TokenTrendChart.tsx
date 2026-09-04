@@ -140,7 +140,7 @@ export const TokenTrendChart: React.FC = () => {
       <div
         style={{
           fontSize: 'var(--heading-xs-font-size)',
-          fontWeight: 'var(--heading-xs-font-weight)',
+          fontWeight: 'var(--font-weight-strong)',
           color: 'var(--text-default)',
           lineHeight: 'var(--heading-xs-line-height)',
           marginBottom: 'var(--spacer-20)',

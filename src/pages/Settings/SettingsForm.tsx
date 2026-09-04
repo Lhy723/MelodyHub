@@ -853,7 +853,7 @@ export const SettingsForm: React.FC = () => {
                 <div
                   style={{
                     fontSize: 'var(--heading-md-font-size)',
-                    fontWeight: 'var(--heading-md-font-weight)',
+                    fontWeight: 'var(--font-weight-strong)',
                     lineHeight: 'var(--heading-md-line-height)',
                     color: 'var(--text-default)',
                   }}

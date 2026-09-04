@@ -10,7 +10,7 @@ export const FormField: React.FC<FormFieldProps> = ({ label, children }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacer-8)' }}>
     <label
       style={{
-        fontSize: 'var(--body-base-strong-font-size)',
+        fontSize: 'var(--body-base-font-size)',
         fontWeight: 'var(--body-base-strong-font-weight)',
         color: 'var(--text-default)',
       }}

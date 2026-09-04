@@ -914,7 +914,7 @@ export function ClaudeSettingsEditor({ content, onChange, t }: ClaudeSettingsEdi
                       gap: 6,
                       color: 'var(--text-tertiary)',
                       fontSize: 'var(--body-xs-font-size)',
-                      fontWeight: 'var(--font-weight-normal)',
+                      fontWeight: 'var(--font-weight-default)',
                     }}
                   >
                     {groupSpecs.length}
