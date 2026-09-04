@@ -1109,24 +1109,18 @@ fn select_candidate_index(
                 .iter()
                 .enumerate()
                 .max_by(|(_, (_, _, left_model, _)), (_, (_, _, right_model, _))| {
-                    let left_fits = context_fits(
-                        left_model,
-                        capabilities.estimated_context_tokens,
-                    );
-                    let right_fits = context_fits(
-                        right_model,
-                        capabilities.estimated_context_tokens,
-                    );
+                    let left_fits =
+                        context_fits(left_model, capabilities.estimated_context_tokens);
+                    let right_fits =
+                        context_fits(right_model, capabilities.estimated_context_tokens);
                     // Sufficient windows outrank insufficient ones;
                     // within a group, the larger window wins.
-                    left_fits
-                        .cmp(&right_fits)
-                        .then_with(|| {
-                            left_model
-                                .context_window
-                                .unwrap_or(0)
-                                .cmp(&right_model.context_window.unwrap_or(0))
-                        })
+                    left_fits.cmp(&right_fits).then_with(|| {
+                        left_model
+                            .context_window
+                            .unwrap_or(0)
+                            .cmp(&right_model.context_window.unwrap_or(0))
+                    })
                 })
                 .map(|(index, _)| index)
                 .unwrap_or(0)
@@ -1407,6 +1401,7 @@ mod tests {
         Arc::new(RwLock::new(RoutingState::new()))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn test_candidate(
         target_id: &str,
         provider_id: &str,

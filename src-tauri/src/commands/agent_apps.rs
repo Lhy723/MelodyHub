@@ -182,35 +182,36 @@ pub fn save_agent_app_config(
     }
 
     match app {
-        AgentApp::Codex => save_codex(
-            &path,
-            &endpoint,
-            &model,
-            &config.available_models,
-            config.auth_token.as_deref(),
-            &reasoning_effort,
-            &config.feature_flags,
-        )?,
-        AgentApp::Claude => save_claude(
-            &path,
-            &endpoint,
-            &model,
-            &config.available_models,
-            config.auth_token.as_deref(),
-            &reasoning_effort,
-            config.thinking_enabled,
-            &config.feature_flags,
-        )?,
-        AgentApp::OpenCode => save_opencode(
-            &path,
-            &endpoint,
-            &model,
-            &config.available_models,
-            config.auth_token.as_deref(),
-            &reasoning_effort,
-            config.thinking_enabled,
-            &config.feature_flags,
-        )?,
+        AgentApp::Codex => save_codex(SaveTarget {
+            thinking_enabled: config.thinking_enabled,
+            path: &path,
+            endpoint: &endpoint,
+            model: &model,
+            available_models: &config.available_models,
+            auth_token: config.auth_token.as_deref(),
+            reasoning_effort: &reasoning_effort,
+            feature_flags: &config.feature_flags,
+        })?,
+        AgentApp::Claude => save_claude(SaveTarget {
+            path: &path,
+            endpoint: &endpoint,
+            model: &model,
+            available_models: &config.available_models,
+            auth_token: config.auth_token.as_deref(),
+            reasoning_effort: &reasoning_effort,
+            thinking_enabled: config.thinking_enabled,
+            feature_flags: &config.feature_flags,
+        })?,
+        AgentApp::OpenCode => save_opencode(SaveTarget {
+            path: &path,
+            endpoint: &endpoint,
+            model: &model,
+            available_models: &config.available_models,
+            auth_token: config.auth_token.as_deref(),
+            reasoning_effort: &reasoning_effort,
+            thinking_enabled: config.thinking_enabled,
+            feature_flags: &config.feature_flags,
+        })?,
     }
 
     load_status(app)
@@ -401,15 +402,29 @@ fn read_config_values(app: AgentApp, path: &Path) -> Result<AgentConfigValues, S
     }
 }
 
-fn save_codex(
-    path: &Path,
-    endpoint: &str,
-    model: &str,
-    available_models: &[String],
-    auth_token: Option<&str>,
-    reasoning_effort: &str,
-    feature_flags: &BTreeMap<String, bool>,
-) -> Result<(), String> {
+/// Bundled parameters for saving an agent app config file.
+struct SaveTarget<'a> {
+    path: &'a Path,
+    endpoint: &'a str,
+    model: &'a str,
+    available_models: &'a [String],
+    auth_token: Option<&'a str>,
+    reasoning_effort: &'a str,
+    thinking_enabled: bool,
+    feature_flags: &'a BTreeMap<String, bool>,
+}
+
+fn save_codex(target: SaveTarget<'_>) -> Result<(), String> {
+    let SaveTarget {
+        path,
+        endpoint,
+        model,
+        available_models,
+        auth_token,
+        reasoning_effort,
+        feature_flags,
+        ..
+    } = target;
     let mut document = read_toml_document(path)?;
     document["model_provider"] = value(MELODY_PROVIDER_ID);
     if !model.is_empty() {
@@ -462,8 +477,8 @@ fn read_codex(path: &Path) -> Result<AgentConfigValues, String> {
         .unwrap_or(MELODY_PROVIDER_ID);
     // 只有当 config.toml 中显式写了 `model_provider = "melody-hub"` 时才视为托管。
     // 缺失该字段（如 ChatGPT 登录）或其他 provider 都视为非托管。
-    let is_managed = document.get("model_provider").is_some()
-        && provider_id == MELODY_PROVIDER_ID;
+    let is_managed =
+        document.get("model_provider").is_some() && provider_id == MELODY_PROVIDER_ID;
     let provider = document
         .get("model_providers")
         .and_then(Item::as_table_like)
@@ -507,16 +522,17 @@ fn read_codex(path: &Path) -> Result<AgentConfigValues, String> {
     })
 }
 
-fn save_claude(
-    path: &Path,
-    endpoint: &str,
-    model: &str,
-    available_models: &[String],
-    auth_token: Option<&str>,
-    reasoning_effort: &str,
-    thinking_enabled: bool,
-    feature_flags: &BTreeMap<String, bool>,
-) -> Result<(), String> {
+fn save_claude(target: SaveTarget<'_>) -> Result<(), String> {
+    let SaveTarget {
+        path,
+        endpoint,
+        model,
+        available_models,
+        auth_token,
+        reasoning_effort,
+        thinking_enabled,
+        feature_flags,
+    } = target;
     let mut root = read_json_object(path)?;
     {
         let env = ensure_object(&mut root, "env")?;
@@ -614,16 +630,17 @@ fn read_claude(path: &Path) -> Result<AgentConfigValues, String> {
     })
 }
 
-fn save_opencode(
-    path: &Path,
-    endpoint: &str,
-    model: &str,
-    available_models: &[String],
-    auth_token: Option<&str>,
-    reasoning_effort: &str,
-    thinking_enabled: bool,
-    feature_flags: &BTreeMap<String, bool>,
-) -> Result<(), String> {
+fn save_opencode(target: SaveTarget<'_>) -> Result<(), String> {
+    let SaveTarget {
+        path,
+        endpoint,
+        model,
+        available_models,
+        auth_token,
+        reasoning_effort,
+        thinking_enabled,
+        feature_flags,
+    } = target;
     let mut root = read_json_object(path)?;
     let providers = ensure_object(&mut root, "provider")?;
     let provider = providers
@@ -712,13 +729,7 @@ fn read_opencode(path: &Path) -> Result<AgentConfigValues, String> {
         .unwrap_or_default();
     // 所有模型名（排除默认模型）作为可用模型列表
     let available_models: Vec<String> = models_obj
-        .map(|models| {
-            models
-                .keys()
-                .filter(|k| *k != &model)
-                .cloned()
-                .collect()
-        })
+        .map(|models| models.keys().filter(|k| *k != &model).cloned().collect())
         .unwrap_or_default();
     let model_options = models_obj
         .and_then(|models| models.get(&model))
@@ -1291,15 +1302,16 @@ mode = "limited"
         ));
         let mut feature_flags = BTreeMap::new();
         feature_flags.insert("web_search".to_string(), true);
-        save_codex(
-            &path,
-            "http://127.0.0.1:8080/v1",
-            "deepseek-v4-flash",
-            &[],
-            Some("token"),
-            "xhigh",
-            &feature_flags,
-        )
+        save_codex(SaveTarget {
+            thinking_enabled: false,
+            path: &path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "deepseek-v4-flash",
+            available_models: &[],
+            auth_token: Some("token"),
+            reasoning_effort: "xhigh",
+            feature_flags: &feature_flags,
+        })
         .unwrap();
         let values = read_codex(&path).unwrap();
         assert_eq!(values.endpoint, "http://127.0.0.1:8080/v1");
@@ -1325,27 +1337,27 @@ mode = "limited"
         let mut opencode_flags = BTreeMap::new();
         opencode_flags.insert("encryptedReasoning".to_string(), true);
 
-        save_claude(
-            &claude_path,
-            "http://127.0.0.1:8080/v1",
-            "claude-sonnet",
-            &[],
-            Some("token"),
-            "medium",
-            true,
-            &claude_flags,
-        )
+        save_claude(SaveTarget {
+            path: &claude_path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "claude-sonnet",
+            available_models: &[],
+            auth_token: Some("token"),
+            reasoning_effort: "medium",
+            thinking_enabled: true,
+            feature_flags: &claude_flags,
+        })
         .unwrap();
-        save_opencode(
-            &opencode_path,
-            "http://127.0.0.1:8080/v1",
-            "deepseek-v4-flash",
-            &[],
-            Some("token"),
-            "high",
-            true,
-            &opencode_flags,
-        )
+        save_opencode(SaveTarget {
+            path: &opencode_path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "deepseek-v4-flash",
+            available_models: &[],
+            auth_token: Some("token"),
+            reasoning_effort: "high",
+            thinking_enabled: true,
+            feature_flags: &opencode_flags,
+        })
         .unwrap();
 
         let claude_values = read_claude(&claude_path).unwrap();
@@ -1385,73 +1397,75 @@ mode = "limited"
             uuid::Uuid::new_v4()
         ));
 
-        save_codex(
-            &codex_path,
-            "http://127.0.0.1:8080/v1",
-            "codex-model",
-            &[],
-            None,
-            "",
-            &BTreeMap::new(),
-        )
+        save_codex(SaveTarget {
+            thinking_enabled: false,
+            path: &codex_path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "codex-model",
+            available_models: &[],
+            auth_token: None,
+            reasoning_effort: "",
+            feature_flags: &BTreeMap::new(),
+        })
         .unwrap();
-        save_codex(
-            &codex_path,
-            "http://127.0.0.1:8080/v1",
-            "",
-            &[],
-            None,
-            "",
-            &BTreeMap::new(),
-        )
+        save_codex(SaveTarget {
+            thinking_enabled: false,
+            path: &codex_path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "",
+            available_models: &[],
+            auth_token: None,
+            reasoning_effort: "",
+            feature_flags: &BTreeMap::new(),
+        })
         .unwrap();
         assert!(read_codex(&codex_path).unwrap().model.is_empty());
 
-        save_claude(
-            &claude_path,
-            "http://127.0.0.1:8080",
-            "claude-model",
-            &[],
-            None,
-            "",
-            false,
-            &BTreeMap::new(),
-        )
+        save_claude(SaveTarget {
+            path: &claude_path,
+            endpoint: "http://127.0.0.1:8080",
+            model: "claude-model",
+            available_models: &[],
+            auth_token: None,
+            reasoning_effort: "",
+            thinking_enabled: false,
+            feature_flags: &BTreeMap::new(),
+        })
         .unwrap();
-        save_claude(
-            &claude_path,
-            "http://127.0.0.1:8080",
-            "",
-            &[],
-            None,
-            "",
-            false,
-            &BTreeMap::new(),
-        )
+        save_claude(SaveTarget {
+            path: &claude_path,
+            endpoint: "http://127.0.0.1:8080",
+            model: "",
+            available_models: &[],
+            auth_token: None,
+            reasoning_effort: "",
+            thinking_enabled: false,
+            feature_flags: &BTreeMap::new(),
+        })
         .unwrap();
         assert!(read_claude(&claude_path).unwrap().model.is_empty());
 
-        save_opencode(
-            &opencode_path,
-            "http://127.0.0.1:8080/v1",
-            "opencode-model",
-            &[],
-            None,
-            "",
-            false,
-            &BTreeMap::new(),
-        )
+        save_opencode(SaveTarget {
+            path: &opencode_path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "opencode-model",
+            available_models: &[],
+            auth_token: None,
+            reasoning_effort: "",
+            thinking_enabled: false,
+            feature_flags: &BTreeMap::new(),
+        })
         .unwrap();
-        save_opencode(
-            &opencode_path,
-            "http://127.0.0.1:8080/v1",
-            "",
-            &[],
-            None,
-            "",
-            false,
-            &BTreeMap::new(),
-        )
+        save_opencode(SaveTarget {
+            path: &opencode_path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "",
+            available_models: &[],
+            auth_token: None,
+            reasoning_effort: "",
+            thinking_enabled: false,
+            feature_flags: &BTreeMap::new(),
+        })
         .unwrap();
         assert!(read_opencode(&opencode_path).unwrap().model.is_empty());
 

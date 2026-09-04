@@ -1899,9 +1899,7 @@ mod tests {
             ProtocolKind::OpenAiResponses,
         );
 
-        let first = concat!(
-            "data: {\"id\":\"chat_1\",\"model\":\"deepseek-v4\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_content\":\"The\"},\"finish_reason\":\"stop\"}]}\n\n"
-        );
+        let first = "data: {\"id\":\"chat_1\",\"model\":\"deepseek-v4\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_content\":\"The\"},\"finish_reason\":\"stop\"}]}\n\n";
         let first_output =
             String::from_utf8(converter.push(first.as_bytes()).unwrap()).unwrap();
         assert!(first_output.contains("\"delta\":\"The\""));
