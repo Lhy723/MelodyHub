@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { ChevronDown, ListFilter, Maximize2, Minimize2, SlidersHorizontal } from 'lucide-react';
+import { ListFilter, Maximize2, Minimize2, SlidersHorizontal } from 'lucide-react';
 import { Card, CardDesc, CardTitle, Dropdown, Input, Switch } from '../../components/ui';
+import { GroupChevron, SettingRow, StatusBanner } from './SettingRow';
+import './settings-shared.css';
 
 type Translate = (key: string) => string;
 type JsonObject = Record<string, unknown>;
@@ -530,47 +531,6 @@ function formatConfig(config: JsonObject): string {
   return `${JSON.stringify(config, null, 2)}\n`;
 }
 
-function ClaudeSettingRow({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 'var(--spacer-20)',
-        padding: 'var(--spacer-12) 0',
-        borderBottom: '1px solid var(--border-neutral-l1)',
-        flexWrap: 'wrap',
-      }}
-    >
-      <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-        <div
-          style={{
-            color: 'var(--text-secondary)',
-            fontSize: 'var(--body-sm-font-size)',
-            fontWeight: 'var(--font-weight-medium)',
-          }}
-        >
-          {label}
-        </div>
-        {hint && (
-          <div
-            style={{
-              marginTop: 4,
-              color: 'var(--text-tertiary)',
-              fontSize: 'var(--body-xs-font-size)',
-              lineHeight: 1.45,
-            }}
-          >
-            {hint}
-          </div>
-        )}
-      </div>
-      <div style={{ flex: '0 1 420px', minWidth: 240, display: 'flex', justifyContent: 'flex-end' }}>{children}</div>
-    </div>
-  );
-}
-
 function JsonValueEditor({
   value,
   onCommit,
@@ -613,6 +573,7 @@ function JsonValueEditor({
         }}
         spellCheck={false}
         placeholder={placeholder}
+        className="mh-textarea"
         style={{
           display: 'block',
           width: '100%',
@@ -620,14 +581,12 @@ function JsonValueEditor({
           resize: 'vertical',
           boxSizing: 'border-box',
           padding: 'var(--spacer-8) var(--spacer-10)',
-          border: `1px solid ${invalid ? 'var(--status-error-default)' : 'var(--border-neutral-l1)'}`,
-          borderRadius: 'var(--radius-8)',
+          borderColor: invalid ? 'var(--status-error-default)' : undefined,
           background: 'var(--bg-base-default)',
           color: 'var(--text-default)',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          fontFamily: 'var(--font-family-mono)',
           fontSize: 'var(--body-xs-font-size)',
           lineHeight: 1.5,
-          outline: 'none',
         }}
       />
       {invalid && (
@@ -666,6 +625,7 @@ function StringListEditor({
         onCommit(next.length ? next : undefined);
       }}
       placeholder={placeholder}
+      className="mh-textarea"
       style={{
         display: 'block',
         width: '100%',
@@ -673,14 +633,11 @@ function StringListEditor({
         resize: 'vertical',
         boxSizing: 'border-box',
         padding: 'var(--spacer-8) var(--spacer-10)',
-        border: '1px solid var(--border-neutral-l1)',
-        borderRadius: 'var(--radius-8)',
         background: 'var(--bg-base-default)',
         color: 'var(--text-default)',
         fontFamily: 'inherit',
         fontSize: 'var(--body-sm-font-size)',
         lineHeight: 1.5,
-        outline: 'none',
       }}
     />
   );
@@ -817,6 +774,7 @@ export function ClaudeSettingsEditor({ content, onChange, t }: ClaudeSettingsEdi
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-6)' }}>
           <button
             type="button"
+            className="icon-action-btn"
             onClick={() =>
               setOpenGroups(
                 Object.fromEntries(GROUP_KEYS.map((group) => [group, true])) as Record<ClaudeSettingGroup, boolean>,
@@ -824,18 +782,12 @@ export function ClaudeSettingsEditor({ content, onChange, t }: ClaudeSettingsEdi
             }
             title={t('applications.claudeSettings.expandAll')}
             aria-label={t('applications.claudeSettings.expandAll')}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-tertiary)',
-              cursor: 'pointer',
-              padding: 4,
-            }}
           >
             <Maximize2 size={14} />
           </button>
           <button
             type="button"
+            className="icon-action-btn"
             onClick={() =>
               setOpenGroups(
                 Object.fromEntries(GROUP_KEYS.map((group) => [group, false])) as Record<ClaudeSettingGroup, boolean>,
@@ -843,13 +795,6 @@ export function ClaudeSettingsEditor({ content, onChange, t }: ClaudeSettingsEdi
             }
             title={t('applications.claudeSettings.collapseAll')}
             aria-label={t('applications.claudeSettings.collapseAll')}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--text-tertiary)',
-              cursor: 'pointer',
-              padding: 4,
-            }}
           >
             <Minimize2 size={14} />
           </button>
@@ -867,18 +812,9 @@ export function ClaudeSettingsEditor({ content, onChange, t }: ClaudeSettingsEdi
       </div>
 
       {!config ? (
-        <div
-          style={{
-            margin: 'var(--spacer-16) var(--spacer-20)',
-            padding: 'var(--spacer-10)',
-            borderRadius: 'var(--radius-8)',
-            background: 'color-mix(in srgb, var(--status-error-default) 10%, transparent)',
-            color: 'var(--status-error-default)',
-            fontSize: 'var(--body-sm-font-size)',
-          }}
-        >
+        <StatusBanner tone="error" style={{ margin: 'var(--spacer-16) var(--spacer-20)' }}>
           {t('applications.claudeSettings.invalidJson')}
-        </div>
+        </StatusBanner>
       ) : (
         <div style={{ padding: 'var(--spacer-8) var(--spacer-20) var(--spacer-16)' }}>
           {GROUP_KEYS.map((group) => {
@@ -918,25 +854,19 @@ export function ClaudeSettingsEditor({ content, onChange, t }: ClaudeSettingsEdi
                     }}
                   >
                     {groupSpecs.length}
-                    <ChevronDown
-                      size={14}
-                      style={{
-                        transform: opened ? 'rotate(0deg)' : 'rotate(-90deg)',
-                        transition: 'transform 160ms ease',
-                      }}
-                    />
+                    <GroupChevron open={opened} />
                   </span>
                 </button>
                 {opened && (
                   <div>
                     {groupSpecs.map((spec) => (
-                      <ClaudeSettingRow
+                      <SettingRow
                         key={spec.key}
                         label={LABELS[spec.key] ?? humanizeKey(spec.key)}
                         hint={spec.key}
                       >
                         {controlFor(spec, config, updateSetting, t)}
-                      </ClaudeSettingRow>
+                      </SettingRow>
                     ))}
                   </div>
                 )}

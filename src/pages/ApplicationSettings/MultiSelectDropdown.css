@@ -1,0 +1,156 @@
+/* ApplicationSettings MultiSelectDropdown — interior popover 底座的触发器与面板覆盖样式。
+   底座行为（定位/翻转/滚动锁/焦点管理/外点关闭/Escape）来自 interior/popover，
+   这里只覆盖触发器形态与面板内容布局。 */
+
+.mh-multiselect__trigger {
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding: var(--spacer-4) var(--spacer-10) var(--spacer-4) var(--spacer-12);
+  border-color: var(--border-neutral-l1);
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-default);
+  flex-wrap: wrap;
+}
+
+.mh-multiselect__trigger[data-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mh-multiselect__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacer-4);
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.mh-multiselect__placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+}
+
+.mh-multiselect__overflow {
+  color: var(--text-tertiary);
+  font-size: var(--body-xs-font-size);
+}
+
+.mh-multiselect__side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  flex-shrink: 0;
+}
+
+.mh-multiselect__count {
+  color: var(--text-tertiary);
+  font-size: var(--body-xs-font-size);
+}
+
+/* 面板：搜索行吸顶，选项列表随内容滚动 */
+.mh-multiselect__panel {
+  min-width: 240px;
+}
+
+.mh-multiselect__panel .mh-popover__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.mh-multiselect__search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  padding: var(--spacer-8) var(--spacer-12);
+  margin: calc(-1 * var(--spacer-12)) calc(-1 * var(--spacer-12)) 0;
+  border-bottom: 1px solid var(--border-neutral-l1);
+  background: var(--bg-menu);
+  flex-shrink: 0;
+}
+
+.mh-multiselect__search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-default);
+  font-size: var(--body-sm-font-size);
+  font-family: inherit;
+}
+
+.mh-multiselect__search input::placeholder {
+  color: var(--text-disabled);
+}
+
+.mh-multiselect__list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacer-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacer-2);
+}
+
+.mh-multiselect__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  padding: var(--spacer-6) var(--spacer-10);
+  border-radius: var(--radius-6);
+  color: var(--text-default);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mh-multiselect__option:hover {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-multiselect__option[aria-selected='true'] {
+  color: var(--text-brand);
+  background: var(--bg-brand-popup);
+}
+
+.mh-multiselect__checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-4);
+  border: 1px solid var(--border-neutral-l2);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.mh-multiselect__option[aria-selected='true'] .mh-multiselect__checkbox {
+  border: none;
+  background: var(--bg-brand);
+}
+
+.mh-multiselect__option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh-multiselect__empty {
+  padding: var(--spacer-16) var(--spacer-12);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--body-sm-font-size);
+}

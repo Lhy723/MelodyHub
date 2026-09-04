@@ -1,6 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useId } from 'react';
-import type { ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertCircle,
@@ -32,6 +30,9 @@ import {
 import { desktopApi, type AgentAppConfigInput, type AgentAppId, type AgentAppStatus } from '../../lib/desktopApi';
 import { LoadingButton } from '../../components/interior/loading-button';
 import { Tabs } from '../../components/interior/tabs';
+import { Popover } from '../../components/interior/popover';
+import { SettingRow, StatusBanner } from './SettingRow';
+import './MultiSelectDropdown.css';
 import { useProviderStore } from '../../store/providerStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CodexSettingsEditor } from './CodexSettingsEditor';
@@ -151,16 +152,30 @@ function statusColor(status: AgentAppStatus): string {
 function SaveIndicator({ state, error, t }: { state: SaveState; error?: string; t: (key: string) => string }) {
   if (state === 'saving') {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)' }}>
-        <Loader2 size={13} className="animate-spin" />
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 'var(--spacer-4)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <Loader2 size={12} className="animate-spin" />
         {t('applications.saveState.saving')}
       </span>
     );
   }
   if (state === 'saved') {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--status-success-default)' }}>
-        <CheckCircle2 size={13} />
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 'var(--spacer-4)',
+          color: 'var(--status-success-default)',
+        }}
+      >
+        <CheckCircle2 size={12} />
         {t('applications.saveState.saved')}
       </span>
     );
@@ -169,75 +184,43 @@ function SaveIndicator({ state, error, t }: { state: SaveState; error?: string; 
     return (
       <span
         title={error}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--status-error-default)' }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 'var(--spacer-4)',
+          color: 'var(--status-error-default)',
+        }}
       >
-        <AlertCircle size={13} />
+        <AlertCircle size={12} />
         {error || t('applications.saveState.error')}
       </span>
     );
   }
   if (state === 'dirty') {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-tertiary)' }}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 'var(--spacer-4)',
+          color: 'var(--text-tertiary)',
+        }}
+      >
         {t('applications.saveState.pending')}
       </span>
     );
   }
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-tertiary)' }}>
-      {t('applications.saveState.idle')}
-    </span>
-  );
-}
-
-function SettingRow({
-  label,
-  hint,
-  children,
-  last = false,
-}: {
-  label: ReactNode;
-  hint?: string;
-  children: ReactNode;
-  last?: boolean;
-}) {
-  return (
-    <div
+    <span
       style={{
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 'var(--spacer-16)',
-        padding: 'var(--spacer-10) 0',
-        borderBottom: last ? 'none' : '1px solid var(--border-neutral-l1)',
-        flexWrap: 'wrap',
+        gap: 'var(--spacer-4)',
+        color: 'var(--text-tertiary)',
       }}
     >
-      <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-        <div
-          style={{
-            color: 'var(--text-secondary)',
-            fontSize: 'var(--body-sm-font-size)',
-            fontWeight: 'var(--font-weight-medium)',
-          }}
-        >
-          {label}
-        </div>
-        {hint && (
-          <div
-            style={{
-              marginTop: 4,
-              color: 'var(--text-tertiary)',
-              fontSize: 'var(--body-xs-font-size)',
-              lineHeight: 1.45,
-            }}
-          >
-            {hint}
-          </div>
-        )}
-      </div>
-      <div style={{ flex: '0 1 380px', minWidth: 220, display: 'flex', justifyContent: 'flex-end' }}>{children}</div>
-    </div>
+      {t('applications.saveState.idle')}
+    </span>
   );
 }
 
@@ -297,7 +280,8 @@ function SwitchGrid({ items, last = false }: { items: SwitchItem[]; last?: boole
 
 // ═══════════════════════════════════════════════════════════════
 // MultiSelectDropdown — 紧凑的多选下拉组件
-// 触发器只占一行高度，点击后弹出带搜索的复选框列表
+// interior popover 底座（定位/翻转/滚动锁/焦点管理/外点与 Escape 关闭）
+// + tag-input 的 chip 形态展示已选项；触发器只占一行高度
 // ═══════════════════════════════════════════════════════════════
 interface MultiSelectDropdownProps {
   options: string[];
@@ -322,11 +306,9 @@ function MultiSelectDropdown({
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [popupRect, setPopupRect] = useState<{ top: number; left: number; width: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const listboxId = useId();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const disabledByEmpty = options.length === 0;
+  const isDisabled = disabled || disabledByEmpty;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -335,40 +317,14 @@ function MultiSelectDropdown({
   }, [options, query]);
 
   useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (!wrapRef.current?.contains(target) && !popupRef.current?.contains(target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    if (!open) setQuery('');
   }, [open]);
 
-  const updatePosition = useCallback(() => {
-    if (wrapRef.current) {
-      const rect = wrapRef.current.getBoundingClientRect();
-      setPopupRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
-    }
-  }, []);
-
+  // popover 打开后把焦点交给搜索框（popover 先聚焦面板，这里随后接管）
   useEffect(() => {
-    if (open) {
-      updatePosition();
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-    setPopupRect(null);
-    return;
-  }, [open, updatePosition]);
-
-  useEffect(() => {
-    if (!open) setQuery('');
+    if (!open) return;
+    const id = window.setTimeout(() => searchInputRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
   }, [open]);
 
   const toggle = (m: string) => {
@@ -379,8 +335,7 @@ function MultiSelectDropdown({
     }
   };
 
-  const remove = (m: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const remove = (m: string) => {
     onChange(selected.filter((x) => x !== m));
   };
 
@@ -391,225 +346,107 @@ function MultiSelectDropdown({
         ? placeholder
         : `${selected.length} / ${options.length}`;
 
-  return (
-    <div ref={wrapRef} style={{ position: 'relative', width: '100%' }}>
-      <button
-        type="button"
-        disabled={disabled || options.length === 0}
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={open ? listboxId : undefined}
-        style={{
-          width: '100%',
-          minHeight: 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 'var(--spacer-8)',
-          padding: 'var(--spacer-4) var(--spacer-10) var(--spacer-4) var(--spacer-12)',
-          borderRadius: 'var(--radius-8)',
-          border: '1px solid var(--border-neutral-l1)',
-          background: 'var(--bg-base-default)',
-          color: selected.length > 0 ? 'var(--text-default)' : 'var(--text-tertiary)',
-          fontSize: 'var(--body-sm-font-size)',
-          fontFamily: 'inherit',
-          cursor: disabled || options.length === 0 ? 'not-allowed' : 'pointer',
-          opacity: disabled || options.length === 0 ? 0.6 : 1,
-          outline: open ? '2px solid var(--bg-brand-popup)' : 'none',
-          outlineOffset: -1,
-          transition: 'border-color var(--transition-fast), outline var(--transition-fast)',
-        }}
-      >
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 'var(--spacer-4)',
-            overflow: 'hidden',
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          {selected.length === 0 ? (
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {options.length === 0 ? emptyText : placeholder}
-            </span>
-          ) : (
-            selected.slice(0, 3).map((m) => (
+  // 已选项：tag-input 的 chip 形态（radius-6 / 24px / --bg-overlay-l1 / remove 钮 focus 环）
+  const chips = (
+    <span className="mh-multiselect__chips">
+      {selected.length === 0 ? (
+        <span className="mh-multiselect__placeholder">{disabledByEmpty ? emptyText : placeholder}</span>
+      ) : (
+        <>
+          {selected.slice(0, 3).map((m) => (
+            <span key={m} className="mh-tag-input__chip">
+              <span className="mh-tag-input__chip-text">{m}</span>
               <span
-                key={m}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '1px 6px 1px 8px',
-                  borderRadius: 'var(--radius-4)',
-                  background: 'var(--bg-overlay-l1)',
-                  color: 'var(--text-secondary)',
-                  fontSize: 'var(--body-xs-font-size)',
-                  maxWidth: 160,
+                className="mh-tag-input__remove"
+                onClick={(e) => {
+                  // 只移除，不触发 popover 开合
+                  e.stopPropagation();
+                  remove(m);
                 }}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m}</span>
-                <X
-                  size={11}
-                  onClick={(e) => remove(m, e)}
-                  style={{ cursor: 'pointer', color: 'var(--icon-tertiary)', flexShrink: 0 }}
-                />
+                <X size={11} />
               </span>
-            ))
-          )}
-          {selected.length > 3 && (
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)' }}>
-              +{selected.length - 3}
             </span>
-          )}
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-6)', flexShrink: 0 }}>
-          {selected.length > 0 && (
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)' }}>{summaryLabel}</span>
-          )}
-          <ChevronDown
-            size={14}
-            style={{
-              color: 'var(--icon-secondary)',
-              transition: 'transform var(--transition-normal)',
-              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}
-          />
-        </span>
-      </button>
+          ))}
+          {selected.length > 3 && <span className="mh-multiselect__overflow">+{selected.length - 3}</span>}
+        </>
+      )}
+    </span>
+  );
 
-      {open &&
-        popupRect &&
-        createPortal(
-          <div
-            ref={popupRef}
-            role="listbox"
-            id={listboxId}
-            style={{
-              position: 'fixed',
-              top: popupRect.top,
-              left: popupRect.left,
-              width: popupRect.width,
-              zIndex: 99999,
-              maxHeight: 320,
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 'var(--radius-8)',
-              border: '1px solid var(--border-neutral-l1)',
-              background: 'var(--bg-base-default)',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--spacer-6)',
-                padding: 'var(--spacer-8) var(--spacer-12)',
-                borderBottom: '1px solid var(--border-neutral-l1)',
-                flexShrink: 0,
-              }}
-            >
-              <Search size={14} style={{ color: 'var(--icon-tertiary)', flexShrink: 0 }} />
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={searchPlaceholder}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  color: 'var(--text-default)',
-                  fontSize: 'var(--body-sm-font-size)',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </div>
-            <div
-              ref={listRef}
-              className="ds-scroll"
-              style={{
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                padding: 'var(--spacer-4)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--spacer-2)',
-                flex: 1,
-                minHeight: 0,
-              }}
-            >
-              {filtered.length === 0 ? (
-                <div
-                  style={{
-                    padding: 'var(--spacer-16) var(--spacer-12)',
-                    textAlign: 'center',
-                    color: 'var(--text-tertiary)',
-                    fontSize: 'var(--body-sm-font-size)',
-                  }}
-                >
-                  {noMatchText}
-                </div>
-              ) : (
-                filtered.map((m) => {
-                  const checked = selected.includes(m);
-                  return (
-                    <div
-                      key={m}
-                      role="option"
-                      aria-selected={checked}
-                      onClick={() => toggle(m)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--spacer-8)',
-                        padding: 'var(--spacer-6) var(--spacer-10)',
-                        borderRadius: 'var(--radius-6)',
-                        color: checked ? 'var(--text-brand)' : 'var(--text-default)',
-                        background: checked ? 'var(--bg-brand-popup)' : 'transparent',
-                        cursor: 'pointer',
-                        transition: 'background var(--transition-fast)',
-                        userSelect: 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!checked) e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!checked) e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: 16,
-                          height: 16,
-                          borderRadius: 'var(--radius-4)',
-                          border: checked ? 'none' : '1px solid var(--border-neutral-l2)',
-                          background: checked ? 'var(--bg-brand)' : 'transparent',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {checked && <Check size={11} style={{ color: '#fff' }} />}
-                      </span>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>,
-          document.body,
+  const side = (
+    <span className="mh-multiselect__side">
+      {selected.length > 0 && <span className="mh-multiselect__count">{summaryLabel}</span>}
+      <ChevronDown
+        size={14}
+        style={{
+          color: 'var(--icon-secondary)',
+          transition: 'transform var(--transition-normal)',
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+        }}
+      />
+    </span>
+  );
+
+  if (isDisabled) {
+    return (
+      <div className="mh-multiselect__trigger" data-disabled="true" aria-disabled="true">
+        {chips}
+        {side}
+      </div>
+    );
+  }
+
+  return (
+    <Popover
+      trigger={
+        <>
+          {chips}
+          {side}
+        </>
+      }
+      label={placeholder}
+      className="mh-multiselect__panel"
+      triggerClassName="mh-multiselect__trigger"
+      side="bottom"
+      align="start"
+      offset={6}
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <div className="mh-multiselect__search">
+        <Search size={14} style={{ color: 'var(--icon-tertiary)', flexShrink: 0 }} />
+        <input
+          ref={searchInputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={searchPlaceholder}
+        />
+      </div>
+      <div className="mh-multiselect__list ds-scroll">
+        {filtered.length === 0 ? (
+          <div className="mh-multiselect__empty">{noMatchText}</div>
+        ) : (
+          filtered.map((m) => {
+            const checked = selected.includes(m);
+            return (
+              <div
+                key={m}
+                role="option"
+                aria-selected={checked}
+                className="mh-multiselect__option"
+                onClick={() => toggle(m)}
+              >
+                <span className="mh-multiselect__checkbox">
+                  {checked && <Check size={11} style={{ color: 'var(--text-onbrand)' }} />}
+                </span>
+                <span className="mh-multiselect__option-label">{m}</span>
+              </div>
+            );
+          })
         )}
-    </div>
+      </div>
+    </Popover>
   );
 }
 
@@ -989,19 +826,9 @@ export const ApplicationSettings: React.FC = () => {
       </div>
 
       {loadError && (
-        <Card
-          style={{
-            marginBottom: 'var(--spacer-16)',
-            borderColor: 'var(--status-error-default)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--spacer-8)',
-            color: 'var(--status-error-default)',
-          }}
-        >
-          <AlertCircle size={16} />
-          <span>{loadError}</span>
-        </Card>
+        <StatusBanner tone="error" icon={AlertCircle} style={{ marginBottom: 'var(--spacer-16)' }}>
+          {loadError}
+        </StatusBanner>
       )}
 
       {loading ? (
@@ -1131,37 +958,19 @@ export const ApplicationSettings: React.FC = () => {
                   </div>
 
                   {activeStatus.error && (
-                    <div
-                      style={{
-                        margin: 'var(--spacer-16) var(--spacer-20) 0',
-                        padding: 'var(--spacer-8) var(--spacer-10)',
-                        borderRadius: 'var(--radius-6)',
-                        background: 'color-mix(in srgb, var(--status-error-default) 10%, transparent)',
-                        color: 'var(--status-error-default)',
-                        fontSize: 'var(--body-sm-font-size)',
-                      }}
-                    >
+                    <StatusBanner tone="error" style={{ margin: 'var(--spacer-16) var(--spacer-20) 0' }}>
                       {activeStatus.error}
-                    </div>
+                    </StatusBanner>
                   )}
 
                   {!activeStatus.isManaged && activeStatus.configExists && !activeStatus.error && (
-                    <div
-                      style={{
-                        margin: 'var(--spacer-16) var(--spacer-20) 0',
-                        padding: 'var(--spacer-8) var(--spacer-10)',
-                        borderRadius: 'var(--radius-6)',
-                        background: 'color-mix(in srgb, var(--status-warning-default, var(--text-secondary)) 8%, transparent)',
-                        color: 'var(--text-secondary)',
-                        fontSize: 'var(--body-sm-font-size)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--spacer-6)',
-                      }}
+                    <StatusBanner
+                      tone="warning"
+                      icon={AlertCircle}
+                      style={{ margin: 'var(--spacer-16) var(--spacer-20) 0' }}
                     >
-                      <AlertCircle size={14} style={{ flexShrink: 0, color: 'var(--status-warning-default, var(--text-secondary))' }} />
                       {t('applications.notManagedHint')}
-                    </div>
+                    </StatusBanner>
                   )}
 
                   <div style={{ padding: 'var(--spacer-16)' }}>
@@ -1502,6 +1311,7 @@ export const ApplicationSettings: React.FC = () => {
                       spellCheck={false}
                       aria-label={t('applications.finalConfig.title')}
                       placeholder={t('applications.finalConfig.empty')}
+                      className="mh-textarea"
                       style={{
                         display: 'block',
                         width: '100%',
@@ -1509,14 +1319,11 @@ export const ApplicationSettings: React.FC = () => {
                         resize: 'vertical',
                         boxSizing: 'border-box',
                         padding: 'var(--spacer-12)',
-                        border: '1px solid var(--border-neutral-l1)',
-                        borderRadius: 'var(--radius-8)',
                         background: 'var(--bg-base-default)',
                         color: 'var(--text-default)',
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                        fontFamily: 'var(--font-family-mono)',
                         fontSize: 'var(--body-sm-font-size)',
                         lineHeight: 1.6,
-                        outline: 'none',
                       }}
                     />
                     <p

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronDown, ListFilter, Maximize2, Minimize2, SlidersHorizontal } from 'lucide-react';
+import { ListFilter, Maximize2, Minimize2, SlidersHorizontal } from 'lucide-react';
 import { Card, CardDesc, CardTitle, Dropdown, Input, Switch } from '../../components/ui';
+import { GroupChevron, SettingRow } from './SettingRow';
+import './settings-shared.css';
 
 type Translate = (key: string) => string;
 type CodexValue = unknown;
@@ -753,9 +755,9 @@ function KeyBadge({ keyName }: { keyName: string }) {
     <code
       style={{
         marginLeft: 'var(--spacer-6)',
-        padding: '1px 5px',
-        fontSize: '10px',
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        padding: 'var(--spacer-4) var(--spacer-6)',
+        fontSize: 'var(--body-xs-font-size)',
+        fontFamily: 'var(--font-family-mono)',
         color: 'var(--text-tertiary)',
         background: 'var(--bg-overlay-l1)',
         borderRadius: 'var(--radius-4)',
@@ -768,28 +770,11 @@ function KeyBadge({ keyName }: { keyName: string }) {
   );
 }
 
-function SettingRow({ label, hint, keyName, children }: { label: string; hint?: string; keyName: string; children: ReactNode }) {
+function SettingRowWithKey({ label, hint, keyName, children }: { label: string; hint?: string; keyName: string; children: ReactNode }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 'var(--spacer-16)',
-        padding: 'var(--spacer-8) 0',
-        borderBottom: '1px solid var(--border-neutral-l1)',
-        flexWrap: 'wrap',
-      }}
-    >
-      <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--body-sm-font-size)', fontWeight: 'var(--font-weight-medium)' }}>
-          {label}
-          <KeyBadge keyName={keyName} />
-        </div>
-        {hint && <div style={{ marginTop: 2, color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)', lineHeight: 1.4 }}>{hint}</div>}
-      </div>
-      <div style={{ flex: '0 1 380px', minWidth: 200, display: 'flex', justifyContent: 'flex-end' }}>{children}</div>
-    </div>
+    <SettingRow label={<>{label}<KeyBadge keyName={keyName} /></>} hint={hint}>
+      {children}
+    </SettingRow>
   );
 }
 
@@ -852,11 +837,12 @@ function JsonValueEditor({ value, onCommit, placeholder, t }: { value: CodexValu
         }}
         spellCheck={false}
         placeholder={placeholder}
+        className="mh-textarea"
         style={{
           display: 'block', width: '100%', minHeight: 76, resize: 'vertical', boxSizing: 'border-box',
-          padding: 'var(--spacer-8) var(--spacer-10)', border: `1px solid ${invalid ? 'var(--status-error-default)' : 'var(--border-neutral-l1)'}`,
-          borderRadius: 'var(--radius-8)', background: 'var(--bg-base-default)', color: 'var(--text-default)',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 'var(--body-xs-font-size)', lineHeight: 1.5, outline: 'none',
+          padding: 'var(--spacer-8) var(--spacer-10)', borderColor: invalid ? 'var(--status-error-default)' : undefined,
+          background: 'var(--bg-base-default)', color: 'var(--text-default)',
+          fontFamily: 'var(--font-family-mono)', fontSize: 'var(--body-xs-font-size)', lineHeight: 1.5,
         }}
       />
       {invalid && <div style={{ marginTop: 4, color: 'var(--status-error-default)', fontSize: 'var(--body-xs-font-size)' }}>{t('applications.codexSettings.invalidFieldJson')}</div>}
@@ -878,7 +864,8 @@ function StringListEditor({ value, onCommit, placeholder }: { value: CodexValue;
         onCommit(next.length ? next : undefined);
       }}
       placeholder={placeholder}
-      style={{ display: 'block', width: '100%', minHeight: 66, resize: 'vertical', boxSizing: 'border-box', padding: 'var(--spacer-8) var(--spacer-10)', border: '1px solid var(--border-neutral-l1)', borderRadius: 'var(--radius-8)', background: 'var(--bg-base-default)', color: 'var(--text-default)', fontFamily: 'inherit', fontSize: 'var(--body-sm-font-size)', lineHeight: 1.5, outline: 'none' }}
+      className="mh-textarea"
+      style={{ display: 'block', width: '100%', minHeight: 66, resize: 'vertical', boxSizing: 'border-box', padding: 'var(--spacer-8) var(--spacer-10)', background: 'var(--bg-base-default)', color: 'var(--text-default)', fontFamily: 'inherit', fontSize: 'var(--body-sm-font-size)', lineHeight: 1.5 }}
     />
   );
 }
@@ -992,8 +979,8 @@ export function CodexSettingsEditor({ settings, onSettingChange, t, managed = fa
           </div>
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-6)' }}>
-          <button type="button" onClick={() => setOpenGroups(Object.fromEntries(GROUPS.map((group) => [group, true])) as Record<CodexSettingGroup, boolean>)} title={t('applications.codexSettings.expandAll')} aria-label={t('applications.codexSettings.expandAll')} style={{ border: 'none', background: 'transparent', color: 'var(--text-tertiary)', cursor: 'pointer', padding: 4 }}><Maximize2 size={14} /></button>
-          <button type="button" onClick={() => setOpenGroups(Object.fromEntries(GROUPS.map((group) => [group, false])) as Record<CodexSettingGroup, boolean>)} title={t('applications.codexSettings.collapseAll')} aria-label={t('applications.codexSettings.collapseAll')} style={{ border: 'none', background: 'transparent', color: 'var(--text-tertiary)', cursor: 'pointer', padding: 4 }}><Minimize2 size={14} /></button>
+          <button type="button" className="icon-action-btn" onClick={() => setOpenGroups(Object.fromEntries(GROUPS.map((group) => [group, true])) as Record<CodexSettingGroup, boolean>)} title={t('applications.codexSettings.expandAll')} aria-label={t('applications.codexSettings.expandAll')}><Maximize2 size={14} /></button>
+          <button type="button" className="icon-action-btn" onClick={() => setOpenGroups(Object.fromEntries(GROUPS.map((group) => [group, false])) as Record<CodexSettingGroup, boolean>)} title={t('applications.codexSettings.collapseAll')} aria-label={t('applications.codexSettings.collapseAll')}><Minimize2 size={14} /></button>
         </div>
       </div>
       <div style={{ padding: 'var(--spacer-12) var(--spacer-20) 0' }}>
@@ -1008,7 +995,7 @@ export function CodexSettingsEditor({ settings, onSettingChange, t, managed = fa
             <section key={group} style={{ borderBottom: '1px solid var(--border-neutral-l1)' }}>
               <button type="button" onClick={() => setOpenGroups((current) => ({ ...current, [group]: !current[group] }))} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', border: 'none', background: 'transparent', padding: 'var(--spacer-14) 0', color: 'var(--text-default)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--body-sm-font-size)', fontWeight: 'var(--font-weight-strong)', textAlign: 'left' }}>
                 <span>{t(`applications.codexSettings.group.${group}`)}</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)', fontWeight: 'var(--font-weight-default)' }}>{groupSpecs.length}<ChevronDown size={14} style={{ transform: opened ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 160ms ease' }} /></span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)', fontWeight: 'var(--font-weight-default)' }}>{groupSpecs.length}<GroupChevron open={opened} /></span>
               </button>
               {opened && (
                 <div>
@@ -1020,9 +1007,9 @@ export function CodexSettingsEditor({ settings, onSettingChange, t, managed = fa
                         {otherSpecs.map((spec) => {
                           const { label, hint } = labelAndHintFor(spec.key);
                           return (
-                            <SettingRow key={spec.key} label={label} hint={hint} keyName={spec.key}>
+                            <SettingRowWithKey key={spec.key} label={label} hint={hint} keyName={spec.key}>
                               {controlFor(spec, settings, updateSetting, t)}
-                            </SettingRow>
+                            </SettingRowWithKey>
                           );
                         })}
                         {boolSpecs.length > 0 && (
