@@ -1,0 +1,96 @@
+/* MelodyHub interior popover —换肤样式
+   行为来自上游 interior popover.tsx（usePopover 定位/翻转/钳制 + 关闭交互原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-popover__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  height: 36px;
+  padding: 0 var(--spacer-12);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-8);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-popover__trigger:hover {
+  border-color: var(--border-neutral-l3);
+  color: var(--text-default);
+}
+
+.mh-popover__trigger:focus-visible {
+  border-color: var(--border-brand);
+  box-shadow: var(--shadow-md);
+}
+
+.mh-popover__floating {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+}
+
+.mh-popover__panel {
+  position: relative;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-menu);
+  padding: var(--spacer-12);
+  box-shadow: var(--shadow-floating);
+}
+
+.mh-popover__panel:focus-visible {
+  outline: none;
+}
+
+.mh-popover__arrow {
+  position: absolute;
+  display: block;
+  background: var(--bg-menu);
+  border: 0 solid var(--border-neutral-l2);
+}
+
+/* 箭头只显示朝向面板内部的两条边（对应上游 ARROW_EDGE 映射） */
+.mh-popover__arrow--bottom {
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.mh-popover__arrow--top {
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+.mh-popover__arrow--right {
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.mh-popover__arrow--left {
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.mh-popover__content {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-popover__trigger {
+    transition: none;
+  }
+}

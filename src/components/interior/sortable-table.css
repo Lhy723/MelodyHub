@@ -1,0 +1,234 @@
+/* MelodyHub interior sortable-table —换肤样式
+   行为来自上游 interior sortable-table.tsx（useSortableRows 排序逻辑、
+   三态 toggle、aria-sort、行位移动画、网格线、markable、aria-live 播报、
+   reduced-motion 原样保留），样式从 Tailwind 重写为 MelodyHub CSS Vars。
+   深色模式靠 var 体系自动适配，不写死色值。 */
+
+.mh-sortable-table {
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-16);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-sortable-table__header-row {
+  display: grid;
+  align-items: center;
+  height: 36px;
+  column-gap: var(--spacer-8);
+  padding: 0 var(--spacer-8);
+  border-bottom: 1px solid var(--border-neutral-l1);
+}
+
+.mh-sortable-table__mark-head,
+.mh-sortable-table__col-head {
+  min-width: 0;
+}
+
+.mh-sortable-table__col-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--spacer-6);
+  color: var(--text-tertiary);
+  font-size: var(--body-xs-font-size);
+  font-weight: var(--font-weight-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mh-sortable-table__col-label--end {
+  text-align: right;
+}
+
+.mh-sortable-table__sort-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  height: 28px;
+  width: 100%;
+  padding: 0 var(--spacer-6);
+  border: none;
+  border-radius: var(--radius-6);
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-sortable-table__sort-btn:hover {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-sortable-table__sort-btn:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-sortable-table__sort-btn--end {
+  flex-direction: row-reverse;
+}
+
+.mh-sortable-table__sort-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+  font-size: var(--body-xs-font-size);
+  font-weight: var(--font-weight-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: color var(--transition-fast);
+}
+
+.mh-sortable-table__sort-btn:hover .mh-sortable-table__sort-label {
+  color: var(--text-default);
+}
+
+.mh-sortable-table__sort-label--active {
+  color: var(--text-default);
+}
+
+.mh-sortable-table__sort-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.mh-sortable-table__body {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mh-sortable-table__body--scrollable {
+  scrollbar-gutter: stable;
+}
+
+.mh-sortable-table__empty-row {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacer-14);
+}
+
+.mh-sortable-table__empty-cell {
+  font-size: var(--body-md-font-size);
+  color: var(--text-tertiary);
+}
+
+.mh-sortable-table__row {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: grid;
+  align-items: center;
+  column-gap: var(--spacer-8);
+  padding: 0 var(--spacer-8);
+  transition: background-color var(--transition-normal);
+}
+
+.mh-sortable-table__row--marked {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-sortable-table__mark-cell {
+  min-width: 0;
+}
+
+.mh-sortable-table__mark-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-sortable-table__mark-btn:focus-visible {
+  border-color: var(--bg-brand);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-sortable-table__mark-btn--checked {
+  border-color: var(--bg-brand);
+  background: var(--bg-brand);
+  color: var(--text-onbrand);
+}
+
+.mh-sortable-table__check {
+  display: inline-flex;
+}
+
+.mh-sortable-table__cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--spacer-6);
+  font-size: var(--body-base-font-size);
+}
+
+.mh-sortable-table__cell--end {
+  text-align: right;
+}
+
+.mh-sortable-table__cell--numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.mh-sortable-table__cell--primary {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-default);
+}
+
+.mh-sortable-table__cell--secondary {
+  color: var(--text-secondary);
+}
+
+.mh-sortable-table__gridlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mh-sortable-table__gridline {
+  position: absolute;
+  inset-inline: 0;
+  border-top: 1px solid var(--border-neutral-l1);
+}
+
+.mh-sortable-table__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-sortable-table__row,
+  .mh-sortable-table__sort-btn,
+  .mh-sortable-table__sort-label,
+  .mh-sortable-table__mark-btn {
+    transition: none;
+  }
+}

@@ -1,0 +1,86 @@
+/* MelodyHub interior new-items-pill — 换肤样式
+   行为来自上游 interior new-items-pill.tsx（useNewItems + pill 入场/退场 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色经由 [data-theme='dark'] 的 var 体系自动适配。 */
+
+.mh-new-items-pill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.mh-new-items-pill--top {
+  top: var(--spacer-8);
+}
+
+.mh-new-items-pill--bottom {
+  bottom: var(--spacer-8);
+}
+
+.mh-new-items-pill__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  height: 32px;
+  padding: 0 var(--spacer-10) 0 var(--spacer-8);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+  pointer-events: auto;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-new-items-pill__button:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-new-items-pill__button:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-new-items-pill__icon {
+  flex-shrink: 0;
+}
+
+.mh-new-items-pill__icon--flip {
+  transform: rotate(180deg);
+}
+
+.mh-new-items-pill__text {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mh-new-items-pill__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-new-items-pill__button {
+    transition: none;
+  }
+}

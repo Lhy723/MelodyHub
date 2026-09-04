@@ -8,6 +8,7 @@ import {
   Clock3,
   Gauge,
   GitBranch,
+  GripVertical,
   History,
   Layers3,
   ListOrdered,
@@ -26,6 +27,7 @@ import { useT } from '../../i18n';
 
 const icons = {
   priority: ListOrdered,
+  manual: GripVertical,
   weighted: Percent,
   'round-robin': Repeat2,
   'context-relay': GitBranch,

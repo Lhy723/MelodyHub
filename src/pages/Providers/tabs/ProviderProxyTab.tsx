@@ -1,19 +1,6 @@
 import React from 'react';
 import { Switch } from '../../../components/ui/Switch';
-
-const inputBaseStyle: React.CSSProperties = {
-  width: '100%',
-  height: 34,
-  padding: '0 10px',
-  borderRadius: 8,
-  border: '1px solid var(--border-neutral-l1)',
-  background: 'var(--bg-overlay-l1)',
-  color: 'var(--text-default)',
-  font: 'inherit',
-  fontSize: 'var(--body-base-font-size)',
-  outline: 'none',
-  boxSizing: 'border-box',
-};
+import { FloatingLabelInput } from '../../../components/interior/floating-label';
 
 interface ProviderProxyTabProps {
   proxyEnabled: boolean;
@@ -42,22 +29,12 @@ export const ProviderProxyTab: React.FC<ProviderProxyTabProps> = ({
 
       {proxyEnabled && (
         <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: 'var(--body-sm-font-size)',
-              color: 'var(--text-secondary)',
-              marginBottom: 6,
-            }}
-          >
-            代理地址
-          </label>
-          <input
-            type="text"
+          <FloatingLabelInput
+            label="代理地址"
             value={proxyUrl}
-            onChange={(e) => onProxyUrlChange(e.target.value)}
-            placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080"
-            style={inputBaseStyle}
+            onChange={onProxyUrlChange}
+            hint="http://127.0.0.1:7890 或 socks5://127.0.0.1:1080"
+            autoComplete="url"
           />
         </div>
       )}

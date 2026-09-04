@@ -69,6 +69,12 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            // Local coding-agent integrations
+            commands::agent_apps::load_agent_apps,
+            commands::agent_apps::save_agent_app_config,
+            commands::agent_apps::save_agent_app_text,
+            commands::agent_apps::save_agent_app_setting,
+            commands::agent_apps::restore_agent_app_config,
             // Provider / Aggregation
             commands::providers::save_providers,
             commands::providers::load_providers,

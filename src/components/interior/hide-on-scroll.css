@@ -1,0 +1,76 @@
+/* MelodyHub interior hide-on-scroll —换肤样式
+   行为来自上游 interior hide-on-scroll.tsx（useHideOnScroll 滚动方向感知显隐、
+   累计阈值、topGuard、pinned/disabled、reduced-motion）原样保留，
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-hide-on-scroll {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-hide-on-scroll__bar {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  padding-inline: var(--spacer-12);
+  background: var(--bg-white);
+}
+
+.mh-hide-on-scroll__rule {
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-neutral-l2);
+}
+
+.mh-hide-on-scroll__viewport {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  outline: none;
+  scrollbar-gutter: stable;
+}
+
+.mh-hide-on-scroll__viewport:focus-visible {
+  background: var(--status-primary-surface-l1);
+  box-shadow: inset 0 0 0 1px var(--status-primary-default);
+}
+
+.mh-hide-on-scroll__spacer {
+  width: 100%;
+}
+
+.mh-hide-on-scroll__fade {
+  pointer-events: none;
+  position: sticky;
+  height: var(--spacer-20);
+}
+
+.mh-hide-on-scroll__fade--top {
+  top: 0;
+  margin-bottom: calc(var(--spacer-20) * -1);
+  background: linear-gradient(to bottom, var(--bg-white), transparent);
+}
+
+.mh-hide-on-scroll__fade--bottom {
+  bottom: 0;
+  margin-top: calc(var(--spacer-20) * -1);
+  background: linear-gradient(to top, var(--bg-white), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-hide-on-scroll__viewport:focus-visible {
+    transition: none;
+  }
+}

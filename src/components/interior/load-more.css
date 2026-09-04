@@ -1,0 +1,136 @@
+/* MelodyHub interior load-more —换肤样式
+   行为来自上游 interior load-more.tsx（useLoadMore 哨兵无限滚动 + 自动/手动加载 +
+   maxAutoLoads 暂停 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-load-more {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.mh-load-more__sentinel {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+}
+
+.mh-load-more__button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 var(--spacer-12);
+  border: none;
+  border-radius: var(--radius-10);
+  background: transparent;
+  color: inherit;
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-load-more__button:hover {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-load-more__button:active {
+  transform: translateY(1px);
+}
+
+.mh-load-more__button:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+/* loading / end 态不可点：对应上游 inert（cursor-default，无 hover/active） */
+.mh-load-more__button[data-status='loading'],
+.mh-load-more__button[data-status='end'] {
+  cursor: default;
+}
+
+.mh-load-more__button[data-status='loading']:hover,
+.mh-load-more__button[data-status='end']:hover {
+  background: transparent;
+}
+
+.mh-load-more__button[data-status='loading']:active,
+.mh-load-more__button[data-status='end']:active {
+  transform: none;
+}
+
+.mh-load-more__stack {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.mh-load-more__label {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  white-space: nowrap;
+}
+
+.mh-load-more__label[data-status='idle'] {
+  color: var(--text-secondary);
+}
+
+.mh-load-more__label[data-status='loading'],
+.mh-load-more__label[data-status='end'] {
+  color: var(--text-tertiary);
+}
+
+.mh-load-more__label[data-status='error'] {
+  color: var(--status-error-default);
+}
+
+.mh-load-more__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+}
+
+.mh-load-more__icon svg {
+  display: block;
+}
+
+.mh-load-more__spinner {
+  width: 11px;
+  height: 11px;
+}
+
+.mh-load-more__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-load-more__button,
+  .mh-load-more__button:active {
+    transition: none;
+    transform: none;
+  }
+}

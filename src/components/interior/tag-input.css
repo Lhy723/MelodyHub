@@ -1,0 +1,223 @@
+/* MelodyHub interior tag-input —换肤样式
+   行为来自上游 interior tag-input.tsx（useTagInput 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色靠 var 体系自动适配。 */
+
+.mh-tag-input {
+  width: 100%;
+}
+
+.mh-tag-input__label {
+  display: block;
+  margin-bottom: var(--spacer-6);
+  color: var(--text-secondary);
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  font-weight: var(--font-weight-medium);
+}
+
+.mh-tag-input__box {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacer-6);
+  min-height: 40px;
+  max-height: 116px;
+  margin: 0;
+  padding: var(--spacer-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-default);
+  box-shadow: var(--shadow-sm);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-tag-input__box:focus-within {
+  border-color: var(--border-brand);
+  box-shadow: none;
+}
+
+.mh-tag-input__chip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  height: 24px;
+  max-width: 100%;
+  flex-shrink: 0;
+  padding-left: var(--spacer-8);
+  padding-right: var(--spacer-6);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-6);
+  background: var(--bg-overlay-l1);
+  color: var(--text-secondary);
+  font-size: var(--body-md-font-size);
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-tag-input__chip[data-lit='true'] {
+  border-color: var(--bg-invert);
+  background: var(--bg-invert);
+  color: var(--bg-base-default);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-tag-input__chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh-tag-input__remove {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-right: -2px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--icon-tertiary);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-tag-input__remove:hover {
+  color: var(--icon-default);
+}
+
+.mh-tag-input__remove:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 1px;
+}
+
+.mh-tag-input__chip[data-lit='true'] .mh-tag-input__remove {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.mh-tag-input__chip[data-lit='true'] .mh-tag-input__remove:hover {
+  opacity: 1;
+}
+
+.mh-tag-input__input-wrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  height: 24px;
+}
+
+.mh-tag-input__sizer {
+  pointer-events: none;
+  visibility: hidden;
+  max-width: 224px;
+  overflow: hidden;
+  white-space: pre;
+  padding: 0 var(--spacer-4);
+  font-size: var(--body-md-font-size);
+}
+
+.mh-tag-input__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--spacer-4);
+  border: none;
+  background: transparent;
+  color: var(--text-default);
+  font-size: var(--body-md-font-size);
+  outline: none;
+}
+
+.mh-tag-input__input::placeholder {
+  color: var(--text-disabled);
+}
+
+.mh-tag-input__footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacer-12);
+  margin-top: var(--spacer-6);
+}
+
+.mh-tag-input__messages {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.mh-tag-input__hint,
+.mh-tag-input__message {
+  grid-area: 1 / 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+}
+
+.mh-tag-input__hint {
+  color: var(--text-tertiary);
+}
+
+.mh-tag-input__message {
+  color: var(--text-secondary);
+}
+
+.mh-tag-input__count {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+  font-variant-numeric: tabular-nums;
+}
+
+.mh-tag-input__count-flip {
+  display: inline-grid;
+  justify-items: end;
+}
+
+.mh-tag-input__count-ghost {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.mh-tag-input__count-value {
+  grid-area: 1 / 1;
+}
+
+.mh-tag-input__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-tag-input__box,
+  .mh-tag-input__chip,
+  .mh-tag-input__remove {
+    transition: none;
+  }
+}

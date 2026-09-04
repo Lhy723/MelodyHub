@@ -1,0 +1,102 @@
+/* MelodyHub interior show-more —换肤样式
+   行为来自上游 interior show-more.tsx（useShowMore 量测+展开/收起+渐隐遮罩原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-show-more {
+  font-size: 13.5px;
+  line-height: 1.625;
+  color: var(--text-secondary);
+}
+
+.mh-show-more__wrap {
+  position: relative;
+}
+
+.mh-show-more__viewport {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-6);
+  outline: none;
+}
+
+.mh-show-more__viewport:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-show-more__veil {
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 36px;
+  background: linear-gradient(to top, var(--bg-base-default), transparent);
+}
+
+.mh-show-more__footer {
+  margin-top: var(--spacer-8);
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+.mh-show-more__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-8);
+  height: 32px;
+  padding: 0 var(--spacer-10);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-show-more__toggle:hover {
+  border-color: var(--border-neutral-l3);
+  color: var(--text-default);
+}
+
+.mh-show-more__toggle:focus-visible {
+  border-color: var(--bg-brand);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-show-more__toggle[data-expandable='false'] {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.mh-show-more__labels {
+  display: grid;
+  text-align: left;
+}
+
+.mh-show-more__label {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+
+.mh-show-more__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--icon-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-show-more__toggle {
+    transition: none;
+  }
+}

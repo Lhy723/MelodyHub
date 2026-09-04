@@ -1,0 +1,73 @@
+/* MelodyHub interior reading-progress —换肤样式
+   行为来自上游 interior reading-progress.tsx（hook 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色由 var 体系适配。 */
+
+.mh-reading-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-12);
+}
+
+.mh-reading-progress__track {
+  min-width: 0;
+  flex: 1;
+  padding: var(--spacer-2);
+  border-radius: var(--radius-4);
+  background: var(--bg-base-secondary);
+  box-shadow: inset 0 1px 2px var(--bg-overlay-l2);
+}
+
+.mh-reading-progress__fill {
+  height: 3px;
+  transform-origin: left;
+  border-radius: var(--radius-2);
+  background: var(--status-primary-default);
+}
+
+.mh-reading-progress__meta {
+  display: grid;
+  flex-shrink: 0;
+  justify-items: end;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-xs-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 隐形占位：撑住完成态文案宽度，避免 readout/done 切换时布局抖动 */
+.mh-reading-progress__sizer {
+  visibility: hidden;
+  grid-column-start: 1;
+  grid-row-start: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  white-space: nowrap;
+}
+
+.mh-reading-progress__sizer-icon {
+  width: var(--icon-size-12);
+  flex-shrink: 0;
+}
+
+.mh-reading-progress__readout {
+  grid-column-start: 1;
+  grid-row-start: 1;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+}
+
+.mh-reading-progress__done {
+  grid-column-start: 1;
+  grid-row-start: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-reading-progress__fill {
+    transition: none;
+  }
+}

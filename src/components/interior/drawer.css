@@ -1,0 +1,166 @@
+/* MelodyHub interior drawer — 换肤样式
+   行为来自上游 interior drawer.tsx（useDrawer 原样保留：拖拽手势/吸附、
+   Escape、焦点陷阱与恢复、panel inert、滚动锁、背景 inert、reduced-motion），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。深色靠 var 体系适配，无写死色值。 */
+
+.mh-drawer__root {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.mh-drawer__root[data-container='parent'] {
+  position: absolute;
+}
+
+.mh-drawer__root[data-open='false'] {
+  pointer-events: none;
+}
+
+.mh-drawer__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-overlay-l4);
+  touch-action: none;
+}
+
+.mh-drawer__panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  border: 0 solid var(--border-neutral-l1);
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  box-shadow:
+    0 28px 56px -24px color-mix(in srgb, var(--text-default) 45%, transparent),
+    0 4px 16px color-mix(in srgb, var(--text-default) 8%, transparent);
+  outline: none;
+}
+
+.mh-drawer__panel[data-side='right'] {
+  right: 0;
+  border-left-width: 1px;
+  border-top-left-radius: var(--radius-12);
+  border-bottom-left-radius: var(--radius-12);
+}
+
+.mh-drawer__panel[data-side='left'] {
+  left: 0;
+  border-right-width: 1px;
+  border-top-right-radius: var(--radius-12);
+  border-bottom-right-radius: var(--radius-12);
+}
+
+.mh-drawer__panel[data-dragging='true'] {
+  user-select: none;
+}
+
+.mh-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacer-12);
+  padding: var(--spacer-12) var(--spacer-16);
+  border-bottom: 1px solid var(--border-neutral-l1);
+  user-select: none;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.mh-drawer__header[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+.mh-drawer__titles {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh-drawer__title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--heading-xs-font-size);
+  line-height: var(--heading-xs-line-height);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-default);
+}
+
+.mh-drawer__description {
+  margin: var(--spacer-2) 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-drawer__close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: calc(var(--spacer-4) * -1) calc(var(--spacer-4) * -1) 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--icon-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-drawer__close:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-drawer__close:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 1px;
+}
+
+.mh-drawer__body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacer-12) var(--spacer-16);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  color: var(--text-secondary);
+}
+
+.mh-drawer__footer {
+  padding: var(--spacer-12) var(--spacer-16);
+  border-top: 1px solid var(--border-neutral-l1);
+  flex-shrink: 0;
+}
+
+/* 屏幕阅读器提示（上游 sr-only 对等实现） */
+.mh-drawer__hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-drawer__panel,
+  .mh-drawer__scrim {
+    transition: none;
+  }
+}

@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStatsStore } from '../../store/statsStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { Card, Tag, FlexBetween, Skeleton } from '../../components/ui';
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { LoadingButton } from '../../components/interior/loading-button';
+import { Pagination } from '../../components/interior/pagination';
+import { Drawer } from '../../components/interior/drawer';
+import { CopyButton } from '../../components/interior/copy-button';
 import { useT } from '../../i18n';
 
 const modelTagStyle: Record<string, { variant: 'brand' | 'green' | 'danger'; customColor?: string }> = {
@@ -11,6 +14,28 @@ const modelTagStyle: Record<string, { variant: 'brand' | 'green' | 'danger'; cus
   'DeepSeek V3': { variant: 'green', customColor: 'var(--accent-teal)' },
   'Qwen 2.5': { variant: 'green', customColor: 'var(--accent-amber)' },
 };
+
+/** 抽屉里的标签-值行。 */
+const RequestDetailRow: React.FC<{ label: string; value?: string; children?: React.ReactNode }> = ({
+  label,
+  value,
+  children,
+}) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 'var(--spacer-12)',
+      padding: 'var(--spacer-10) 0',
+      borderBottom: '1px solid var(--border-neutral-l1)',
+      fontSize: 'var(--body-sm-font-size)',
+    }}
+  >
+    <span style={{ color: 'var(--text-tertiary)', flexShrink: 0 }}>{label}</span>
+    {children ?? <span style={{ color: 'var(--text-default)', textAlign: 'right' }}>{value}</span>}
+  </div>
+);
 
 export const RecentRequests: React.FC = () => {
   const t = useT();
@@ -21,6 +46,8 @@ export const RecentRequests: React.FC = () => {
   const page = useStatsStore((s) => s.page);
   const pageSize = useSettingsStore((s) => s.settings.pageSize);
   const setPage = useStatsStore((s) => s.setPage);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? (recentRequests.find((r) => r.id === selectedId) ?? null) : null;
   const prevLength = useRef(recentRequests.length);
 
   // Track new rows for animation
@@ -83,20 +110,14 @@ export const RecentRequests: React.FC = () => {
         <div style={{ padding: 'var(--spacer-32) 0', textAlign: 'center', color: 'var(--text-tertiary)' }}>
           <span style={{ color: 'var(--status-error-default)', fontSize: 'var(--body-base-font-size)' }}>{t('dashboard.loadFailed')}</span>
           <div style={{ marginTop: 'var(--spacer-8)' }}>
-            <button
-              onClick={fetchRequests}
-              style={{
-                cursor: 'pointer',
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--text-brand)',
-                fontSize: 'var(--body-sm-font-size)',
-                fontFamily: 'inherit',
-              }}
+            <LoadingButton
+              onAction={fetchRequests}
+              pendingLabel={t('dashboard.retrying')}
+              successLabel={t('dashboard.retried')}
+              errorLabel={t('dashboard.retry')}
             >
-              <RefreshCw size={12} style={{ marginRight: 4, display: 'inline' }} />
-                {t('dashboard.retry')}
-            </button>
+              {t('dashboard.retry')}
+            </LoadingButton>
           </div>
         </div>
       </Card>
@@ -255,10 +276,20 @@ export const RecentRequests: React.FC = () => {
                     <tr
                       key={req.id}
                       className={isNewRow ? 'rb-recent-request-new' : undefined}
+                      tabIndex={0}
+                      aria-label={`${req.model} ${formatTimestamp(req.timestamp)}`}
                       style={{
                         transition: 'background var(--transition-fast, 0.12s ease), opacity 0.3s ease',
                         animation: isNewRow ? 'slideInUp 0.25s ease-out both' : 'none',
                         animationDelay: isNewRow ? `${idx * 30}ms` : '0ms',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setSelectedId(req.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedId(req.id);
+                        }
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'var(--bg-overlay-l1)';
@@ -366,103 +397,72 @@ export const RecentRequests: React.FC = () => {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Pagination（interior 1-indexed，store 为 0-indexed，此处做 ±1 适配） */}
           {totalPages > 1 && (
             <div
-              className="ds-pagination"
               style={{
                 display: 'flex',
-                alignItems: 'center',
                 justifyContent: 'center',
-                gap: 'var(--spacer-4)',
                 marginTop: 'var(--spacer-16)',
               }}
             >
-              <button
-                disabled={safePage === 0}
-                onClick={() => setPage(safePage - 1)}
-                style={{
-                  minWidth: 32,
-                  height: 32,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'transparent',
-                  color: safePage === 0 ? 'var(--text-disabled)' : 'var(--text-secondary)',
-                  border: '1px solid var(--border-neutral-l1)',
-                  borderRadius: 'var(--radius-8)',
-                  font: 'inherit',
-                  fontSize: 'var(--body-base-font-size)',
-                  cursor: safePage === 0 ? 'not-allowed' : 'pointer',
-                  transition: 'background var(--transition-fast, 0.12s ease), color var(--transition-fast, 0.12s ease)',
-                }}
-                onMouseEnter={(e) => {
-                  if (safePage !== 0) e.currentTarget.style.background = 'var(--bg-overlay-l2)';
-                }}
-                onMouseLeave={(e) => {
-                  if (safePage !== 0) e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPage(i)}
-                  style={{
-                    minWidth: 32,
-                    height: 32,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: i === safePage ? 'var(--bg-overlay-l3)' : 'transparent',
-                    color: i === safePage ? 'var(--text-default)' : 'var(--text-secondary)',
-                    border: '1px solid var(--border-neutral-l1)',
-                    borderRadius: 'var(--radius-8)',
-                    font: 'inherit',
-                    fontSize: 'var(--body-base-font-size)',
-                    cursor: 'pointer',
-                    transition: 'background var(--transition-fast, 0.12s ease)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (i !== safePage) e.currentTarget.style.background = 'var(--bg-overlay-l1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (i !== safePage) e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                disabled={safePage >= totalPages - 1}
-                onClick={() => setPage(safePage + 1)}
-                style={{
-                  minWidth: 32,
-                  height: 32,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'transparent',
-                  color: safePage >= totalPages - 1 ? 'var(--text-disabled)' : 'var(--text-secondary)',
-                  border: '1px solid var(--border-neutral-l1)',
-                  borderRadius: 'var(--radius-8)',
-                  font: 'inherit',
-                  fontSize: 'var(--body-base-font-size)',
-                  cursor: safePage >= totalPages - 1 ? 'not-allowed' : 'pointer',
-                  transition: 'background var(--transition-fast, 0.12s ease), color var(--transition-fast, 0.12s ease)',
-                }}
-                onMouseEnter={(e) => {
-                  if (safePage < totalPages - 1) e.currentTarget.style.background = 'var(--bg-overlay-l2)';
-                }}
-                onMouseLeave={(e) => {
-                  if (safePage < totalPages - 1) e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
+              <Pagination count={totalPages} page={safePage + 1} onPageChange={(p) => setPage(p - 1)} />
             </div>
           )}
+
+          {/* 行点击 → 右侧抽屉：表里放不下的请求 ID / 失败分类 / 故障转移链 */}
+          <Drawer
+            open={!!selected}
+            onOpenChange={(o) => {
+              if (!o) setSelectedId(null);
+            }}
+            title={t('dashboard.requestDetail.title')}
+            description={selected ? `${selected.model} · ${formatTimestamp(selected.timestamp)}` : undefined}
+            width={360}
+          >
+            {selected && (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <RequestDetailRow label={t('dashboard.requestDetail.id')}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-8)' }}>
+                    <code
+                      style={{
+                        fontFamily: 'var(--code-terminal-font-family)',
+                        fontSize: 'var(--body-sm-font-size)',
+                        color: 'var(--text-default)',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {selected.id}
+                    </code>
+                    <CopyButton
+                      value={selected.id}
+                      label={t('dashboard.requestDetail.copy')}
+                      copiedLabel={t('dashboard.requestDetail.copied')}
+                      errorLabel={t('dashboard.requestDetail.copyFailed')}
+                    />
+                  </span>
+                </RequestDetailRow>
+                <RequestDetailRow label={t('dashboard.table.provider')} value={selected.provider} />
+                <RequestDetailRow label={t('dashboard.table.type')} value={selected.type} />
+                <RequestDetailRow label={t('dashboard.table.tokens')} value={selected.tokens.toLocaleString()} />
+                <RequestDetailRow label={t('dashboard.table.latency')} value={`${(selected.latencyMs / 1000).toFixed(2)}s`} />
+                {selected.errorCategory && (
+                  <RequestDetailRow label={t('dashboard.requestDetail.errorCategory')}>
+                    <Tag variant="danger" style={{ border: 'none' }}>
+                      {selected.errorCategory}
+                    </Tag>
+                  </RequestDetailRow>
+                )}
+                {selected.failoverCount != null && selected.failoverCount > 0 && (
+                  <RequestDetailRow label={t('dashboard.requestDetail.failoverPath')}>
+                    <span style={{ color: 'var(--text-default)' }}>
+                      {selected.originalProvider ? `${selected.originalProvider} → ${selected.provider} ×${selected.failoverCount}` : `切换×${selected.failoverCount}`}
+                    </span>
+                  </RequestDetailRow>
+                )}
+              </div>
+            )}
+          </Drawer>
         </>
       )}
     </Card>

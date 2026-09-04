@@ -1,0 +1,84 @@
+/* MelodyHub interior reorder-list — 换肤样式
+   行为来自上游 interior reorder-list.tsx（hook 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-reorder-list {
+  width: 100%;
+}
+
+.mh-reorder-list__group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacer-6);
+}
+
+.mh-reorder-list__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-10);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-default);
+  padding: var(--spacer-10) var(--spacer-12);
+  outline: none;
+  cursor: grab;
+  box-shadow: var(--shadow-sm);
+  touch-action: pan-x;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-reorder-list__item--lifted {
+  z-index: 10;
+  cursor: grabbing;
+  box-shadow: var(--shadow-floating);
+}
+
+.mh-reorder-list__item--held {
+  border-color: var(--border-brand);
+  background: var(--bg-brand-popup);
+}
+
+.mh-reorder-list__item:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-reorder-list__grip {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.mh-reorder-list__item--lifted .mh-reorder-list__grip {
+  color: var(--text-secondary);
+}
+
+.mh-reorder-list__content {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh-reorder-list__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-reorder-list__item,
+  .mh-reorder-list__grip {
+    transition: none;
+  }
+}

@@ -1,0 +1,218 @@
+/* MelodyHub interior command-palette — 换肤样式
+   行为来自上游 interior command-palette.tsx（useCommandPalette / PaletteLayer 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。深色模式由 var 体系自然适配，
+   仅遮罩 scrim 沿用上游的不透明度并以 [data-theme='dark'] 区分。 */
+
+/* ── 面板主体 ─────────────────────────────────────────── */
+.mh-cmdk {
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l1);
+  border-radius: var(--radius-16);
+  background: var(--bg-base-default);
+  color: var(--text-default);
+}
+
+.mh-cmdk:focus-within {
+  border-color: var(--border-neutral-l2);
+}
+
+.mh-cmdk--overlay {
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow-floating);
+}
+
+/* ── 搜索行 ───────────────────────────────────────────── */
+.mh-cmdk__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-10);
+  height: 44px;
+  padding: 0 var(--spacer-12);
+  border-bottom: 1px solid var(--border-neutral-l1);
+}
+
+.mh-cmdk__search-icon {
+  flex-shrink: 0;
+  color: var(--icon-tertiary);
+}
+
+.mh-cmdk__input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-default);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  outline: none;
+}
+
+.mh-cmdk__input::placeholder {
+  color: var(--text-disabled);
+}
+
+.mh-cmdk__count {
+  min-width: 3ch;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-xs-font-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+/* ── 列表区 ───────────────────────────────────────────── */
+.mh-cmdk__body {
+  position: relative;
+}
+
+.mh-cmdk__list {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacer-2);
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  list-style: none;
+}
+
+.mh-cmdk__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0 var(--spacer-10);
+  border-radius: var(--radius-8);
+  cursor: default;
+  outline: none;
+}
+
+.mh-cmdk__row-highlight {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-8);
+  background: var(--bg-overlay-l2);
+}
+
+.mh-cmdk__row-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-10);
+  min-width: 0;
+  flex: 1;
+}
+
+.mh-cmdk__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-default);
+}
+
+.mh-cmdk__hint {
+  flex-shrink: 0;
+  font-size: var(--body-sm-font-size);
+  color: var(--text-tertiary);
+}
+
+.mh-cmdk__shortcuts {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.mh-cmdk__kbd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 var(--spacer-4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-4);
+  font-family: var(--font-family-mono);
+  font-size: var(--body-xs-font-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+/* ── 空状态 ───────────────────────────────────────────── */
+.mh-cmdk__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 var(--spacer-12);
+  text-align: center;
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* ── 屏幕阅读器 live region ───────────────────────────── */
+.mh-cmdk__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── 浮层（open 受控时经 portal 挂载） ─────────────────── */
+.mh-cmdk-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacer-16);
+}
+
+.mh-cmdk-layer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='dark'] .mh-cmdk-layer__backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.mh-cmdk-layer__panel {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* ── 小屏：hint 让位给 label ──────────────────────────── */
+@media (max-width: 640px) {
+  .mh-cmdk__hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-cmdk,
+  .mh-cmdk-layer__backdrop {
+    transition: none;
+  }
+}

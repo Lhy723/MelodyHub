@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStatsStore } from '../../store/statsStore';
 import type { UsageStats } from '../../types/stats';
 import { Counter, FlexBetween, FlexRow, ShinyText, SpotlightCard, Skeleton } from '../../components/ui';
-import { Coins, Activity, Box, Clock, RefreshCw } from 'lucide-react';
+import { Coins, Activity, Box, Clock } from 'lucide-react';
+import { LoadingButton } from '../../components/interior/loading-button';
+import { ValueFlash } from '../../components/interior/value-flash';
 import { useT } from '../../i18n';
 
 interface KpiCardConfig {
@@ -35,15 +37,6 @@ const makeCards = (t: ReturnType<typeof useT>): KpiCardConfig[] => [
     changeLabel: t('dashboard.kpi.vs'),
   },
   {
-    key: 'models',
-    label: t('dashboard.kpi.models'),
-    icon: Box,
-    formatter: (v: number) => v.toString(),
-    getValue: (s) => s.activeModels,
-    getChange: () => null,
-    changeLabel: t('dashboard.kpi.allOk'),
-  },
-  {
     key: 'response',
     label: t('dashboard.kpi.response'),
     icon: Clock,
@@ -51,6 +44,15 @@ const makeCards = (t: ReturnType<typeof useT>): KpiCardConfig[] => [
     getValue: (s) => s.avgResponseTime,
     getChange: (s) => s.responseTimeChange,
     changeLabel: t('dashboard.kpi.vs'),
+  },
+  {
+    key: 'models',
+    label: t('dashboard.kpi.models'),
+    icon: Box,
+    formatter: (v: number) => v.toString(),
+    getValue: (s) => s.activeModels,
+    getChange: () => null,
+    changeLabel: t('dashboard.kpi.allOk'),
   },
 ];
 
@@ -106,21 +108,16 @@ export const KPICards: React.FC = () => {
             <div style={{ textAlign: 'center', padding: 'var(--spacer-12) 0' }}>
               <card.icon size={20} style={{ color: 'var(--status-error-default)', marginBottom: 'var(--spacer-8)' }} />
               <div style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)' }}>{t('dashboard.loadFailed')}</div>
-              <button
-                onClick={fetchStats}
-                style={{
-                  marginTop: 'var(--spacer-8)',
-                  cursor: 'pointer',
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--text-brand)',
-                  fontSize: 'var(--body-xs-font-size)',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <RefreshCw size={12} style={{ marginRight: 4, display: 'inline' }} />
-                {t('dashboard.retry')}
-              </button>
+              <div style={{ marginTop: 'var(--spacer-8)' }}>
+                <LoadingButton
+                  onAction={fetchStats}
+                  pendingLabel={t('dashboard.retrying')}
+                  successLabel={t('dashboard.retried')}
+                  errorLabel={t('dashboard.retry')}
+                >
+                  {t('dashboard.retry')}
+                </LoadingButton>
+              </div>
             </div>
           </SpotlightCard>
         ))}
@@ -167,9 +164,8 @@ export const KPICards: React.FC = () => {
         const Icon = card.icon;
         const value = card.getValue(stats);
         const change = card.getChange(stats);
-        const isUp = card.key === 'response' ? change != null && change <= 0 : change != null && change >= 0;
-        const trendDir = isUp ? 'up' : 'down';
-        const trendColor = trendDir === 'up' ? 'var(--status-success-default)' : 'var(--status-error-default)';
+        const isGood = card.key === 'response' ? change != null && change <= 0 : change != null && change >= 0;
+        const trendColor = isGood ? 'var(--status-success-default)' : 'var(--status-error-default)';
         const isChanged = changedKeys.has(card.key);
 
         return (
@@ -244,7 +240,6 @@ export const KPICards: React.FC = () => {
               </FlexRow>
             ) : change != null ? (
               <FlexRow gap="var(--spacer-4)">
-                <span style={{ fontSize: 12, color: trendColor }}>{trendDir === 'up' ? '▲' : '▼'}</span>
                 <span
                   style={{
                     fontSize: 'var(--body-sm-font-size)',
@@ -252,9 +247,12 @@ export const KPICards: React.FC = () => {
                     color: trendColor,
                   }}
                 >
-                  {change >= 0 ? '+' : ''}
-                  {change}
-                  {card.key === 'response' ? 's' : '%'}
+                  <ValueFlash
+                    value={change}
+                    format={(v) => `${v >= 0 ? '+' : ''}${v}${card.key === 'response' ? 's' : '%'}`}
+                    label={card.label}
+                    compare={card.key === 'response' ? (n, p) => p - n : undefined}
+                  />
                 </span>
                 <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)' }}>
                   {card.changeLabel}

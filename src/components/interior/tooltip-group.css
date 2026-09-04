@@ -1,0 +1,74 @@
+/* MelodyHub interior tooltip-group —换肤样式
+   行为来自上游 interior tooltip-group.tsx（TooltipStore 延迟/暖机/行程 +
+   键盘可达 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。
+   深色模式由 var 体系自然适配（--bg-tooltip / --text-* / --border-* 均有
+   [data-theme='dark'] 覆盖），此处不写死色值。 */
+
+.mh-tooltip-group {
+  display: contents;
+}
+
+.mh-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+/* 浮层锚点：零宽居中容器，承载 AnimatePresence 气泡 */
+.mh-tooltip__anchor {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  width: 0;
+}
+
+.mh-tooltip__anchor--top {
+  bottom: calc(100% + var(--spacer-8));
+}
+
+.mh-tooltip__anchor--bottom {
+  top: calc(100% + var(--spacer-8));
+}
+
+/* 气泡本体：w-max + max-width 220px + 8px 圆角 + 小字中等字重 */
+.mh-tooltip__content {
+  position: relative;
+  width: max-content;
+  max-width: 220px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-8);
+  padding: var(--spacer-4) var(--spacer-8);
+  color: var(--text-secondary);
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--body-sm-line-height);
+}
+
+/* 气泡底座：边框 + 浮层背景 + 阴影（随主题自动切换） */
+.mh-tooltip__surface {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-8);
+  border: 1px solid var(--border-neutral-l2);
+  background: var(--bg-tooltip);
+  box-shadow: var(--shadow-md);
+}
+
+/* 文案层：上游为 whitespace-nowrap，原样保留单行不换行 */
+.mh-tooltip__label {
+  position: relative;
+  display: block;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-tooltip__content,
+  .mh-tooltip__surface,
+  .mh-tooltip__label {
+    transition: none;
+  }
+}

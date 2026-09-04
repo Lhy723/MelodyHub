@@ -1,0 +1,158 @@
+/* MelodyHub interior filter-grid —换肤样式
+   行为来自上游 interior filter-grid.tsx（useFilterGrid + 布局动画/空状态/keyboard/reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色靠 var 体系适配。 */
+
+.mh-filter-grid {
+  width: 100%;
+}
+
+.mh-filter-grid__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacer-6);
+}
+
+.mh-filter-grid__chip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  height: 32px;
+  padding: 0 var(--spacer-12);
+  border: none;
+  border-radius: var(--radius-6);
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+}
+
+.mh-filter-grid__chip:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-filter-grid__chip-thumb {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-6);
+  background: var(--bg-invert);
+}
+
+.mh-filter-grid__chip-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-6);
+  border: 1px solid var(--border-neutral-l2);
+  pointer-events: none;
+}
+
+.mh-filter-grid__chip[data-on='true'] .mh-filter-grid__chip-ring {
+  border-color: transparent;
+}
+
+.mh-filter-grid__chip:focus-visible .mh-filter-grid__chip-ring {
+  border-color: var(--border-brand);
+}
+
+.mh-filter-grid__chip-text {
+  position: relative;
+  display: inline-grid;
+  grid-column-start: 1;
+  grid-row-start: 1;
+}
+
+.mh-filter-grid__chip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacer-6);
+  grid-column-start: 1;
+  grid-row-start: 1;
+  white-space: nowrap;
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.mh-filter-grid__chip-label--on {
+  /* 与 thumb（--bg-invert）形成反色对比：浅色下白字深底，深色下深字浅底，均走 var 体系 */
+  color: var(--bg-base-default);
+}
+
+.mh-filter-grid__chip-count {
+  font-size: var(--body-xs-font-size);
+  line-height: var(--body-xs-line-height);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.mh-filter-grid__chip-count--on {
+  opacity: 0.7;
+  color: inherit;
+}
+
+.mh-filter-grid__body {
+  position: relative;
+  margin-top: var(--spacer-10);
+}
+
+.mh-filter-grid__list {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mh-filter-grid__list--capped {
+  scrollbar-gutter: stable;
+}
+
+.mh-filter-grid__item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-12);
+  background: var(--bg-white);
+  padding: var(--spacer-10);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-filter-grid__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.mh-filter-grid__empty-text {
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-filter-grid__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+p.mh-filter-grid__sr {
+  position: absolute;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-filter-grid__chip,
+  .mh-filter-grid__item {
+    transition: none;
+  }
+}

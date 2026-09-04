@@ -1,0 +1,95 @@
+/* MelodyHub interior value-flash —换肤样式
+   行为来自上游 interior value-flash.tsx（useValueFlash + 滚动/闪光 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色靠 var 体系适配。 */
+
+.mh-value-flash {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--spacer-6);
+  padding: var(--spacer-3) var(--spacer-6);
+  border-radius: var(--radius-6);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  transition:
+    color var(--transition-normal),
+    background var(--transition-normal);
+}
+
+.mh-value-flash[data-flashing='true'][data-tone='up'] {
+  color: var(--status-success-default);
+}
+
+.mh-value-flash[data-flashing='true'][data-tone='down'] {
+  color: var(--status-error-default);
+}
+
+.mh-value-flash__tint {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-6);
+}
+
+.mh-value-flash__tint[data-tone='up'] {
+  background: var(--status-success-surface-l1);
+}
+
+.mh-value-flash__tint[data-tone='down'] {
+  background: var(--status-error-surface-l1);
+}
+
+.mh-value-flash__value {
+  position: relative;
+  display: inline-grid;
+  overflow: hidden;
+}
+
+.mh-value-flash__text {
+  grid-column-start: 1;
+  grid-row-start: 1;
+}
+
+.mh-value-flash__icon {
+  position: relative;
+  display: grid;
+  width: 1em;
+  height: 1em;
+  place-items: center;
+}
+
+.mh-value-flash__glyph {
+  display: inline-flex;
+  grid-column-start: 1;
+  grid-row-start: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.mh-value-flash__glyph svg {
+  display: block;
+  width: 0.68em;
+  height: 0.68em;
+}
+
+.mh-value-flash__glyph[data-direction='down'] svg {
+  transform: rotate(180deg);
+}
+
+.mh-value-flash__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-value-flash {
+    transition: none;
+  }
+}

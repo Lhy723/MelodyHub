@@ -1,0 +1,283 @@
+/* MelodyHub interior wizard-steps —换肤样式
+   行为来自上游 interior wizard-steps.tsx（useWizard + 方向动画 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-wizard-steps {
+  width: 100%;
+}
+
+.mh-wizard-steps__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mh-wizard-steps__title {
+  display: grid;
+  margin-bottom: var(--spacer-8);
+  user-select: none;
+  -webkit-user-select: none;
+  font-size: var(--heading-xs-font-size);
+  line-height: var(--heading-xs-line-height);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.mh-wizard-steps__title-item {
+  grid-area: 1 / 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh-wizard-steps__rail {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-4);
+  list-style: none;
+  margin: 0 0 var(--spacer-16);
+  padding: 0;
+}
+
+.mh-wizard-steps__node {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--spacer-4);
+}
+
+.mh-wizard-steps__node:last-child {
+  flex: none;
+}
+
+.mh-wizard-steps__tile {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-8);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-wizard-steps__tile[data-tone='done'] {
+  border-color: transparent;
+  background: var(--bg-invert);
+  color: var(--bg-base-default);
+}
+
+.mh-wizard-steps__tile[data-tone='current'] {
+  border-color: var(--border-neutral-l3);
+  color: var(--text-default);
+}
+
+.mh-wizard-steps__tile[data-tone='idle'] {
+  color: var(--text-disabled);
+}
+
+.mh-wizard-steps__check {
+  width: var(--icon-size-12);
+  height: var(--icon-size-12);
+}
+
+.mh-wizard-steps__step-btn {
+  border: none;
+  border-radius: var(--radius-8);
+  background: transparent;
+  padding: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+.mh-wizard-steps__step-btn:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-wizard-steps__locked {
+  display: inline-flex;
+}
+
+.mh-wizard-steps__link {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--border-neutral-l1);
+}
+
+.mh-wizard-steps__link-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--bg-invert);
+  transform-origin: left;
+}
+
+.mh-wizard-steps__viewport {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-12);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+  outline: none;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-wizard-steps__viewport:focus-visible {
+  border-color: var(--bg-brand);
+}
+
+/* bare：调用方自带容器，去掉视口卡片铬与面板内边距 */
+.mh-wizard-steps.is-bare .mh-wizard-steps__viewport {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mh-wizard-steps.is-bare .mh-wizard-steps__panel {
+  padding: 0;
+}
+
+.mh-wizard-steps__panel {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: var(--spacer-16);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  color: var(--text-secondary);
+}
+
+.mh-wizard-steps__complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--spacer-6);
+}
+
+.mh-wizard-steps__complete-title {
+  font-size: var(--heading-xs-font-size);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-default);
+}
+
+.mh-wizard-steps__complete-hint {
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-wizard-steps__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-12);
+  height: 36px;
+  margin-top: var(--spacer-12);
+}
+
+.mh-wizard-steps__back {
+  height: 36px;
+  padding: 0 var(--spacer-12);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  font-size: var(--heading-xs-font-size);
+  font-weight: var(--font-weight-medium);
+  outline: none;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-wizard-steps__back:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-wizard-steps__back:active {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-wizard-steps__back:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-wizard-steps__advance {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  margin-left: auto;
+  padding: 0 var(--spacer-14);
+  border: none;
+  border-radius: var(--radius-10);
+  background: var(--bg-invert);
+  color: var(--bg-base-default);
+  font-size: var(--heading-xs-font-size);
+  font-weight: var(--font-weight-medium);
+  outline: none;
+  cursor: pointer;
+}
+
+.mh-wizard-steps__advance:hover {
+  background: var(--bg-invert-hover);
+}
+
+.mh-wizard-steps__advance:active {
+  background: var(--bg-invert-active);
+}
+
+.mh-wizard-steps__advance:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mh-wizard-steps__advance:disabled:hover {
+  background: var(--bg-invert);
+}
+
+.mh-wizard-steps__advance:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-wizard-steps__advance-sizer {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.mh-wizard-steps__advance-label {
+  grid-area: 1 / 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-wizard-steps__tile,
+  .mh-wizard-steps__viewport,
+  .mh-wizard-steps__back {
+    transition: none;
+  }
+}

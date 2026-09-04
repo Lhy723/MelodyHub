@@ -5,15 +5,15 @@ import { useStatsStore } from '../../store/statsStore';
 import { useT } from '../../i18n';
 import { desktopApi, type ProviderHealthSnapshot } from '../../lib/desktopApi';
 import type { Model } from '../../types/provider';
-import { Card, Tag, ConfirmDialog, ProviderLogo, toast } from '../../components/ui';
+import { Card, Tag, ConfirmDialog, ProviderLogo, ModelLogo, toast } from '../../components/ui';
+import { useCopyToClipboard } from '../../components/interior/copy-button';
+import { useAsyncAction } from '../../components/interior/loading-button';
+import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
+import { Pagination } from '../../components/interior/pagination';
 import {
   ArrowLeft,
   Pencil,
   Trash2,
-  Power,
-  PowerOff,
-  Copy,
-  Bot,
   Server,
   Globe,
   Shield,
@@ -29,6 +29,12 @@ import {
 } from 'lucide-react';
 
 // ── Helpers ─────────────────────────────────────────────────
+
+// 电源图标走路径变形。本页语义与卡片相反（禁用时显示 Power 可点启用），故 active 取反。
+function DetailPowerIcon({ isDisabled }: { isDisabled: boolean }) {
+  const icon = useIconMorph({ preset: 'power', active: !isDisabled });
+  return <MorphGlyph slots={icon.slots} rotate={icon.rotate} transition={icon.transition} mode={icon.mode} size={16} />;
+}
 
 const describeModelCapabilities = (model: Model, t: ReturnType<typeof useT>) => {
   const tags: string[] = [];
@@ -176,8 +182,14 @@ export const ProviderDetailPage: React.FC = () => {
 
   const [health, setHealth] = useState<ProviderHealthSnapshot | undefined>();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [reqPage, setReqPage] = useState(0);
+  // Key 复制改走 interior（fallback + 自动复位）；测试按钮进行态改由 useAsyncAction 拥有，铬不动。
+  const keyCopy = useCopyToClipboard({
+    onCopy: () => toast(t('providers.apiKeyCopied'), 'success'),
+    onError: () => toast(t('providers.copyFailed'), 'error'),
+  });
+  const keyCopyIcon = useIconMorph({ preset: 'copy-check', active: keyCopy.copied });
 
   // Fetch health periodically
   useEffect(() => {
@@ -209,6 +221,12 @@ export const ProviderDetailPage: React.FC = () => {
     if (!provider) return [];
     return recentRequests.filter((r) => r.provider === provider.name);
   }, [recentRequests, provider]);
+
+  // 该供应商近期请求分页（10 条/页，Pagination 1-indexed，此处做 ±1 适配）
+  const REQ_PAGE_SIZE = 10;
+  const reqTotalPages = Math.max(1, Math.ceil(providerRequests.length / REQ_PAGE_SIZE));
+  const safeReqPage = Math.min(reqPage, reqTotalPages - 1);
+  const pagedRequests = providerRequests.slice(safeReqPage * REQ_PAGE_SIZE, (safeReqPage + 1) * REQ_PAGE_SIZE);
 
   // Compute stats
   const stats = useMemo(() => {
@@ -253,14 +271,7 @@ export const ProviderDetailPage: React.FC = () => {
   const isDisabled = provider.status === 'disabled';
 
   const handleCopyKey = () => {
-    if (provider.apiKey) {
-      navigator.clipboard
-        .writeText(provider.apiKey)
-        .then(() => {
-          toast(t('providers.apiKeyCopied'), 'success');
-        })
-        .catch(() => toast(t('providers.copyFailed'), 'error'));
-    }
+    if (provider.apiKey) void keyCopy.copy(provider.apiKey);
   };
 
   const handleDelete = async () => {
@@ -284,7 +295,6 @@ export const ProviderDetailPage: React.FC = () => {
   };
 
   const handleTestConnection = async () => {
-    setTesting(true);
     setTestResult(null);
     try {
       const result = await desktopApi.testProviderConnection(
@@ -297,10 +307,11 @@ export const ProviderDetailPage: React.FC = () => {
     } catch (e) {
       setTestResult({ success: false, message: String(e) });
       toast('测试失败', 'error');
-    } finally {
-      setTesting(false);
     }
   };
+
+  // 测试按钮保留图标铬（Zap/转圈），进行态改由 useAsyncAction 拥有（防重入 + 自动复位）。
+  const testAction = useAsyncAction({ action: handleTestConnection });
 
   const apiKeyMasked = provider.apiKey ? provider.apiKey.slice(0, 8) + '••••••••' : '未配置';
 
@@ -338,10 +349,10 @@ export const ProviderDetailPage: React.FC = () => {
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 'var(--spacer-8)' }}>
           <button onClick={handleToggleEnabled} style={iconBtnStyle} title={isDisabled ? '启用' : '禁用'}>
-            {isDisabled ? <Power size={16} /> : <PowerOff size={16} />}
+            <DetailPowerIcon isDisabled={isDisabled} />
           </button>
-          <button onClick={handleTestConnection} style={iconBtnStyle} title="测试连接" disabled={testing}>
-            {testing ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+          <button onClick={testAction.run} style={iconBtnStyle} title="测试连接" disabled={testAction.pending}>
+            {testAction.pending ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
           </button>
           <button onClick={() => navigate(`/providers/${provider.id}/edit`)} style={iconBtnStyle} title="编辑">
             <Pencil size={16} />
@@ -466,7 +477,7 @@ export const ProviderDetailPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {providerRequests.slice(0, 10).map((req) => (
+                  {pagedRequests.map((req) => (
                     <tr key={req.id}>
                       <td
                         style={{
@@ -524,6 +535,11 @@ export const ProviderDetailPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {reqTotalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--spacer-12)' }}>
+                <Pagination count={reqTotalPages} page={safeReqPage + 1} onPageChange={(p) => setReqPage(p - 1)} />
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -553,7 +569,7 @@ export const ProviderDetailPage: React.FC = () => {
                 style={{ ...iconBtnStyle, width: 28, height: 28, border: 'none' }}
                 title="复制"
               >
-                <Copy size={12} />
+                <MorphGlyph slots={keyCopyIcon.slots} rotate={keyCopyIcon.rotate} transition={keyCopyIcon.transition} mode={keyCopyIcon.mode} size={12} />
               </button>
             )}
           </div>
@@ -611,7 +627,7 @@ export const ProviderDetailPage: React.FC = () => {
       {/* ── Model List ───────────────────────────────────── */}
       <Card padding="var(--spacer-24)">
         <div style={{ ...sectionTitleStyle, marginBottom: 'var(--spacer-16)' }}>
-          <Bot size={18} />
+          <ProviderLogo providerId={provider.id} name={provider.name} size={18} />
           模型列表 ({provider.models.length})
         </div>
 
@@ -632,7 +648,7 @@ export const ProviderDetailPage: React.FC = () => {
             return (
               <div key={model.id} style={modelRowStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-8)' }}>
-                  <Bot size={16} style={{ color: 'var(--text-tertiary)' }} />
+                  <ModelLogo modelName={model.name} providerId={provider.id} name={provider.name} size={16} />
                   <span style={{ fontSize: 'var(--body-base-font-size)', color: 'var(--text-default)' }}>
                     {model.name}
                   </span>

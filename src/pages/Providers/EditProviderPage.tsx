@@ -3,12 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
 import { useT } from '../../i18n';
 import { ProviderLogo } from '../../components/ui/ProviderLogo';
-import { Tabs } from '../../components/ui/Tabs';
+import { Tabs } from '../../components/interior/tabs';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { toast } from '../../components/ui/Toast';
 import { desktopApi } from '../../lib/desktopApi';
-import { ArrowLeft, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { LoadingButton } from '../../components/interior/loading-button';
 import { ProviderBasicTab } from './tabs/ProviderBasicTab';
 import { ProviderModelsTab } from './tabs/ProviderModelsTab';
 import { ProviderMappingsTab } from './tabs/ProviderMappingsTab';
@@ -144,13 +145,16 @@ export const EditProviderPage: React.FC = () => {
         setTestTime(new Date().toLocaleTimeString());
         updateField('status', 'error');
         toast(`连接失败: ${msg}`, 'error');
+        // 继续 throw，让调用方的 LoadingButton 进入 error 脸（toast 已发出，不重复）。
+        throw new Error(msg);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setTestMessage(msg);
       setTestTime(new Date().toLocaleTimeString());
       updateField('status', 'error');
-      toast(`连接失败: ${msg}`, 'error');
+      if (!(e instanceof Error)) toast(`连接失败: ${msg}`, 'error');
+      throw e instanceof Error ? e : new Error(msg);
     } finally {
       setTesting(false);
     }
@@ -208,7 +212,6 @@ export const EditProviderPage: React.FC = () => {
       <div
         style={{
           padding: '16px 24px 0',
-          borderBottom: '1px solid var(--border-neutral-l1)',
           background: 'var(--bg-primary)',
           flexShrink: 0,
         }}
@@ -274,9 +277,15 @@ export const EditProviderPage: React.FC = () => {
           >
             {saveStateText}
           </span>
-          <Button variant="secondary" size="sm" icon={RefreshCw} loading={testing} onClick={handleTestConnection}>
-            {t('providers.status.testing')}
-          </Button>
+          {/* 页头快捷测试与基本信息分组内是同一个 handleTestConnection（async），进行态由按钮各自拥有；testing 只保留给状态文案。 */}
+          <LoadingButton
+            onAction={handleTestConnection}
+            pendingLabel={t('providers.status.testing')}
+            successLabel={t('providers.status.connected')}
+            errorLabel={t('providers.retest')}
+          >
+            {t('providers.testConnection')}
+          </LoadingButton>
           <Button variant="secondary" size="sm" icon={Save} onClick={doAutoSave}>
             {t('common.save')}
           </Button>
@@ -284,64 +293,74 @@ export const EditProviderPage: React.FC = () => {
             {t('models.delete')}
           </Button>
         </div>
-        <Tabs
-          tabs={TAB_TABS.map((t) => ({ ...t, count: tabCounts[t.key] }))}
-          activeKey={activeTab}
-          onChange={(k) => {
-            flushSave();
-            setActiveTab(k as TabKey);
-          }}
-        />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
-        {activeTab === 'basic' && (
-          <ProviderBasicTab
-            apiBase={form.apiBase}
-            apiKey={form.apiKey}
-            apiKeyConfigured={!!provider.apiKey}
-            apiFlavor={form.apiFlavor || 'openai-compatible'}
-            testStatus={
-              form.status === 'connected'
-                ? 'connected'
-                : form.status === 'error'
-                  ? 'error'
-                  : testing
-                    ? 'testing'
-                    : 'idle'
-            }
-            testMessage={testMessage}
-            testTime={testTime}
-            testing={testing}
-            onApiBaseChange={(v) => updateField('apiBase', v)}
-            onApiKeyChange={(v) => updateField('apiKey', v)}
-            onApiFlavorChange={(v) => updateField('apiFlavor', v)}
-            onTestConnection={handleTestConnection}
-          />
-        )}
-        {activeTab === 'models' && (
-          <ProviderModelsTab
-            models={form.models}
-            apiBase={form.apiBase}
-            apiKey={form.apiKey}
-            apiFlavor={form.apiFlavor || 'openai-compatible'}
-            onModelsChange={(v: Model[]) => updateField('models', v)}
-          />
-        )}
-        {activeTab === 'mappings' && (
-          <ProviderMappingsTab
-            mappings={form.modelMapping ?? {}}
-            onChange={(v) => updateField('modelMapping', Object.keys(v).length ? v : undefined)}
-          />
-        )}
-        {activeTab === 'proxy' && (
-          <ProviderProxyTab
-            proxyEnabled={proxyConfig.enabled}
-            proxyUrl={proxyConfig.url}
-            onProxyEnabledChange={(v) => updateField('proxyConfig', { ...proxyConfig, enabled: v })}
-            onProxyUrlChange={(v) => updateField('proxyConfig', { ...proxyConfig, url: v })}
-          />
-        )}
+      {/* 文档站同款：一张卡片内含标签栏 + 面板，renderPanel 随选中切换，切换带方向滑动。 */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--spacer-16) var(--spacer-24) var(--spacer-24)' }}>
+        <Tabs
+          variant="segmented"
+          label="供应商设置分组"
+          items={TAB_TABS.map((t) => ({ value: t.key, label: t.label, badge: tabCounts[t.key] }))}
+          value={activeTab}
+          onValueChange={(v) => {
+            flushSave();
+            setActiveTab(v as TabKey);
+          }}
+          panelClassName="mh-tabs__panel--page"
+          renderPanel={(v) => {
+            if (v === 'models')
+              return (
+                <ProviderModelsTab
+                  models={form.models}
+                  apiBase={form.apiBase}
+                  apiKey={form.apiKey}
+                  apiFlavor={form.apiFlavor || 'openai-compatible'}
+                  providerId={provider?.id || ''}
+                  providerName={form.name || provider?.name}
+                  onModelsChange={(m: Model[]) => updateField('models', m)}
+                />
+              );
+            if (v === 'mappings')
+              return (
+                <ProviderMappingsTab
+                  mappings={form.modelMapping ?? {}}
+                  onChange={(m) => updateField('modelMapping', Object.keys(m).length ? m : undefined)}
+                />
+              );
+            if (v === 'proxy')
+              return (
+                <ProviderProxyTab
+                  proxyEnabled={proxyConfig.enabled}
+                  proxyUrl={proxyConfig.url}
+                  onProxyEnabledChange={(e) => updateField('proxyConfig', { ...proxyConfig, enabled: e })}
+                  onProxyUrlChange={(u) => updateField('proxyConfig', { ...proxyConfig, url: u })}
+                />
+              );
+            return (
+              <ProviderBasicTab
+                apiBase={form.apiBase}
+                apiKey={form.apiKey}
+                apiKeyConfigured={!!provider.apiKey}
+                apiFlavor={form.apiFlavor || 'openai-compatible'}
+                testStatus={
+                  form.status === 'connected'
+                    ? 'connected'
+                    : form.status === 'error'
+                      ? 'error'
+                      : testing
+                        ? 'testing'
+                        : 'idle'
+                }
+                testMessage={testMessage}
+                testTime={testTime}
+                onApiBaseChange={(v) => updateField('apiBase', v)}
+                onApiKeyChange={(v) => updateField('apiKey', v)}
+                onApiFlavorChange={(v) => updateField('apiFlavor', v)}
+                onTestConnection={handleTestConnection}
+              />
+            );
+          }}
+        />
       </div>
 
       {showDeleteConfirm && (

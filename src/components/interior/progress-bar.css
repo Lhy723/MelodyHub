@@ -1,0 +1,116 @@
+/* MelodyHub interior progress-bar — 换肤样式
+   行为来自上游 interior progress-bar.tsx，样式从 Tailwind 重写为 MelodyHub CSS Vars。
+   复用 index.css 已有的 progressShimmer / progressIndeterminate / progressDonePulse keyframes。 */
+
+.mh-progress {
+  width: 100%;
+}
+
+.mh-progress__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacer-12);
+}
+
+.mh-progress__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.mh-progress__value {
+  display: grid;
+  justify-items: end;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.mh-progress__value > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  font-size: var(--body-xs-font-size);
+  font-weight: var(--font-weight-medium);
+  line-height: 20px;
+}
+
+.mh-progress__value-num {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.mh-progress__track {
+  margin-top: var(--spacer-8);
+  border-radius: var(--radius-4);
+  background: var(--bg-overlay-l1);
+  padding: 2px;
+  box-shadow: inset 0 1px 2px var(--bg-overlay-l2);
+}
+
+.mh-progress__viewport {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-2);
+}
+
+.mh-progress__fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-origin: left;
+  border-radius: var(--radius-2);
+  background: var(--bg-brand);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.mh-progress__fill[data-done='true'] {
+  animation: progressDonePulse 0.6s ease-out 1;
+}
+
+.mh-progress__indeterminate {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  width: 40%;
+  border-radius: var(--radius-2);
+  background: var(--bg-brand);
+}
+
+.mh-progress__indeterminate[data-animate='true'] {
+  animation: progressIndeterminate 1.25s ease-in-out infinite;
+}
+
+.mh-progress__shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-120%);
+}
+
+.mh-progress__shimmer[data-animate='true'] {
+  animation: progressShimmer 1.6s ease-in-out infinite;
+}
+
+.mh-progress__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-progress__indeterminate,
+  .mh-progress__shimmer,
+  .mh-progress__fill {
+    animation: none !important;
+  }
+}

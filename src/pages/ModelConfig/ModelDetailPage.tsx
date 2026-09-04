@@ -6,6 +6,7 @@ import { buildLegacyAggregationTargets, normalizeStrategyKey } from '../../types
 import type { RouteTarget, RoutingStrategy } from '../../types/aggregation';
 import type { Model } from '../../types/provider';
 import { Card, AnimatedContent, Button } from '../../components/ui';
+import { ReorderList } from '../../components/interior/reorder-list';
 import { toast } from '../../components/ui/Toast';
 import { ModelBulkEditPanel, type BulkEditValues } from './ModelBulkEditPanel';
 import { ModelSourcesTable, type SourceRow, type PendingEdits, type ModelPatch } from './ModelSourcesTable';
@@ -13,7 +14,7 @@ import { RoutingStrategySelect } from './RoutingStrategySelect';
 import { useT } from '../../i18n';
 import {
   ArrowLeft,
-  Bot,
+  Box,
   Eye,
   Brain,
   SlidersHorizontal,
@@ -495,7 +496,7 @@ export const ModelDetailPage: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              <Bot size={20} />
+              <Box size={20} />
             </div>
             <h1
               style={{
@@ -660,12 +661,14 @@ export const ModelDetailPage: React.FC = () => {
             const isCostField = routingStrategy === 'cost-optimized' || routingStrategy === 'auto';
             const isQuotaField = ['fill-first', 'reset-aware', 'headroom', 'auto'].includes(routingStrategy);
             const isResetField = ['reset-aware', 'reset-window', 'auto'].includes(routingStrategy);
+            const isManualOrder = routingStrategy === 'manual';
             const showPanel =
-              isPriorityField || isWeightField || isCostField || isQuotaField || isResetField;
+              isPriorityField || isWeightField || isCostField || isQuotaField || isResetField || isManualOrder;
             if (!showPanel || routingTargets.length === 0) return null;
 
             const hintKeys = [
               isPriorityField && 'models.routing.priorityHint',
+              isManualOrder && 'models.routing.manualHint',
               isWeightField && 'models.routing.weightedHint',
               isCostField && 'models.routing.costHint',
               isQuotaField && 'models.routing.quotaHint',
@@ -698,6 +701,121 @@ export const ModelDetailPage: React.FC = () => {
               outline: 'none',
               width: '100%',
             } as const;
+
+            // 手动排序：顺序即配置，用拖拽列表代替数字字段。
+            if (isManualOrder) {
+              return (
+                <div style={{ marginTop: 'var(--spacer-16)' }}>
+                  <div
+                    style={{
+                      marginBottom: 'var(--spacer-8)',
+                      padding: 'var(--spacer-10) var(--spacer-12)',
+                      borderRadius: 'var(--radius-8)',
+                      background: 'var(--bg-overlay-l1)',
+                      color: 'var(--text-secondary)',
+                      fontSize: 'var(--body-sm-font-size)',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {hintKeys.map((key) => t(key)).join(' ')}
+                  </div>
+                  <div
+                    style={{
+                      color: 'var(--text-secondary)',
+                      fontSize: 'var(--body-sm-font-size)',
+                      fontWeight: 'var(--font-weight-medium)',
+                      marginBottom: 'var(--spacer-8)',
+                    }}
+                  >
+                    {t('models.routing.targetList')}
+                  </div>
+                  <ReorderList
+                    items={routingTargets}
+                    getId={(target) => target.id}
+                    getLabel={(target) => target.model}
+                    onReorder={setRoutingTargets}
+                    onCommit={setRoutingTargets}
+                    label={t('models.routing.targetList')}
+                  >
+                    {(target) => {
+                      const display = targetDisplayMap.get(target.providerId);
+                      return (
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--spacer-10)',
+                            minWidth: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              minWidth: 20,
+                              height: 20,
+                              padding: '0 var(--spacer-4)',
+                              borderRadius: 'var(--radius-4)',
+                              background: 'var(--bg-brand)',
+                              color: 'var(--text-onbrand)',
+                              fontSize: 'var(--body-xs-font-size)',
+                              fontWeight: 'var(--font-weight-strong)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {routingTargets.findIndex((item) => item.id === target.id) + 1}
+                          </span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: 'block',
+                                fontSize: 'var(--body-sm-font-size)',
+                                color: 'var(--text-default)',
+                                fontFamily: 'var(--font-family-mono)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {target.model}
+                            </span>
+                            {display && (
+                              <span
+                                style={{ fontSize: 'var(--body-xs-font-size)', color: 'var(--text-tertiary)' }}
+                              >
+                                {display.providerName}
+                              </span>
+                            )}
+                          </span>
+                          <label
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 'var(--spacer-6)',
+                              fontSize: 'var(--body-xs-font-size)',
+                              color: 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={target.enabled}
+                              onChange={(event) =>
+                                patchRoutingTarget(target.id, { enabled: event.target.checked })
+                              }
+                              style={{ cursor: 'pointer' }}
+                            />
+                            {target.enabled ? t('models.routing.enabledOn') : t('models.routing.enabledOff')}
+                          </label>
+                        </span>
+                      );
+                    }}
+                  </ReorderList>
+                </div>
+              );
+            }
 
             return (
               <div style={{ marginTop: 'var(--spacer-16)' }}>

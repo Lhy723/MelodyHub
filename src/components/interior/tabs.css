@@ -1,0 +1,180 @@
+/* MelodyHub interior tabs —换肤样式
+   行为来自上游 interior tabs.tsx（useTabs + 滑动指示器 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-tabs {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-12);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-tabs__row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  gap: var(--spacer-4);
+  border-bottom: 1px solid var(--border-neutral-l2);
+  background: var(--bg-base-secondary);
+  padding: var(--spacer-4) var(--spacer-4) 0;
+}
+
+.mh-tabs__indicator {
+  position: absolute;
+  top: var(--spacer-4);
+  bottom: -1px;
+  border-top-left-radius: var(--radius-8);
+  border-top-right-radius: var(--radius-8);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: var(--bg-white);
+}
+
+.mh-tabs__indicator-border {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border-neutral-l2);
+  border-bottom: none;
+  border-top-left-radius: var(--radius-8);
+  border-top-right-radius: var(--radius-8);
+}
+
+.mh-tabs__tab {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 var(--spacer-14);
+  border: none;
+  border-top-left-radius: var(--radius-8);
+  border-top-right-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  outline: none;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-tabs__tab:hover:not([data-disabled='true']) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-tabs__tab[data-selected='true'] {
+  color: var(--text-default);
+}
+
+.mh-tabs__tab[data-disabled='true'] {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+.mh-tabs__tab:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-tabs__tab-label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  line-height: 1.4;
+}
+
+.mh-tabs__tab-ghost {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  font-weight: var(--font-weight-medium);
+}
+
+.mh-tabs__tab-text {
+  grid-area: 1 / 1;
+}
+
+.mh-tabs__tab-text[data-selected='true'] {
+  font-weight: var(--font-weight-medium);
+}
+
+.mh-tabs__badge {
+  margin-left: var(--spacer-6);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--spacer-6);
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-overlay-l2);
+  color: var(--text-tertiary);
+  font-family: var(--font-family-metric);
+  font-size: var(--body-xs-font-size);
+  line-height: var(--body-xs-line-height);
+}
+
+/* 页面级面板：卡片内标签体与内容体的呼吸间距（调用方经 panelClassName 选用）。 */
+.mh-tabs__panel--page {
+  padding: var(--spacer-20) var(--spacer-24) var(--spacer-24);
+}
+
+.mh-tabs__panel {
+  border-radius: var(--radius-10);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  color: var(--text-secondary);
+  outline: none;
+}
+
+.mh-tabs__panel:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+/* underline 变体：去卡片化，细线 + 2px 滑杆（文档站第二种形态）。 */
+.mh-tabs[data-variant='underline'] {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mh-tabs[data-variant='underline'] .mh-tabs__row {
+  background: transparent;
+  border-bottom: 1px solid var(--border-neutral-l1);
+  padding: 0;
+  gap: var(--spacer-24);
+}
+
+.mh-tabs[data-variant='underline'] .mh-tabs__indicator {
+  top: auto;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--icon-default);
+}
+
+.mh-tabs[data-variant='underline'] .mh-tabs__indicator-border {
+  display: none;
+}
+
+.mh-tabs[data-variant='underline'] .mh-tabs__tab {
+  height: auto;
+  padding: var(--spacer-12) 0;
+  border-radius: 0;
+  color: var(--text-tertiary);
+}
+
+.mh-tabs[data-variant='underline'] .mh-tabs__tab:hover:not([data-disabled='true']) {
+  background: transparent;
+  color: var(--text-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-tabs__tab {
+    transition: none;
+  }
+}

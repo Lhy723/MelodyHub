@@ -9,7 +9,8 @@ import { ModelDonutChart } from './ModelDonutChart';
 import { UsageHeatmap } from './UsageHeatmap';
 import { RecentRequests } from './RecentRequests';
 import { ProxyControl } from './ProxyControl';
-import { TriangleAlert, RefreshCw } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
+import { LoadingButton } from '../../components/interior/loading-button';
 import { useT } from '../../i18n';
 
 export const Dashboard: React.FC = () => {
@@ -26,10 +27,9 @@ export const Dashboard: React.FC = () => {
     return statsError || requestsError || dailyUsageError;
   }, [statsError, requestsError, dailyUsageError]);
 
-  const handleRetry = () => {
-    fetchStats();
-    fetchRequests();
-    fetchDailyUsage();
+  // 重试同时刷三块数据，等全部落定再给成功脸；失败时 store 错误横幅会重新出现并说明原因。
+  const handleRetry = async () => {
+    await Promise.all([fetchStats(), fetchRequests(), fetchDailyUsage()]);
   };
 
   useEffect(() => {
@@ -103,26 +103,14 @@ export const Dashboard: React.FC = () => {
         >
           <TriangleAlert size={16} />
           <span style={{ flex: 1 }}>{t('dashboard.loadError')}{loadError}</span>
-          <button
-            onClick={handleRetry}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--spacer-4)',
-              height: 28,
-              padding: '0 var(--spacer-10)',
-              borderRadius: 'var(--radius-6)',
-              border: '1px solid var(--status-error-default)',
-              background: 'transparent',
-              color: 'var(--status-error-default)',
-              cursor: 'pointer',
-              fontSize: 'var(--body-xs-font-size)',
-              fontFamily: 'inherit',
-            }}
+          <LoadingButton
+            onAction={handleRetry}
+            pendingLabel={t('dashboard.retrying')}
+            successLabel={t('dashboard.retried')}
+            errorLabel={t('dashboard.retry')}
           >
-            <RefreshCw size={12} />
             {t('dashboard.retry')}
-          </button>
+          </LoadingButton>
         </div>
       )}
       <ProxyControl />

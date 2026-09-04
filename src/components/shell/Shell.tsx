@@ -16,6 +16,7 @@ export const Shell: React.FC = () => {
     '/dashboard': t('shell.dashboard'),
     '/providers': t('shell.providers'),
     '/models': t('shell.models'),
+    '/applications': t('shell.applicationSettings'),
     '/settings': t('shell.settings'),
   };
   const pageTitle = pageTitles[location.pathname] || pageTitles[rootPath] || 'Melody Hub';

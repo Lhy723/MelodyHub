@@ -20,6 +20,9 @@ const ProviderDetailPage = lazy(() =>
   import('./pages/Providers/ProviderDetailPage').then((m) => ({ default: m.ProviderDetailPage })),
 );
 const Settings = lazy(() => import('./pages/Settings/Settings').then((m) => ({ default: m.Settings })));
+const ApplicationSettings = lazy(() =>
+  import('./pages/ApplicationSettings/ApplicationSettings').then((m) => ({ default: m.ApplicationSettings })),
+);
 
 function resolveTheme(theme: string): string {
   if (theme !== 'system') return theme;
@@ -123,6 +126,14 @@ function App() {
             element={
               <Suspense fallback={null}>
                 <Settings />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/applications"
+            element={
+              <Suspense fallback={null}>
+                <ApplicationSettings />
               </Suspense>
             }
           />

@@ -81,3 +81,82 @@ describe('Dropdown motion', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 });
+
+describe('Dropdown interior behaviors', () => {
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('skips disabled options in keyboard nav and blocks selection', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Dropdown
+        options={[
+          { value: 'one', label: 'One' },
+          { value: 'two', label: 'Two', disabled: true },
+          { value: 'three', label: 'Three' },
+        ]}
+        value="one"
+        onChange={onChange}
+      />,
+    );
+
+    const trigger = screen.getByRole('button');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('listbox')).toBeInTheDocument();
+
+    // ArrowDown from One skips disabled Two and lands on Three.
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledOnce();
+    expect(onChange).toHaveBeenCalledWith('three');
+  });
+
+  it('marks disabled options with aria-disabled and ignores pointer selection', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Dropdown
+        options={[
+          { value: 'one', label: 'One' },
+          { value: 'two', label: 'Two', disabled: true },
+        ]}
+        value="one"
+        onChange={onChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button'));
+    const disabled = await screen.findByText('Two');
+    expect(disabled.closest('[role="option"]')).toHaveAttribute('aria-disabled', 'true');
+    await user.click(disabled);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('jumps to a matching option on typeahead', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Dropdown
+        options={[
+          { value: 'alpha', label: 'Alpha' },
+          { value: 'beta', label: 'Beta' },
+          { value: 'gamma', label: 'Gamma' },
+        ]}
+        value="alpha"
+        onChange={onChange}
+      />,
+    );
+
+    const trigger = screen.getByRole('button');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('listbox')).toBeInTheDocument();
+
+    await user.keyboard('g');
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith('gamma');
+  });
+});

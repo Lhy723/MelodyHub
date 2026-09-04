@@ -7,6 +7,7 @@ import type { Provider } from './provider';
 
 export const ROUTING_STRATEGY_VALUES = [
   'priority',
+  'manual',
   'weighted',
   'round-robin',
   'context-relay',
@@ -106,6 +107,7 @@ export interface RoutingStrategyOption {
 
 export const STRATEGY_OPTIONS: RoutingStrategyOption[] = [
   { value: 'priority', labelKey: 'priority', descriptionKey: 'priorityDesc', groupKey: 'deterministic' },
+  { value: 'manual', labelKey: 'manual', descriptionKey: 'manualDesc', groupKey: 'deterministic' },
   { value: 'fill-first', labelKey: 'fillFirst', descriptionKey: 'fillFirstDesc', groupKey: 'deterministic' },
   { value: 'round-robin', labelKey: 'roundRobin', descriptionKey: 'roundRobinDesc', groupKey: 'balanced' },
   { value: 'weighted', labelKey: 'weighted', descriptionKey: 'weightedDesc', groupKey: 'balanced' },

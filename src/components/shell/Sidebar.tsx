@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { LayoutDashboard, Server, Cpu, Settings } from 'lucide-react';
+import { LayoutDashboard, Server, Cpu, Settings, AppWindow } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { useT } from '../../i18n';
@@ -36,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeKey, onNavigate }) => {
     { key: 'dashboard', label: t('sidebar.dashboard'), icon: <LayoutDashboard size={16} />, path: '/dashboard' },
     { key: 'providers', label: t('sidebar.providers'), icon: <Server size={16} />, path: '/providers' },
     { key: 'models', label: t('sidebar.models'), icon: <Cpu size={16} />, path: '/models' },
+    { key: 'applications', label: t('sidebar.applicationSettings'), icon: <AppWindow size={16} />, path: '/applications' },
     { key: 'settings', label: t('sidebar.settings'), icon: <Settings size={16} />, path: '/settings' },
   ];
 

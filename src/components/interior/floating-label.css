@@ -1,0 +1,149 @@
+/* MelodyHub interior floating-label —换肤样式
+   行为来自上游 interior floating-label.tsx（useFloatingLabel 浮动标签/聚焦/
+   填充态 + 首帧 instant + reduced-motion）原样保留，
+   样式从 Tailwind 重写为 MelodyHub CSS Vars（深色靠 var 体系适配）。 */
+
+.mh-floating-label {
+  width: 100%;
+}
+
+.mh-floating-label[data-disabled='true'] {
+  opacity: 0.55;
+}
+
+.mh-floating-label__body {
+  position: relative;
+  padding-top: var(--spacer-20);
+}
+
+.mh-floating-label__shell {
+  position: relative;
+  height: var(--spacer-40);
+  border: 2px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-base-secondary);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text-default) 8%, transparent);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-floating-label__shell[data-focused='true'] {
+  border-color: var(--border-brand);
+  background: var(--bg-white);
+  box-shadow: none;
+}
+
+.mh-floating-label__shell[data-invalid='true'] {
+  border-color: var(--status-error-default);
+  background: var(--bg-white);
+  box-shadow: none;
+}
+
+.mh-floating-label__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  padding: 0 var(--spacer-12);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  color: var(--text-default);
+  outline: none;
+}
+
+.mh-floating-label__input:focus-visible {
+  outline: none;
+}
+
+.mh-floating-label__input:disabled {
+  cursor: not-allowed;
+}
+
+.mh-floating-label__label {
+  position: absolute;
+  top: var(--spacer-32);
+  left: var(--spacer-12);
+  display: block;
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-sm-line-height);
+  color: var(--text-disabled);
+  cursor: text;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mh-floating-label__label[data-raised='true'] {
+  color: var(--text-tertiary);
+}
+
+.mh-floating-label__label[data-invalid='true'] {
+  color: var(--status-error-default);
+}
+
+.mh-floating-label__required {
+  margin-left: var(--spacer-2);
+  color: var(--text-disabled);
+}
+
+.mh-floating-label__footer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacer-12);
+  height: var(--spacer-16);
+  margin-top: var(--spacer-6);
+}
+
+.mh-floating-label__hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+  color: var(--text-tertiary);
+}
+
+.mh-floating-label__hint[data-invalid='true'] {
+  color: var(--status-error-default);
+}
+
+.mh-floating-label__count {
+  display: grid;
+  flex-shrink: 0;
+  justify-items: end;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-xs-font-size);
+  line-height: var(--body-sm-line-height);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.mh-floating-label__count-ghost {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.mh-floating-label__count-value {
+  grid-area: 1 / 1;
+}
+
+.mh-floating-label__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-floating-label__shell {
+    transition: none;
+  }
+}

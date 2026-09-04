@@ -1,0 +1,172 @@
+/* MelodyHub interior expanding-search —换肤样式
+   行为来自上游 interior expanding-search.tsx（useExpandingSearch + 宽度弹簧/
+   透明度交叉淡入/clear 缩放/trigger 位移 + reduced-motion + 失焦收起）原样保留，
+   样式从 Tailwind 重写为 MelodyHub CSS Vars（深色靠 var 体系适配）。 */
+
+.mh-expanding-search {
+  position: relative;
+  height: var(--spacer-40);
+  width: 100%;
+}
+
+.mh-expanding-search__shell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  border: 2px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-base-secondary);
+  box-shadow: var(--shadow-sm);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mh-expanding-search__shell[data-align='right'] {
+  right: 0;
+}
+
+.mh-expanding-search__shell[data-align='left'] {
+  left: 0;
+}
+
+.mh-expanding-search__shell[data-focused='true'] {
+  border-color: var(--border-brand);
+  background: var(--bg-white);
+  box-shadow: none;
+}
+
+.mh-expanding-search__input {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 36px;
+  color: var(--text-default);
+  outline: none;
+}
+
+.mh-expanding-search__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.mh-expanding-search__input:focus-visible {
+  outline: none;
+}
+
+.mh-expanding-search__input::-webkit-search-cancel-button,
+.mh-expanding-search__input::-webkit-search-decoration {
+  appearance: none;
+}
+
+.mh-expanding-search__actions {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 7px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-6);
+}
+
+.mh-expanding-search__count {
+  width: 32px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-family: var(--font-family-mono);
+  font-size: var(--body-xs-font-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.mh-expanding-search__clear {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-6);
+  background: transparent;
+  color: var(--icon-secondary);
+  outline: none;
+  cursor: pointer;
+}
+
+.mh-expanding-search__clear[data-active='true'] {
+  pointer-events: auto;
+}
+
+.mh-expanding-search__clear:hover {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-expanding-search__clear:focus-visible {
+  outline: 2px solid var(--border-brand);
+  outline-offset: -2px;
+}
+
+.mh-expanding-search__trigger {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--spacer-40);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--icon-secondary);
+  outline: none;
+  cursor: pointer;
+}
+
+.mh-expanding-search__trigger[data-align='right'] {
+  right: 0;
+}
+
+.mh-expanding-search__trigger[data-align='left'] {
+  left: 0;
+}
+
+.mh-expanding-search__trigger[data-open='true'] {
+  pointer-events: none;
+}
+
+.mh-expanding-search__trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-expanding-search__trigger:focus-visible {
+  outline: 2px solid var(--border-brand);
+  outline-offset: -2px;
+}
+
+.mh-expanding-search__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-expanding-search__shell,
+  .mh-expanding-search__clear,
+  .mh-expanding-search__trigger {
+    transition: none;
+  }
+}

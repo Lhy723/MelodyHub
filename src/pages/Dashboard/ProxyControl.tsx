@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { desktopApi } from '../../lib/desktopApi';
 import { toast, Counter, StarBorder } from '../../components/ui';
 import { useT, t as tFn } from '../../i18n';
-import Prism from '../../components/ui/Prism';
-import { Play, Square, Copy, Check, Loader2, Cpu } from 'lucide-react';
+import { useCopyToClipboard } from '../../components/interior/copy-button';
+import { useAsyncAction } from '../../components/interior/loading-button';
+import { useIconMorph, MorphGlyph } from '../../components/interior/icon-morph';
+import { Loader2, Cpu } from 'lucide-react';
 
 interface ProxyStatus {
   running: boolean;
@@ -38,16 +40,25 @@ const CARD_THEME = {
 } as unknown as React.CSSProperties;
 
 const SPRING = { type: 'spring' as const, stiffness: 400, damping: 30 };
+
+// 复制行图标：Copy→✓ 路径变形，行级持有避免串扰。
+function CopyMorphIcon({ copied }: { copied: boolean }) {
+  const icon = useIconMorph({ preset: 'copy-check', active: copied });
+  return <MorphGlyph slots={icon.slots} rotate={icon.rotate} transition={icon.transition} mode={icon.mode} size={14} />;
+}
 const DURATION_SLOW = { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const };
 const DURATION_FAST = { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const };
 
 export const ProxyControl: React.FC = () => {
   const t = useT();
-  const shouldReduceMotion = useReducedMotion();
   const [status, setStatus] = useState<ProxyStatus | null>(null);
-  const [toggling, setToggling] = useState(false);
-  const [copiedEndpoint, setCopiedEndpoint] = useState<number | null>(null);
-  const [copiedToken, setCopiedToken] = useState(false);
+  // interior 复制行为：clipboard fallback + 错误态 + 自动复位（修掉手写版无 fallback 与 setTimeout 泄漏）。
+  const endpointCopy = useCopyToClipboard({ onCopy: () => toast(tFn('proxy.endpointCopied'), 'success') });
+  const tokenCopy = useCopyToClipboard({ onCopy: () => toast(tFn('proxy.tokenCopied'), 'success') });
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  useEffect(() => {
+    if (endpointCopy.status === 'idle') setCopiedIdx(null);
+  }, [endpointCopy.status]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [now, setNow] = useState(Date.now());
   const statusAtRef = useRef<number>(0);
@@ -59,6 +70,28 @@ export const ProxyControl: React.FC = () => {
   useEffect(() => {
     if (!loaded) loadSettings();
   }, [loaded, loadSettings]);
+
+  // 启停开关保留玻璃拟态铬，进行态改由 useAsyncAction 拥有（防重入 + 自动复位，替代手写 toggling state）。
+  const toggleAction = useAsyncAction({
+    action: async () => {
+      try {
+        if (running) {
+          await desktopApi.stopProxy();
+          toast(tFn('proxy.stoppedAgent'), 'info');
+        } else {
+          await desktopApi.startProxy(settings.host, settings.port);
+          toast(tFn('proxy.startedAgent'), 'success');
+        }
+        await desktopApi
+          .getProxyStatus()
+          .then(setStatus)
+          .catch(() => setStatus(null));
+      } catch (e: unknown) {
+        toast(e instanceof Error ? e.message : String(e), 'error');
+        throw e;
+      }
+    },
+  });
 
   const poll = useCallback(() => {
     desktopApi
@@ -87,6 +120,9 @@ export const ProxyControl: React.FC = () => {
   const authToken = settings.authToken;
   const running = status?.running ?? false;
   const showUptime = running && status !== null;
+  // 启停图标走 interior play-pause 路径变形（受控：running=true 显示暂停杠）；按钮铬与加载态保持原样。
+  const toggleIcon = useIconMorph({ preset: 'play-pause', active: running });
+  // 两行复制按钮的 Copy→✓ 同样走路径变形（行级组件持有各自状态，避免多行共用一个 hook 互相串扰）。
 
   useEffect(() => {
     if (!running) return;
@@ -94,48 +130,16 @@ export const ProxyControl: React.FC = () => {
     return () => clearInterval(id);
   }, [running]);
 
-  const handleToggle = async () => {
-    setToggling(true);
-    try {
-      if (running) {
-        await desktopApi.stopProxy();
-        toast(tFn('proxy.stoppedAgent'), 'info');
-      } else {
-        await desktopApi.startProxy(settings.host, settings.port);
-        toast(tFn('proxy.startedAgent'), 'success');
-      }
-      await desktopApi
-        .getProxyStatus()
-        .then(setStatus)
-        .catch(() => setStatus(null));
-    } catch (e: unknown) {
-      toast(e instanceof Error ? e.message : String(e), 'error');
-    } finally {
-      setToggling(false);
-    }
+
+
+  const copyEndpoint = (index: number) => {
+    setCopiedIdx(index);
+    void endpointCopy.copy(endpoints[index].url);
   };
 
-  const copyEndpoint = async (index: number) => {
-    try {
-      await navigator.clipboard.writeText(endpoints[index].url);
-      setCopiedEndpoint(index);
-      setTimeout(() => setCopiedEndpoint(null), 2000);
-      toast(tFn('proxy.endpointCopied'), 'success');
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const copyToken = async () => {
+  const copyToken = () => {
     if (!authToken) return;
-    try {
-      await navigator.clipboard.writeText(authToken);
-      setCopiedToken(true);
-      setTimeout(() => setCopiedToken(false), 2000);
-      toast(tFn('proxy.tokenCopied'), 'success');
-    } catch {
-      /* ignore */
-    }
+    void tokenCopy.copy(authToken);
   };
 
   const totalUptime = showUptime ? status!.uptimeSecs + Math.max(0, Math.floor((now - statusAtRef.current) / 1000)) : 0;
@@ -158,7 +162,7 @@ export const ProxyControl: React.FC = () => {
       key: `ep-${idx}`,
       label: ep.label,
       value: ep.url,
-      copied: copiedEndpoint === idx,
+      copied: endpointCopy.copied && copiedIdx === idx,
       onCopy: () => void copyEndpoint(idx),
     })),
     {
@@ -166,7 +170,7 @@ export const ProxyControl: React.FC = () => {
       key: 'token',
       label: tFn('proxy.token'),
       value: authToken,
-      copied: copiedToken,
+      copied: tokenCopy.copied,
       onCopy: () => void copyToken(),
     },
   ];
@@ -175,18 +179,12 @@ export const ProxyControl: React.FC = () => {
     <div
       style={{
         position: 'relative',
-        borderRadius: 'var(--radius-12)',
+        borderRadius: 'var(--radius-16)',
         overflow: 'hidden',
         marginBottom: 'var(--spacer-24)',
-        minHeight: 180,
       }}
     >
-      {/* Prism background.
-          Renders a WebGL prism refractor on pure black. The prism's
-          built-in chromatic dispersion already produces a colorful
-          spectrum, so no theme-color tint is applied. zIndex:0 keeps
-          it behind content (zIndex:2). pointerEvents:none so it
-          stays decorative. */}
+      {/* 静态深色底：WebGL Prism 动画已删除，换成静态渐变（左上绿光 + 右上蓝光）。 */}
       <div
         style={{
           position: 'absolute',
@@ -197,41 +195,27 @@ export const ProxyControl: React.FC = () => {
           width: '100%',
           height: '100%',
           zIndex: 0,
-          backgroundColor: '#000',
-          opacity: running ? 1 : 0.6,
+          background:
+            'radial-gradient(120% 90% at 12% 0%, rgba(74,222,128,0.14) 0%, rgba(74,222,128,0) 42%), radial-gradient(120% 100% at 88% 8%, rgba(96,165,250,0.16) 0%, rgba(96,165,250,0) 46%), linear-gradient(180deg, #101418 0%, #0a0d11 100%)',
+          opacity: running ? 1 : 0.75,
           transition: 'opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
           pointerEvents: 'none',
         }}
-      >
-        <Prism
-          animationType="rotate"
-          timeScale={running && !shouldReduceMotion ? 0.6 : 0.2}
-          height={3.5}
-          baseWidth={5.5}
-          scale={3.6}
-          hueShift={0}
-          colorFrequency={1}
-          noise={0.4}
-          glow={1}
-          bloom={1}
-          transparent
-          suspendWhenOffscreen
-        />
-      </div>
+      />
 
       <div
         style={{
           position: 'relative',
           zIndex: 2,
           overflow: 'hidden',
-          background: 'transparent',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 32%)',
           border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 'var(--radius-12)',
+          borderRadius: 'var(--radius-16)',
         }}
       >
         <div
           style={{
-            padding: 'var(--spacer-16) var(--spacer-20)',
+            padding: 'var(--spacer-20) var(--spacer-20) var(--spacer-16)',
             ...CARD_THEME,
           }}
         >
@@ -240,8 +224,8 @@ export const ProxyControl: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'var(--spacer-16)',
-              marginBottom: 'var(--spacer-16)',
+              gap: 'var(--spacer-20)',
+              marginBottom: 'var(--spacer-20)',
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -263,9 +247,9 @@ export const ProxyControl: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 'var(--radius-10)',
+                    width: 48,
+                    height: 48,
+                    borderRadius: 'var(--radius-12)',
                     backdropFilter: 'blur(12px) saturate(140%)',
                     WebkitBackdropFilter: 'blur(12px) saturate(140%)',
                     border: '1px solid',
@@ -275,9 +259,10 @@ export const ProxyControl: React.FC = () => {
                   <motion.div
                     animate={running ? { scale: [1, 1.06, 1], opacity: [0.9, 1, 0.9] } : { scale: 1, opacity: 1 }}
                     transition={running ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Cpu
-                      size={20}
+                      size={22}
                       style={{
                         color: running ? 'var(--status-success-default)' : 'var(--icon-tertiary)',
                         transition: 'color 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
@@ -426,40 +411,40 @@ export const ProxyControl: React.FC = () => {
               thickness={2}
             >
               <motion.button
-              onClick={handleToggle}
-              disabled={toggling}
+              onClick={toggleAction.run}
+              disabled={toggleAction.pending}
               initial={false}
               animate={{
                 background: running
-                  ? toggling
+                  ? toggleAction.pending
                     ? 'rgba(248,113,113,0.20)'
                     : 'rgba(248,113,113,0.30)'
-                  : toggling
+                  : toggleAction.pending
                     ? 'rgba(255,255,255,0.12)'
                     : 'rgba(74,222,128,0.30)',
                 borderColor: running ? 'rgba(248,113,113,0.30)' : 'rgba(74,222,128,0.30)',
-                scale: toggling ? 0.96 : 1,
+                scale: toggleAction.pending ? 0.96 : 1,
               }}
               whileHover={
-                toggling
+                toggleAction.pending
                   ? {}
                   : {
                       background: running ? 'rgba(248,113,113,0.42)' : 'rgba(74,222,128,0.42)',
                       scale: 1.03,
                     }
               }
-              whileTap={toggling ? {} : { scale: 0.97 }}
+              whileTap={toggleAction.pending ? {} : { scale: 0.97 }}
               transition={SPRING}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 'var(--spacer-6)',
-                height: 36,
-                padding: '0 var(--spacer-20)',
-                borderRadius: 'var(--radius-8)',
+                gap: 'var(--spacer-8)',
+                height: 44,
+                padding: '0 var(--spacer-28)',
+                borderRadius: 'var(--radius-10)',
                 border: '1px solid',
-                cursor: toggling ? 'not-allowed' : 'pointer',
+                cursor: toggleAction.pending ? 'not-allowed' : 'pointer',
                 fontSize: 'var(--body-base-font-size)',
                 fontWeight: 'var(--font-weight-strong)',
                 fontFamily: 'inherit',
@@ -471,7 +456,7 @@ export const ProxyControl: React.FC = () => {
               }}
             >
               <AnimatePresence mode="wait" initial={false}>
-                {toggling ? (
+                {toggleAction.pending ? (
                   <motion.span
                     key="loading"
                     initial={{ rotate: 0, opacity: 0 }}
@@ -485,32 +470,31 @@ export const ProxyControl: React.FC = () => {
                   >
                     <Loader2 size={16} />
                   </motion.span>
-                ) : running ? (
-                  <motion.span
-                    key="stop"
-                    initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
-                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                    exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
-                    transition={SPRING}
-                    style={{ display: 'flex' }}
-                  >
-                    <Square size={14} />
-                  </motion.span>
                 ) : (
-                  <motion.span
-                    key="start"
-                    initial={{ scale: 0.5, opacity: 0, x: -4 }}
-                    animate={{ scale: 1, opacity: 1, x: 0 }}
-                    exit={{ scale: 0.5, opacity: 0, x: 4 }}
-                    transition={SPRING}
-                    style={{ display: 'flex' }}
-                  >
-                    <Play size={14} />
-                  </motion.span>
+                  // 启停图标改走 interior 路径变形：运行中 ↔ 已停止之间三角形与双杠直接插值，不再整图标缩放旋转替换。
+                  <span key="morph" style={{ display: 'flex' }}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width={14}
+                      height={14}
+                      fill="currentColor"
+                      aria-hidden="true"
+                      style={{ display: 'block' }}
+                    >
+                      {toggleIcon.slots.map((slot) => (
+                        <motion.path
+                          key={slot.key}
+                          initial={false}
+                          animate={{ d: slot.d, opacity: slot.visible ? 1 : 0 }}
+                          transition={toggleIcon.transition}
+                        />
+                      ))}
+                    </svg>
+                  </span>
                 )}
               </AnimatePresence>
               <AnimatePresence mode="wait" initial={false}>
-                {!toggling && (
+                {!toggleAction.pending && (
                   <motion.span
                     key={running ? 'stop-text' : 'start-text'}
                     initial={{ opacity: 0, x: running ? -8 : 8 }}
@@ -546,9 +530,9 @@ export const ProxyControl: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 'var(--spacer-8)',
-                  padding: 'var(--spacer-8) var(--spacer-10)',
-                  borderRadius: 'var(--radius-8)',
+                  gap: 'var(--spacer-10)',
+                  padding: 'var(--spacer-10) var(--spacer-10) var(--spacer-10) var(--spacer-12)',
+                  borderRadius: 'var(--radius-10)',
                   backdropFilter: 'blur(14px) saturate(150%)',
                   WebkitBackdropFilter: 'blur(14px) saturate(150%)',
                   border: '1px solid',
@@ -558,10 +542,11 @@ export const ProxyControl: React.FC = () => {
                 <span
                   style={{
                     fontSize: 'var(--body-xs-font-size)',
-                    color: 'var(--text-tertiary)',
+                    fontWeight: 'var(--font-weight-medium)',
+                    color: 'var(--text-secondary)',
                     whiteSpace: 'nowrap',
                     flexShrink: 0,
-                    minWidth: 60,
+                    minWidth: 76,
                   }}
                 >
                   {item.label}
@@ -590,18 +575,16 @@ export const ProxyControl: React.FC = () => {
                     </motion.code>
                     <button
                       onClick={item.onCopy}
-                      title={item.kind === 'token' ? '复制令牌' : '复制地址'}
+                      aria-label={item.kind === 'token' ? '复制令牌' : '复制地址'}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: 26,
-                        height: 26,
-                        borderRadius: 'var(--radius-6)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        background: 'rgba(255,255,255,0.08)',
-                        backdropFilter: 'blur(10px) saturate(140%)',
-                        WebkitBackdropFilter: 'blur(10px) saturate(140%)',
+                        width: 30,
+                        height: 30,
+                        borderRadius: 'var(--radius-8)',
+                        border: 'none',
+                        background: 'transparent',
                         color: item.copied ? 'var(--status-success-default)' : 'var(--icon-tertiary)',
                         cursor: 'pointer',
                         flexShrink: 0,
@@ -609,35 +592,15 @@ export const ProxyControl: React.FC = () => {
                           'color var(--transition-fast, 0.12s ease), background var(--transition-fast, 0.12s ease)',
                       }}
                       onMouseEnter={(e) => {
-                        if (!item.copied) e.currentTarget.style.background = 'rgba(255,255,255,0.16)';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                        if (!item.copied) e.currentTarget.style.color = 'rgba(255,255,255,0.92)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                        e.currentTarget.style.background = 'transparent';
+                        if (!item.copied) e.currentTarget.style.color = 'var(--icon-tertiary)';
                       }}
                     >
-                      <AnimatePresence mode="wait" initial={false}>
-                        {item.copied ? (
-                          <motion.span
-                            key="check"
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.5, opacity: 0 }}
-                            transition={SPRING}
-                          >
-                            <Check size={14} />
-                          </motion.span>
-                        ) : (
-                          <motion.span
-                            key="copy"
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.5, opacity: 0 }}
-                            transition={SPRING}
-                          >
-                            <Copy size={14} />
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      <CopyMorphIcon copied={item.copied} />
                     </button>
                   </>
                 ) : (

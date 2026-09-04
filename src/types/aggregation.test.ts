@@ -9,10 +9,11 @@ import type { Aggregation } from './aggregation';
 import type { Provider } from './provider';
 
 describe('routing strategies', () => {
-  it('exposes the same 19 public strategies as OmniRoute', () => {
-    expect(ROUTING_STRATEGY_VALUES).toHaveLength(19);
+  it('exposes the same 20 public strategies as OmniRoute', () => {
+    expect(ROUTING_STRATEGY_VALUES).toHaveLength(20);
     expect(STRATEGY_OPTIONS.map((option) => option.value)).toEqual([
       'priority',
+      'manual',
       'fill-first',
       'round-robin',
       'weighted',

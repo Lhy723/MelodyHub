@@ -1,0 +1,58 @@
+/* MelodyHub interior skeleton-swap —换肤样式
+   行为来自上游 interior skeleton-swap.tsx（useSkeletonSwap + 交叉淡入 + reduced-motion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色靠 var 体系自动适配。 */
+
+.mh-skeleton-swap {
+  position: relative;
+  display: grid;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--text-secondary);
+}
+
+.mh-skeleton-swap:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-skeleton-swap__body {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.mh-skeleton-swap__overlay {
+  pointer-events: none;
+  grid-area: 1 / 1;
+  width: 100%;
+  align-self: start;
+}
+
+.mh-skeleton-swap__lines {
+  width: 100%;
+}
+
+.mh-skeleton-swap__row {
+  display: flex;
+  align-items: center;
+}
+
+.mh-skeleton-swap__bar {
+  border-radius: var(--radius-4);
+  background: var(--bg-overlay-l2);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.mh-skeleton-swap__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-skeleton-swap__bar {
+    animation: none;
+  }
+}

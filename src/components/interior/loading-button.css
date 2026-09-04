@@ -1,0 +1,93 @@
+/* MelodyHub interior loading-button — 换肤样式
+   行为来自上游 interior loading-button.tsx（useAsyncAction 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars。 */
+
+.mh-loading-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 var(--spacer-12);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-8);
+  background: var(--bg-white);
+  color: var(--text-default);
+  font-size: var(--body-sm-font-size);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-loading-btn:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-loading-btn:active:not(:disabled) {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-loading-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mh-loading-btn:focus-visible {
+  outline: 2px solid var(--bg-brand);
+  outline-offset: 2px;
+}
+
+.mh-loading-btn[data-status='pending'] {
+  color: var(--text-tertiary);
+}
+
+.mh-loading-btn[data-status='success'] {
+  border-color: var(--status-success-default);
+  color: var(--status-success-default);
+}
+
+.mh-loading-btn[data-status='error'] {
+  border-color: var(--status-error-default);
+  color: var(--status-error-default);
+}
+
+.mh-loading-btn__faces {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.mh-loading-btn__face {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacer-6);
+  white-space: nowrap;
+}
+
+.mh-loading-btn__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.mh-loading-btn__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-loading-btn {
+    transition: none;
+  }
+}

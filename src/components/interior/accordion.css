@@ -1,0 +1,95 @@
+/* MelodyHub interior accordion —换肤样式
+   行为来自上游 interior accordion.tsx（useAutoHeight + useAccordion 原样保留），
+   样式从 Tailwind 重写为 MelodyHub CSS Vars，深色模式由 var 体系自然适配。 */
+
+.mh-accordion {
+  overflow: hidden;
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-accordion__row + .mh-accordion__row {
+  border-top: 1px solid var(--border-neutral-l1);
+}
+
+.mh-accordion__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-12);
+  width: 100%;
+  padding: var(--spacer-12) var(--spacer-14);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-accordion__trigger:hover {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-accordion__trigger:focus-visible {
+  background: var(--bg-overlay-l1);
+  box-shadow: inset 0 0 0 1px var(--bg-brand);
+}
+
+.mh-accordion__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--heading-xs-font-size);
+  line-height: var(--heading-xs-line-height);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.mh-accordion__title[data-open='true'] {
+  color: var(--text-default);
+}
+
+.mh-accordion__meta {
+  flex-shrink: 0;
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.mh-accordion__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--icon-tertiary);
+}
+
+.mh-accordion__panel {
+  border-top: 1px solid var(--border-neutral-l1);
+  background: var(--bg-base-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.mh-accordion__panel-inner {
+  padding: var(--spacer-12) var(--spacer-14) var(--spacer-14);
+  font-size: var(--body-md-font-size);
+  line-height: var(--body-md-line-height);
+  color: var(--text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-accordion__trigger,
+  .mh-accordion__title {
+    transition: none;
+  }
+}
