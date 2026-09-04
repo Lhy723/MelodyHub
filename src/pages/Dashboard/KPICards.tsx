@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStatsStore } from '../../store/statsStore';
 import type { UsageStats } from '../../types/stats';
-import { Counter, FlexBetween, FlexRow, ShinyText, SpotlightCard, Skeleton } from '../../components/ui';
+import { Counter, FlexBetween, FlexRow, SpotlightCard, Skeleton } from '../../components/ui';
 import { Coins, Activity, Box, Clock } from 'lucide-react';
 import { LoadingButton } from '../../components/interior/loading-button';
 import { ValueFlash } from '../../components/interior/value-flash';
@@ -16,6 +16,10 @@ interface KpiCardConfig {
   getChange: (stats: UsageStats) => number | null;
   changeLabel: string;
 }
+
+// index.css 不能改：KPI 大数字字号收敛为文件内常量，勿在 JSX 里散落魔法数。
+const KPI_VALUE_FONT_SIZE = 28;
+const KPI_VALUE_LINE_HEIGHT = 36;
 
 const makeCards = (t: ReturnType<typeof useT>): KpiCardConfig[] => [
   {
@@ -192,10 +196,10 @@ export const KPICards: React.FC = () => {
             <div
               style={{
                 fontFamily: 'var(--font-family-metric)',
-                fontSize: 28,
+                fontSize: KPI_VALUE_FONT_SIZE,
                 fontWeight: 'var(--font-weight-strong)',
                 color: 'var(--text-default)',
-                lineHeight: '36px',
+                lineHeight: `${KPI_VALUE_LINE_HEIGHT}px`,
                 marginBottom: 'var(--spacer-8)',
                 display: 'flex',
                 alignItems: 'center',
@@ -205,7 +209,7 @@ export const KPICards: React.FC = () => {
                 <>
                   <Counter
                     value={value}
-                    fontSize={28}
+                    fontSize={KPI_VALUE_FONT_SIZE}
                     gap={1}
                     horizontalPadding={0}
                     gradientHeight={0}
@@ -235,7 +239,7 @@ export const KPICards: React.FC = () => {
                   }}
                 />
                 <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)' }}>
-                  <ShinyText active={false}>{card.changeLabel}</ShinyText>
+                  {card.changeLabel}
                 </span>
               </FlexRow>
             ) : change != null ? (

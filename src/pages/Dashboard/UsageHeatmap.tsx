@@ -106,13 +106,14 @@ export const UsageHeatmap: React.FC = () => {
     start.setDate(today.getDate() - (WEEKS - 1) * 7);
     const range = [formatDateLocal(start), formatDateLocal(today)];
 
+    // fallback 取自 index.css 浅色主题 --brand-100..600 实际值（深色模式由 getCssVar 解析）。
     const heatColors = [
       getCssVar('--bg-base-tertiary') || '#E5E5E5',
-      getCssVar('--brand-100') || '#E5EAFF',
-      getCssVar('--brand-200') || '#CFD8FF',
-      getCssVar('--brand-300') || '#AAB7FF',
-      getCssVar('--brand-500') || '#6A6FFF',
-      getCssVar('--bg-brand') || '#4B3FE3',
+      getCssVar('--brand-100') || '#d6f5e2',
+      getCssVar('--brand-200') || '#aeebc6',
+      getCssVar('--brand-300') || '#75da9e',
+      getCssVar('--brand-500') || '#1fc170',
+      getCssVar('--bg-brand') || '#00b95c',
     ];
     const tertiaryText = getCssVar('--text-tertiary') || '#737373';
     const tooltipBg = getCssVar('--bg-tooltip') || '#FFFFFF';
@@ -128,7 +129,7 @@ export const UsageHeatmap: React.FC = () => {
         top: 0,
         textStyle: {
           fontSize: 13,
-          fontWeight: 'bold',
+          fontWeight: 600,
           color: getCssVar('--text-default') || '#171717',
         },
       },
@@ -200,12 +201,6 @@ export const UsageHeatmap: React.FC = () => {
             borderRadius: 4,
             borderWidth: 2,
             borderColor: cellBorder,
-          },
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 4,
-              shadowColor: 'rgba(0,0,0,0.2)',
-            },
           },
           progressive: 1000,
           animation: false,

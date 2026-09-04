@@ -8,11 +8,13 @@ import { Drawer } from '../../components/interior/drawer';
 import { CopyButton } from '../../components/interior/copy-button';
 import { useT } from '../../i18n';
 
-const modelTagStyle: Record<string, { variant: 'brand' | 'green' | 'danger'; customColor?: string }> = {
-  'GPT-4o': { variant: 'brand' },
-  'Claude 3.5': { variant: 'green', customColor: 'var(--viz-series-coral)' },
-  'DeepSeek V3': { variant: 'green', customColor: 'var(--accent-teal)' },
-  'Qwen 2.5': { variant: 'green', customColor: 'var(--accent-amber)' },
+/** provider → --chart-* 色彩（与 statsStore VENDOR_PATTERNS 同一套 token），认不出的统一 neutral。 */
+const providerTagColor = (provider: string): string => {
+  if (/gpt|openai/i.test(provider)) return 'var(--chart-gpt)';
+  if (/claude|anthropic/i.test(provider)) return 'var(--chart-claude)';
+  if (/deepseek/i.test(provider)) return 'var(--chart-deepseek)';
+  if (/qwen|tongyi|alibaba/i.test(provider)) return 'var(--chart-qwen)';
+  return 'var(--chart-other)';
 };
 
 /** 抽屉里的标签-值行。 */
@@ -165,112 +167,21 @@ export const RecentRequests: React.FC = () => {
       ) : (
         <>
           <div className="ds-table-card" style={{ overflowX: 'auto' }}>
-            <table className="ds-table" style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse' }}>
+            <table className="ds-table mh-dash-table" style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'left',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.time')}
-                  </th>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'left',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.model')}
-                  </th>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'left',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.provider')}
-                  </th>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'left',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.type')}
-                  </th>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'right',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.tokens')}
-                  </th>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'left',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.status')}
-                  </th>
-                  <th
-                    style={{
-                      padding: 'var(--spacer-16) var(--spacer-8)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                      textAlign: 'right',
-                      fontSize: 'var(--body-md-font-size)',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--body-md-letter-spacing)',
-                    }}
-                  >
-                    {t('dashboard.table.latency')}
-                  </th>
+                  {/* 表头铬收敛到 dashboard.css 的 .mh-dash-table th（interior sortable-table 规范）。 */}
+                  <th>{t('dashboard.table.time')}</th>
+                  <th>{t('dashboard.table.model')}</th>
+                  <th>{t('dashboard.table.provider')}</th>
+                  <th>{t('dashboard.table.type')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('dashboard.table.tokens')}</th>
+                  <th>{t('dashboard.table.status')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('dashboard.table.latency')}</th>
                 </tr>
               </thead>
               <tbody>
                 {paged.map((req, idx) => {
-                  const ts = modelTagStyle[req.model];
                   const isNewRow = newRowIds.current.has(req.id);
                   return (
                     <tr
@@ -316,12 +227,8 @@ export const RecentRequests: React.FC = () => {
                         }}
                       >
                         <Tag
-                          variant={ts?.variant ?? 'brand'}
-                          style={
-                            ts?.customColor
-                              ? { background: 'var(--bg-overlay-l1)', color: ts.customColor, border: 'none' }
-                              : { border: 'none' }
-                          }
+                          variant="neutral"
+                          style={{ color: providerTagColor(req.provider) }}
                         >
                           {req.model}
                         </Tag>

@@ -12,6 +12,7 @@ import { ProxyControl } from './ProxyControl';
 import { TriangleAlert } from 'lucide-react';
 import { LoadingButton } from '../../components/interior/loading-button';
 import { useT } from '../../i18n';
+import './dashboard.css';
 
 export const Dashboard: React.FC = () => {
   const t = useT();
@@ -96,7 +97,8 @@ export const Dashboard: React.FC = () => {
             marginBottom: 'var(--spacer-16)',
             borderRadius: 'var(--radius-8)',
             background: 'var(--status-error-surface-l1)',
-            border: '1px solid var(--status-error-default)',
+            // 全强度错误描边弱化为 30% 语义色发丝线，文字仍保持 --status-error-default。
+            border: '1px solid color-mix(in srgb, var(--status-error-default) 30%, transparent)',
             color: 'var(--status-error-default)',
             fontSize: 'var(--body-sm-font-size)',
           }}

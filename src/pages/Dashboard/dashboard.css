@@ -1,0 +1,86 @@
+/* Dashboard 页面级 interior 收敛样式。
+   基准 token 见 src/index.css；interior 基调 = 扁平白底 + 1px 发丝线 + shadow-sm。
+   深色模式靠 var 体系自动适配，不写死色值。 */
+
+/* ── RecentRequests 表头：对齐 interior sortable-table 头单元格规范 ── */
+.mh-dash-table th {
+  padding: var(--spacer-16) var(--spacer-8);
+  border-bottom: 1px solid var(--border-neutral-l1);
+  text-align: left;
+  font-size: var(--body-xs-font-size);
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── ProxyControl 启停按钮：interior loading-button 铬（1px 边 + overlay hover）── */
+.mh-proxy-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacer-8);
+  height: 44px;
+  padding: 0 var(--spacer-24);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-10);
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-size: var(--body-base-font-size);
+  font-weight: var(--font-weight-strong);
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.mh-proxy-toggle:hover:not(:disabled) {
+  background: var(--bg-overlay-l1);
+}
+
+.mh-proxy-toggle:active:not(:disabled) {
+  background: var(--bg-overlay-l2);
+}
+
+.mh-proxy-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 运行中按钮的下一步动作是「停止」，仅文字用语义色点出，不整卡变色。 */
+.mh-proxy-toggle--running {
+  color: var(--status-error-default);
+}
+
+/* ── ProxyControl 复制格按钮：hover 用 overlay，复制成功态用 success token ── */
+.mh-proxy-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-8);
+  border: none;
+  background: transparent;
+  color: var(--icon-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.mh-proxy-copy:hover:not(.is-copied) {
+  background: var(--bg-overlay-l1);
+  color: var(--text-default);
+}
+
+.mh-proxy-copy.is-copied {
+  color: var(--status-success-default);
+}
