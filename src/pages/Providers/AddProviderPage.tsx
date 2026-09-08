@@ -250,7 +250,7 @@ export const AddProviderPage: React.FC = () => {
   const [profiles, setProfiles] = useState<ProviderProfileEntry[]>(FALLBACK_PROFILES);
   const [selectedProfile, setSelectedProfile] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
-  const [stepperKey, setStepperKey] = useState(0);
+  const [wizardKey, setStepperKey] = useState(0);
   const [retryStep, setRetryStep] = useState(1);
   const [finishError, setFinishError] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -550,7 +550,7 @@ export const AddProviderPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stepper */}
+      {/* WizardSteps */}
       <div
         style={{
           background: 'var(--bg-base-default)',
@@ -560,7 +560,7 @@ export const AddProviderPage: React.FC = () => {
         }}
       >
         <WizardSteps
-          key={stepperKey}
+          key={wizardKey}
           defaultIndex={retryStep - 1}
           index={currentStep - 1}
           onIndexChange={(i) => setCurrentStep(i + 1)}

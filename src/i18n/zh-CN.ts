@@ -524,6 +524,7 @@ const zh: Record<string, string> = {
   'common.cancel': '取消',
   'common.confirm': '确定',
   'common.placeholder': '可选',
+  'common.selectPlaceholder': '— 选择 —',
   'common.loading': '加载中...',
   'common.error': '错误',
   'common.closeNotification': '关闭通知',

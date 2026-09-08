@@ -543,6 +543,7 @@ const en: Record<string, string> = {
   'common.cancel': 'Cancel',
   'common.confirm': 'Confirm',
   'common.placeholder': 'Optional',
+  'common.selectPlaceholder': '— Select —',
   'common.loading': 'Loading...',
   'common.error': 'Error',
   'common.closeNotification': 'Close notification',

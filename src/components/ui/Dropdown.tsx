@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
+import { t as i18n } from '../../i18n';
 
 // ═══════════════════════════════════════════════════════════════
 // Dropdown — custom styled select replacement
@@ -51,7 +52,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   options,
   value,
   onChange,
-  placeholder = '— 选择 —',
+  placeholder = i18n('common.selectPlaceholder'),
   searchable = false,
   searchPlaceholder = '搜索…',
   disabled = false,

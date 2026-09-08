@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.1.12 (2026-09-04)
+
+### 新增
+
+- Agent Apps 应用设置页：管理 Codex/Claude/OpenCode 的模型配置、推理参数与功能开关，写入各工具原生配置文件
+- 模型品牌图标：按模型名自动解析供应商 Logo（ModelLogo），供应商卡、模型库存与详情页接入
+- TooltipGroup 成组提示接入供应商卡与令牌操作按钮
+
+### 界面
+
+- 供应商卡重设计：模型叠堆展示，删除 Prism WebGL 背景改静态渐变
+- 侧边栏激活态降噪为单层中性强调
+- 设置页/供应商编辑页/仪表盘时间范围接入 interior Tabs 与 LoadingButton/IconMorph
+- 模型库存页 FilterGrid 长方形卡片回退
+
+### 修复
+
+- agent_apps 测试补齐新参数，lib 测试恢复编译
+- 收拢 save_* 函数参数为 SaveTarget 结构体，修 clippy too_many_arguments
+
+## 0.1.11 (2026-07-31)
+
 ## 0.1.13 (2026-09-04)
 
 ### 界面
