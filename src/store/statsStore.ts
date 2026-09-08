@@ -162,7 +162,7 @@ export const useStatsStore = create<StatsStore>((set, get) => ({
   fetchDailyUsage: async () => {
     set({ dailyUsageLoading: true, dailyUsageError: null });
     try {
-      const data = await desktopApi.getDailyUsage();
+      const data = await desktopApi.getDailyUsage(get().timeRange);
       set({ dailyUsage: data, dailyUsageLoading: false });
     } catch (e: unknown) {
       set({ dailyUsageLoading: false, dailyUsageError: errorMessage(e, '获取用量数据失败') });

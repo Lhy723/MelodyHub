@@ -49,4 +49,4 @@ export interface DailyUsage {
   tokens: number;
 }
 
-export type TimeRange = '7d' | '30d' | '90d';
+export type TimeRange = '24h' | '7d' | '30d' | '90d';

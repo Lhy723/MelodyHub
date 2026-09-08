@@ -34,6 +34,21 @@ function rangeToDays(range: string): number {
   return 7;
 }
 
+/** Compute the last 24 hours of trend from hourly usage buckets
+ *  (backend keys hourly data as "YYYY-MM-DD HH:00" for the 24h range). */
+function computeHourlyTrend(dailyUsage: { date: string; tokens: number }[]): TrendPoint[] {
+  const byHour = new Map(dailyUsage.map((d) => [d.date, d.tokens]));
+  const result: TrendPoint[] = [];
+  const now = new Date();
+  for (let offset = 23; offset >= 0; offset -= 1) {
+    const date = new Date(now.getTime() - offset * 60 * 60 * 1000);
+    const iso = date.toISOString();
+    const key = `${iso.slice(0, 10)} ${iso.slice(11, 13)}:00`;
+    result.push({ day: `${iso.slice(11, 13)}:00`, tokens: byHour.get(key) ?? 0 });
+  }
+  return result;
+}
+
 function formatTokens(v: number): string {
   if (v >= 1000000) return `${(v / 1000000).toFixed(0)}M`;
   if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
@@ -45,7 +60,8 @@ export const TokenTrendChart: React.FC = () => {
   const dailyUsage = useStatsStore((s) => s.dailyUsage);
   const timeRange = useStatsStore((s) => s.timeRange);
   const days = rangeToDays(timeRange);
-  const trendData = computeTrend(dailyUsage, days);
+  const trendData =
+    timeRange === '24h' ? computeHourlyTrend(dailyUsage) : computeTrend(dailyUsage, days);
   const themeVersion = useThemeVersion();
 
   const option = useMemo<EChartsOption>(() => {
@@ -155,7 +171,9 @@ export const TokenTrendChart: React.FC = () => {
             fontWeight: 400,
           }}
         >
-          {t('dashboard.chart.tokenTrendPeriod', { days })}
+          {timeRange === '24h'
+            ? t('dashboard.chart.tokenTrendPeriod24h')
+            : t('dashboard.chart.tokenTrendPeriod', { days })}
         </span>
       </div>
       <div style={{ height: 220, position: 'relative' }}>

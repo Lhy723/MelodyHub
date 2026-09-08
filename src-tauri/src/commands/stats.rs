@@ -41,9 +41,11 @@ pub async fn get_recent_requests(
 #[tauri::command]
 pub async fn get_daily_usage(
     state: tauri::State<'_, SharedAppState>,
+    time_range: Option<String>,
 ) -> Result<Vec<DailyUsage>, String> {
     let records = state.metrics.snapshot().await;
-    Ok(compute_daily_usage(&records))
+    let filtered = filter_records_by_range(&records, time_range.as_deref());
+    Ok(compute_daily_usage(&filtered, time_range.as_deref()))
 }
 
 /// Reset all in-memory statistics. Persisted JSONL files on disk
@@ -78,6 +80,12 @@ fn compute_stats_for_range(
     let Some(range) = time_range else {
         return compute_stats(records);
     };
+    if range == "24h" {
+        // Rolling 24h window vs the preceding 24h, compared on timestamps.
+        let current = filter_since(records, hours_ago(24));
+        let previous = filter_between(records, hours_ago(48), hours_ago(24));
+        return Ok(compare_periods(&current, &previous));
+    }
     let days = range_days(range);
     let today = Utc::now().date_naive();
     let current_start = today - Duration::days(days - 1);
@@ -96,11 +104,15 @@ fn compute_stats_for_range(
         .cloned()
         .collect();
 
-    let cur = aggregate_stats(&current);
-    let prev = aggregate_stats(&previous);
+    Ok(compare_periods(&current, &previous))
+}
+
+fn compare_periods(current: &[RequestRecord], previous: &[RequestRecord]) -> UsageStats {
+    let cur = aggregate_stats(current);
+    let prev = aggregate_stats(previous);
     let response_delta = round1(cur.avg_response_time - prev.avg_response_time);
 
-    Ok(UsageStats {
+    UsageStats {
         total_tokens: cur.total_tokens,
         total_requests: cur.total_requests,
         active_models: cur.active_models,
@@ -112,7 +124,7 @@ fn compute_stats_for_range(
         ),
         response_time_change: response_delta,
         response_time_trend: if response_delta <= 0.0 { "up" } else { "down" }.into(),
-    })
+    }
 }
 
 /// Filter records to those falling within the given time range
@@ -125,6 +137,9 @@ fn filter_records_by_range(
     let Some(range) = time_range else {
         return records.to_vec();
     };
+    if range == "24h" {
+        return filter_since(records, Utc::now().naive_utc() - Duration::hours(24));
+    }
     let days = range_days(range);
     let today = Utc::now().date_naive();
     let start = today - Duration::days(days - 1);
@@ -202,15 +217,58 @@ fn record_date(record: &RequestRecord) -> Option<NaiveDate> {
     None
 }
 
-fn compute_daily_usage(records: &[RequestRecord]) -> Vec<DailyUsage> {
+fn record_datetime(record: &RequestRecord) -> Option<NaiveDateTime> {
+    if let Ok(dt) = NaiveDateTime::parse_from_str(&record.timestamp, "%Y-%m-%d %H:%M:%S")
+    {
+        return Some(dt);
+    }
+    record_date(record).and_then(|d| d.and_hms_opt(0, 0, 0))
+}
+
+fn hours_ago(hours: i64) -> NaiveDateTime {
+    Utc::now().naive_utc() - Duration::hours(hours)
+}
+
+fn filter_since(records: &[RequestRecord], start: NaiveDateTime) -> Vec<RequestRecord> {
+    records
+        .iter()
+        .filter(|r| record_datetime(r).is_some_and(|ts| ts >= start))
+        .cloned()
+        .collect()
+}
+
+fn filter_between(
+    records: &[RequestRecord],
+    start: NaiveDateTime,
+    end: NaiveDateTime,
+) -> Vec<RequestRecord> {
+    records
+        .iter()
+        .filter(|r| record_datetime(r).is_some_and(|ts| ts >= start && ts < end))
+        .cloned()
+        .collect()
+}
+
+fn compute_daily_usage(
+    records: &[RequestRecord],
+    time_range: Option<&str>,
+) -> Vec<DailyUsage> {
+    // 24h 视图按小时分桶（“YYYY-MM-DD HH:00”），其余按天。
+    let hourly = time_range == Some("24h");
     let mut daily: HashMap<String, (i64, i64)> = HashMap::new();
     for r in records {
-        let date = if r.timestamp.len() >= 10 {
+        let key = if hourly {
+            if r.timestamp.len() >= 13 {
+                format!("{}:00", &r.timestamp[..13])
+            } else {
+                r.timestamp.clone()
+            }
+        } else if r.timestamp.len() >= 10 {
             r.timestamp[..10].to_string()
         } else {
             r.timestamp.clone()
         };
-        let entry = daily.entry(date).or_insert((0, 0));
+        let entry = daily.entry(key).or_insert((0, 0));
         entry.0 += 1;
         entry.1 += r.tokens;
     }
@@ -293,10 +351,55 @@ mod tests {
             rec("gpt-4o", 50, 500, "2026-01-01 12:00:00"),
             rec("claude", 200, 3000, "2026-01-02 11:00:00"),
         ];
-        let d = compute_daily_usage(&recs);
+        let d = compute_daily_usage(&recs, None);
         assert_eq!(d.len(), 2);
         let jan1 = d.iter().find(|x| x.date == "2026-01-01").unwrap();
         assert_eq!(jan1.count, 2);
         assert_eq!(jan1.tokens, 150);
+    }
+    #[test]
+    fn stats_24h_uses_rolling_hour_windows() {
+        let now = Utc::now().naive_utc();
+        let ts = |hours_ago: i64| {
+            (now - Duration::hours(hours_ago))
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        };
+        let records = vec![
+            rec("m", 10, 100, &ts(1)),
+            rec("m", 20, 100, &ts(2)),
+            rec("m", 40, 100, &ts(30)),
+            rec("m", 80, 100, &ts(25)),
+        ];
+        let stats = compute_stats_for_range(&records, Some("24h")).unwrap();
+        // 当前窗口（最近 24h）只有前两条；上一窗口是 24~48h 前的后两条
+        assert_eq!(stats.total_tokens, 30);
+        assert_eq!(stats.total_requests, 2);
+        assert_eq!(stats.token_change, -75.0); // 30 vs 120
+    }
+
+    #[test]
+    fn daily_usage_buckets_by_hour_for_24h() {
+        let now = Utc::now().naive_utc();
+        let ts = |hours_ago: i64| {
+            (now - Duration::hours(hours_ago))
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        };
+        let records = vec![rec("m", 5, 10, &ts(1)), rec("m", 7, 10, &ts(25))];
+        // 命令层先过滤再分桶；这里模拟同样流程。
+        let filtered = filter_records_by_range(&records, Some("24h"));
+        let usage = compute_daily_usage(&filtered, Some("24h"));
+        assert_eq!(usage.len(), 1);
+        assert!(usage[0].date.ends_with(":00"));
+        assert_eq!(usage[0].tokens, 5);
+
+        let usage = compute_daily_usage(&records, Some("24h"));
+        assert_eq!(usage.len(), 2);
+        assert!(usage.iter().all(|u| u.date.ends_with(":00")));
+
+        let usage = compute_daily_usage(&records, None);
+        assert_eq!(usage.len(), 2);
+        assert!(usage.iter().all(|u| !u.date.contains(':')));
     }
 }

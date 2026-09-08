@@ -7,6 +7,7 @@ import { useT } from '../../i18n';
 export const TimeRangeTabs: React.FC = () => {
   const t = useT();
   const rangeOptions: { key: TimeRange; label: string }[] = [
+    { key: '24h', label: t('dashboard.tabs.24h') },
     { key: '7d', label: t('dashboard.tabs.7d') },
     { key: '30d', label: t('dashboard.tabs.30d') },
     { key: '90d', label: t('dashboard.tabs.90d') },
@@ -15,6 +16,7 @@ export const TimeRangeTabs: React.FC = () => {
   const setTimeRange = useStatsStore((s) => s.setTimeRange);
   const fetchStats = useStatsStore((s) => s.fetchStats);
   const fetchRequests = useStatsStore((s) => s.fetchRequests);
+  const fetchDailyUsage = useStatsStore((s) => s.fetchDailyUsage);
 
   return (
     <div style={{ marginBottom: 'var(--spacer-24)' }}>
@@ -25,6 +27,7 @@ export const TimeRangeTabs: React.FC = () => {
           setTimeRange(next as TimeRange);
           void fetchStats();
           void fetchRequests();
+          void fetchDailyUsage();
         }}
         variant="underline"
         label={t('dashboard.tabs.label')}

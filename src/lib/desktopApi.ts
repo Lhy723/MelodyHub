@@ -3,7 +3,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { AppSettings } from '../types/settings';
 import type { Provider } from '../types/provider';
 import type { Aggregation } from '../types/aggregation';
-import type { UsageStats, RequestRecord, DailyUsage } from '../types/stats';
+import type { UsageStats, RequestRecord, DailyUsage, TimeRange } from '../types/stats';
 
 export interface ProviderHealthSnapshot {
   providerId: string;
@@ -73,7 +73,7 @@ export interface DesktopApi {
   getProxyStatus(): Promise<{ running: boolean; host: string; port: number; uptimeSecs: number }>;
   getStats(timeRange: string): Promise<UsageStats>;
   getRecentRequests(limit: number, timeRange?: string): Promise<RequestRecord[]>;
-  getDailyUsage(): Promise<DailyUsage[]>;
+  getDailyUsage(timeRange?: TimeRange | string): Promise<DailyUsage[]>;
   resetStats(): Promise<void>;
   exitApp(): Promise<void>;
   initLogDir(): Promise<void>;
@@ -116,7 +116,7 @@ export const desktopApi: DesktopApi = {
   getStats: (timeRange) => invoke<UsageStats>('get_stats', { timeRange }),
   getRecentRequests: (limit, timeRange) =>
     invoke<RequestRecord[]>('get_recent_requests', { limit, timeRange }),
-  getDailyUsage: () => invoke<DailyUsage[]>('get_daily_usage'),
+  getDailyUsage: (timeRange?) => invoke<DailyUsage[]>('get_daily_usage', { timeRange: timeRange ?? null }),
   resetStats: () => invoke('reset_stats'),
   exitApp: () => invoke('exit_app'),
   initLogDir: () => invoke('init_log_dir'),
