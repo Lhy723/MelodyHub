@@ -33,11 +33,19 @@ export const Dashboard: React.FC = () => {
     await Promise.all([fetchStats(), fetchRequests(), fetchDailyUsage()]);
   };
 
+  // 统一刷新入口：24h 视图额外拉小时桶（时间范围从 store 现读，避免闭包过期）。
+  const refreshDashboardData = () => {
+    void fetchStats();
+    void fetchRequests();
+    void fetchDailyUsage();
+    if (useStatsStore.getState().timeRange === '24h') {
+      void useStatsStore.getState().fetchHourlyUsage();
+    }
+  };
+
   useEffect(() => {
     // Initial load.
-    fetchStats();
-    fetchRequests();
-    fetchDailyUsage();
+    refreshDashboardData();
 
     // Event-driven refresh: listen for `request-completed` events
     // from the Rust backend and debounce-refresh all three data
@@ -48,11 +56,7 @@ export const Dashboard: React.FC = () => {
 
     const scheduleRefresh = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        fetchStats();
-        fetchRequests();
-        fetchDailyUsage();
-      }, 300);
+      debounceTimer = setTimeout(refreshDashboardData, 300);
     };
 
     onRequestCompleted(scheduleRefresh)
@@ -70,9 +74,7 @@ export const Dashboard: React.FC = () => {
     // Re-fetch when the tab becomes visible again (no polling).
     const onVisibility = () => {
       if (!document.hidden) {
-        fetchStats();
-        fetchRequests();
-        fetchDailyUsage();
+        refreshDashboardData();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);

@@ -9,6 +9,7 @@ interface StatsStore {
   modelBreakdown: ModelBreakdown[];
   recentRequests: RequestRecord[];
   dailyUsage: DailyUsage[];
+  hourlyUsage: DailyUsage[];
   timeRange: TimeRange;
   loading: boolean;
   /** Per-area loading states */
@@ -26,6 +27,7 @@ interface StatsStore {
   fetchStats: () => Promise<void>;
   fetchRequests: () => Promise<void>;
   fetchDailyUsage: () => Promise<void>;
+  fetchHourlyUsage: () => Promise<void>;
   resetStats: () => Promise<void>;
 }
 
@@ -106,6 +108,7 @@ export const useStatsStore = create<StatsStore>((set, get) => ({
   modelBreakdown: [],
   recentRequests: [],
   dailyUsage: [],
+  hourlyUsage: [],
   timeRange: '7d',
   loading: false,
   statsLoading: false,
@@ -162,10 +165,20 @@ export const useStatsStore = create<StatsStore>((set, get) => ({
   fetchDailyUsage: async () => {
     set({ dailyUsageLoading: true, dailyUsageError: null });
     try {
-      const data = await desktopApi.getDailyUsage(get().timeRange);
+      // 热力图与按天趋势吃全量历史；24h 小时桶走独立的 hourlyUsage。
+      const data = await desktopApi.getDailyUsage();
       set({ dailyUsage: data, dailyUsageLoading: false });
     } catch (e: unknown) {
       set({ dailyUsageLoading: false, dailyUsageError: errorMessage(e, '获取用量数据失败') });
+    }
+  },
+
+  fetchHourlyUsage: async () => {
+    try {
+      const data = await desktopApi.getDailyUsage('24h');
+      set({ hourlyUsage: data });
+    } catch {
+      // 小时桶仅影响 24h 趋势图，静默失败即可。
     }
   },
 

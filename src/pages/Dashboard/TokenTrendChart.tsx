@@ -58,10 +58,11 @@ function formatTokens(v: number): string {
 export const TokenTrendChart: React.FC = () => {
   const t = useT();
   const dailyUsage = useStatsStore((s) => s.dailyUsage);
+  const hourlyUsage = useStatsStore((s) => s.hourlyUsage);
   const timeRange = useStatsStore((s) => s.timeRange);
   const days = rangeToDays(timeRange);
-  const trendData =
-    timeRange === '24h' ? computeHourlyTrend(dailyUsage) : computeTrend(dailyUsage, days);
+  const is24h = timeRange === '24h';
+  const trendData = is24h ? computeHourlyTrend(hourlyUsage) : computeTrend(dailyUsage, days);
   const themeVersion = useThemeVersion();
 
   const option = useMemo<EChartsOption>(() => {
@@ -177,7 +178,7 @@ export const TokenTrendChart: React.FC = () => {
         </span>
       </div>
       <div style={{ height: 220, position: 'relative' }}>
-        {dailyUsage.length === 0 ? (
+        {(is24h ? hourlyUsage.length === 0 && dailyUsage.length === 0 : dailyUsage.length === 0) ? (
           <div
             style={{
               display: 'flex',

@@ -16,7 +16,7 @@ export const TimeRangeTabs: React.FC = () => {
   const setTimeRange = useStatsStore((s) => s.setTimeRange);
   const fetchStats = useStatsStore((s) => s.fetchStats);
   const fetchRequests = useStatsStore((s) => s.fetchRequests);
-  const fetchDailyUsage = useStatsStore((s) => s.fetchDailyUsage);
+  const fetchHourlyUsage = useStatsStore((s) => s.fetchHourlyUsage);
 
   return (
     <div style={{ marginBottom: 'var(--spacer-24)' }}>
@@ -27,7 +27,9 @@ export const TimeRangeTabs: React.FC = () => {
           setTimeRange(next as TimeRange);
           void fetchStats();
           void fetchRequests();
-          void fetchDailyUsage();
+          if (next === '24h') {
+            void fetchHourlyUsage();
+          }
         }}
         variant="underline"
         label={t('dashboard.tabs.label')}
