@@ -1783,21 +1783,35 @@ mod tests {
         let output =
             String::from_utf8(converter.push(input.as_bytes()).unwrap()).unwrap();
 
+        // 键序不应参与断言（preserve_order 下插入序可变），逐事件解析验证。
+        let events: Vec<serde_json::Value> = output
+            .lines()
+            .filter(|line| line.starts_with("data: ") && !line.contains("[DONE]"))
+            .map(|line| serde_json::from_str(&line["data: ".len()..]).unwrap())
+            .collect();
+        let find_event = |index: i64, event_type: &str| {
+            events.iter().any(|event| {
+                event["type"] == event_type
+                    && event.get("index").and_then(serde_json::Value::as_i64)
+                        == Some(index)
+            })
+        };
+
         // thinking 内容块应在 index 0 开启
-        assert!(output.contains("\"index\":0,\"type\":\"content_block_start\""));
+        assert!(find_event(0, "content_block_start"));
         assert!(output.contains("\"type\":\"thinking\""));
         assert!(output.contains("\"thinking\":\"Let me think\""));
 
         // 切换到 text 前应关闭 thinking 块
-        assert!(output.contains("\"index\":0,\"type\":\"content_block_stop\""));
+        assert!(find_event(0, "content_block_stop"));
 
         // text 内容块应在 index 1 开启
-        assert!(output.contains("\"index\":1,\"type\":\"content_block_start\""));
+        assert!(find_event(1, "content_block_start"));
         assert!(output.contains("\"type\":\"text\""));
         assert!(output.contains("\"text\":\"Hi\""));
 
         // 结束前应关闭 text 块
-        assert!(output.contains("\"index\":1,\"type\":\"content_block_stop\""));
+        assert!(find_event(1, "content_block_stop"));
 
         assert!(output.contains("\"stop_reason\":\"end_turn\""));
         assert!(output.contains("event: message_stop"));

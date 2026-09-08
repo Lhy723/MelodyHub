@@ -75,6 +75,7 @@ pub fn run() {
             commands::agent_apps::save_agent_app_text,
             commands::agent_apps::save_agent_app_setting,
             commands::agent_apps::restore_agent_app_config,
+            commands::agent_apps::disconnect_agent_app,
             // Provider / Aggregation
             commands::providers::save_providers,
             commands::providers::load_providers,

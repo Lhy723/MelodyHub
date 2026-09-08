@@ -13,8 +13,7 @@ import {
   RotateCcw,
   Search,
   Terminal,
-  X,
-} from 'lucide-react';
+  X, Unplug } from 'lucide-react';
 import { t as translate, useT } from '../../i18n';
 import {
   Button,
@@ -25,6 +24,7 @@ import {
   Input,
   Switch,
   toast,
+  ConfirmDialog,
 } from '../../components/ui';
 import { desktopApi, type AgentAppConfigInput, type AgentAppId, type AgentAppStatus } from '../../lib/desktopApi';
 import { LoadingButton } from '../../components/interior/loading-button';
@@ -746,6 +746,31 @@ export const ApplicationSettings: React.FC = () => {
     void performTextSave(id, content, version);
   };
 
+  const [disconnectTarget, setDisconnectTarget] = useState<AgentAppStatus | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+
+  const disconnectConfig = async (id: AgentAppId) => {
+    setDisconnectingId(id);
+    try {
+      const disconnected = await desktopApi.disconnectAgentApp(id);
+      rawDirtyRef.current[id] = false;
+      setStatus(disconnected);
+      const nextForm = formFromStatus(disconnected, fallbackEndpoint(id), Boolean(appTokenRef.current));
+      formsRef.current = { ...formsRef.current, [id]: nextForm };
+      configTextsRef.current = { ...configTextsRef.current, [id]: disconnected.configText };
+      setForms((current) => ({ ...current, [id]: nextForm }));
+      setConfigTexts((current) => ({ ...current, [id]: disconnected.configText }));
+      setVisualStates((current) => ({ ...current, [id]: 'saved' }));
+      setTextStates((current) => ({ ...current, [id]: 'saved' }));
+      toast(t('applications.disconnectSuccess'), 'success');
+    } catch (error) {
+      toast(errorMessage(error, t('applications.disconnectFailed')), 'error');
+    } finally {
+      setDisconnectingId(null);
+      setDisconnectTarget(null);
+    }
+  };
+
   const restoreConfig = async (status: AgentAppStatus) => {
     setRestoringId(status.id);
     try {
@@ -951,6 +976,20 @@ export const ApplicationSettings: React.FC = () => {
                           title={t('applications.restore')}
                         >
                           {t('applications.restore')}
+                        </Button>
+                      )}
+                      {activeStatus.isManaged && (
+                        <Button
+                          variant="secondary"
+                          size="md"
+                          icon={Unplug}
+                          loading={disconnectingId === activeAgent.id}
+                          disabled={disconnectingId !== null || restoringId !== null}
+                          onClick={() => setDisconnectTarget(activeStatus)}
+                          aria-label={t('applications.disconnect')}
+                          title={t('applications.disconnect')}
+                        >
+                          {t('applications.disconnect')}
                         </Button>
                       )}
                     </div>
@@ -1341,6 +1380,18 @@ export const ApplicationSettings: React.FC = () => {
             }
           />
       )}
+      <ConfirmDialog
+        open={disconnectTarget !== null}
+        title={t('applications.disconnect')}
+        message={t('applications.disconnectConfirm')}
+        variant="danger"
+        confirmLabel={t('common.confirm')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (disconnectTarget) void disconnectConfig(disconnectTarget.id);
+        }}
+        onCancel={() => setDisconnectTarget(null)}
+      />
     </div>
   );
 };

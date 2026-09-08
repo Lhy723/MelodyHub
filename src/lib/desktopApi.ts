@@ -95,6 +95,7 @@ export interface DesktopApi {
   saveAgentAppText(id: AgentAppId, content: string): Promise<AgentAppStatus>;
   saveAgentAppSetting(id: AgentAppId, key: string, value: unknown): Promise<AgentAppStatus>;
   restoreAgentAppConfig(id: AgentAppId): Promise<AgentAppStatus>;
+  disconnectAgentApp(id: AgentAppId): Promise<AgentAppStatus>;
   /** Probe the updater endpoints. Returns `null` when up-to-date. */
   checkForUpdates(): Promise<UpdateMetadata | null>;
   /** Download + install the pending update, streaming progress to `onEvent`. */
@@ -130,6 +131,7 @@ export const desktopApi: DesktopApi = {
   saveAgentAppSetting: (id, key, value) =>
     invoke<AgentAppStatus>('save_agent_app_setting', { setting: { id, key, value } }),
   restoreAgentAppConfig: (id) => invoke<AgentAppStatus>('restore_agent_app_config', { id }),
+  disconnectAgentApp: (id) => invoke<AgentAppStatus>('disconnect_agent_app', { id }),
   checkForUpdates: () => invoke<UpdateMetadata | null>('check_for_updates'),
   downloadAndInstallUpdate: (onEvent) => {
     const channel = new Channel<DownloadEvent>();

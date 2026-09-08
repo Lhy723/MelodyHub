@@ -111,7 +111,6 @@ const ROOT_SPECS: CodexSettingSpec[] = [
   { key: 'log_dir', kind: 'string', group: 'environment' },
   { key: 'sqlite_home', kind: 'string', group: 'environment' },
   { key: 'notify', kind: 'stringList', group: 'environment' },
-  { key: 'profile', kind: 'string', group: 'environment' },
 
   { key: 'history.max_bytes', kind: 'integer', group: 'advanced' },
   { key: 'history.persistence', kind: 'enum', group: 'advanced', options: ['save-all', 'none'] },
@@ -303,7 +302,6 @@ const COMPLEX_ROOT_SPECS: CodexSettingSpec[] = [
   { key: 'model_providers', kind: 'json', group: 'integrations' },
   { key: 'marketplaces', kind: 'json', group: 'integrations' },
   { key: 'plugins', kind: 'json', group: 'integrations' },
-  { key: 'profiles', kind: 'json', group: 'integrations' },
   { key: 'projects', kind: 'json', group: 'integrations' },
   { key: 'permissions', kind: 'json', group: 'permissions' },
   { key: 'hooks', kind: 'json', group: 'integrations' },
@@ -450,7 +448,6 @@ const CODEX_LABELS: Record<string, { label: string; hint?: string }> = {
   log_dir: { label: '日志目录' },
   sqlite_home: { label: 'SQLite 主目录' },
   notify: { label: '通知方式' },
-  profile: { label: 'Profile 名称' },
 
   // advanced
   'history.max_bytes': { label: '历史最大字节' },
@@ -492,7 +489,6 @@ const CODEX_LABELS: Record<string, { label: string; hint?: string }> = {
   model_providers: { label: '模型 Provider (JSON)', hint: '自定义模型 provider 列表。' },
   marketplaces: { label: '插件市场 (JSON)' },
   plugins: { label: '插件 (JSON)' },
-  profiles: { label: 'Profile (JSON)' },
   projects: { label: '项目 (JSON)' },
   permissions: { label: '权限规则 (JSON)' },
   hooks: { label: 'Hooks (JSON)' },

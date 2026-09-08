@@ -265,6 +265,91 @@ pub fn save_agent_app_setting(
     load_status(app)
 }
 
+/// Remove every key Melody Hub manages from the agent's config file, leaving
+/// the user's own settings untouched.  The file is backed up first, same as
+/// the save paths.
+#[tauri::command]
+pub fn disconnect_agent_app(id: String) -> Result<AgentAppStatus, String> {
+    let app = AgentApp::parse(&id)?;
+    let path = app.config_path()?;
+    if !path.exists() {
+        return load_status(app);
+    }
+    let values = read_config_values(app, &path)?;
+    if !values.is_managed {
+        return Err(format!(
+            "{} is not managed by Melody Hub; nothing to disconnect",
+            app.config_label()
+        ));
+    }
+    backup_config(&path)?;
+    match app {
+        AgentApp::Codex => disconnect_codex(&path)?,
+        AgentApp::Claude => disconnect_claude(&path)?,
+        AgentApp::OpenCode => disconnect_opencode(&path)?,
+    }
+    load_status(app)
+}
+
+fn disconnect_codex(path: &Path) -> Result<(), String> {
+    let mut document = read_toml_document(path)?;
+    document.remove("model_provider");
+    document.remove("model");
+    document.remove("model_catalog_json");
+    document.remove("model_reasoning_effort");
+    document.remove("model_reasoning_summary");
+    if let Some(providers) = document
+        .get_mut("model_providers")
+        .and_then(Item::as_table_like_mut)
+    {
+        providers.remove(MELODY_PROVIDER_ID);
+    }
+    if let Some(features) = document
+        .get_mut("features")
+        .and_then(Item::as_table_like_mut)
+    {
+        for key in CODEX_FEATURE_KEYS {
+            features.remove(key);
+        }
+    }
+    write_text_atomic(path, &document.to_string())
+}
+
+fn disconnect_claude(path: &Path) -> Result<(), String> {
+    let mut root = read_json_object(path)?;
+    if let Some(env) = root.get_mut("env").and_then(Value::as_object_mut) {
+        for key in [
+            "ANTHROPIC_BASE_URL",
+            "ANTHROPIC_MODEL",
+            "ANTHROPIC_AUTH_TOKEN",
+        ] {
+            env.remove(key);
+        }
+    }
+    for key in [
+        "availableModels",
+        "effortLevel",
+        "alwaysThinkingEnabled",
+        "showThinkingSummaries",
+    ] {
+        root.remove(key);
+    }
+    write_json_atomic(path, &Value::Object(root))
+}
+
+fn disconnect_opencode(path: &Path) -> Result<(), String> {
+    let mut root = read_json_object(path)?;
+    if let Some(providers) = root.get_mut("provider").and_then(Value::as_object_mut) {
+        providers.remove(MELODY_PROVIDER_ID);
+    }
+    if let Some(model) = root.get("model").and_then(Value::as_str) {
+        if model.starts_with(&format!("{MELODY_PROVIDER_ID}/")) {
+            root.remove("model");
+        }
+    }
+    write_json_atomic(path, &Value::Object(root))
+}
+
 #[tauri::command]
 pub fn restore_agent_app_config(id: String) -> Result<AgentAppStatus, String> {
     let app = AgentApp::parse(&id)?;
@@ -422,8 +507,8 @@ fn save_codex(target: SaveTarget<'_>) -> Result<(), String> {
         available_models,
         auth_token,
         reasoning_effort,
+        thinking_enabled,
         feature_flags,
-        ..
     } = target;
     let mut document = read_toml_document(path)?;
     document["model_provider"] = value(MELODY_PROVIDER_ID);
@@ -458,6 +543,20 @@ fn save_codex(target: SaveTarget<'_>) -> Result<(), String> {
         document.remove("model_reasoning_effort");
     } else {
         document["model_reasoning_effort"] = value(reasoning_effort);
+    }
+    // Keep the summary flag symmetric with the reader: thinking enabled is
+    // Codex's default ("auto") and only materialises when previously off, so
+    // hand-tuned summaries survive; disabled writes the explicit off state.
+    if thinking_enabled {
+        if document
+            .get("model_reasoning_summary")
+            .and_then(Item::as_str)
+            == Some("none")
+        {
+            document.remove("model_reasoning_summary");
+        }
+    } else {
+        document["model_reasoning_summary"] = value("none");
     }
     set_toml_bool_flags(&mut document, &CODEX_FEATURE_KEYS, feature_flags);
 
@@ -554,6 +653,10 @@ fn save_claude(target: SaveTarget<'_>) -> Result<(), String> {
     }
     if model.is_empty() {
         root.remove("model");
+    } else {
+        // Keep the root key in sync with env.ANTHROPIC_MODEL: a stale root
+        // value from a hand-written config would shadow nothing but confuse.
+        root.insert("model".into(), Value::String(model.to_string()));
     }
 
     // 写入 availableModels 数组
@@ -626,7 +729,13 @@ fn read_claude(path: &Path) -> Result<AgentConfigValues, String> {
             .and_then(Value::as_bool)
             .unwrap_or(false),
         feature_flags: read_json_bool_flags(&root, &CLAUDE_FEATURE_KEYS),
-        is_managed: true,
+        // Managed means we wrote (or would write) the gateway env block;
+        // a hand-written settings.json without ANTHROPIC_BASE_URL is not ours.
+        is_managed: env
+            .and_then(|env| env.get("ANTHROPIC_BASE_URL"))
+            .and_then(Value::as_str)
+            .map(|url| !url.trim().is_empty())
+            .unwrap_or(false),
     })
 }
 
@@ -649,10 +758,10 @@ fn save_opencode(target: SaveTarget<'_>) -> Result<(), String> {
         .as_object_mut()
         .ok_or_else(|| "OpenCode provider.melody-hub must be an object".to_string())?;
 
-    provider.insert(
-        "npm".to_string(),
-        Value::String("@ai-sdk/openai".to_string()),
-    );
+    // Preserve a hand-tuned SDK package; only seed the default on first run.
+    provider
+        .entry("npm".to_string())
+        .or_insert_with(|| Value::String("@ai-sdk/openai".to_string()));
     provider.insert(
         "name".to_string(),
         Value::String(MELODY_PROVIDER_NAME.to_string()),
@@ -706,6 +815,31 @@ fn save_opencode(target: SaveTarget<'_>) -> Result<(), String> {
                 );
             }
         }
+        // Drop model entries that are no longer part of the configured list.
+        let stale: Vec<String> = models
+            .keys()
+            .filter(|key| !all_models.contains(key))
+            .cloned()
+            .collect();
+        for key in stale {
+            models.remove(&key);
+        }
+    }
+    // Mark the default model via OpenCode's top-level `model` key so the
+    // selection survives JSON round-trips (BTreeMap ordering otherwise
+    // makes "first entry" meaningless).
+    if !model.is_empty() {
+        root.insert(
+            "model".into(),
+            Value::String(format!("{MELODY_PROVIDER_ID}/{model}")),
+        );
+    } else if root
+        .get("model")
+        .and_then(Value::as_str)
+        .map(|value| value.starts_with(&format!("{MELODY_PROVIDER_ID}/")))
+        .unwrap_or(false)
+    {
+        root.remove("model");
     }
     write_json_atomic(path, &Value::Object(root))
 }
@@ -723,10 +857,24 @@ fn read_opencode(path: &Path) -> Result<AgentConfigValues, String> {
     let models_obj = provider
         .and_then(|provider| provider.get("models"))
         .and_then(Value::as_object);
-    let model = models_obj
-        .and_then(|models| models.keys().next())
-        .cloned()
-        .unwrap_or_default();
+    // Prefer OpenCode's top-level `model` marker ("melody-hub/<model>")
+    // written by us; fall back to the first entry for legacy configs.
+    let model = root
+        .get("model")
+        .and_then(Value::as_str)
+        .and_then(|value| value.strip_prefix(&format!("{MELODY_PROVIDER_ID}/")))
+        .filter(|selected| {
+            models_obj
+                .map(|models| models.contains_key(*selected))
+                .unwrap_or(false)
+        })
+        .map(|selected| selected.to_string())
+        .unwrap_or_else(|| {
+            models_obj
+                .and_then(|models| models.keys().next())
+                .cloned()
+                .unwrap_or_default()
+        });
     // 所有模型名（排除默认模型）作为可用模型列表
     let available_models: Vec<String> = models_obj
         .map(|models| models.keys().filter(|k| *k != &model).cloned().collect())
@@ -760,7 +908,8 @@ fn read_opencode(path: &Path) -> Result<AgentConfigValues, String> {
             .map(|summary| !summary.trim().is_empty())
             .unwrap_or(false),
         feature_flags: read_opencode_feature_flags(model_options),
-        is_managed: true,
+        // Managed means our provider block exists in the config.
+        is_managed: provider.is_some(),
     })
 }
 
