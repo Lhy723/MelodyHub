@@ -1271,10 +1271,23 @@ fn decode_openai_chat_request(
             .and_then(Value::as_u64),
         temperature: body.get("temperature").and_then(Value::as_f64),
         top_p: body.get("top_p").and_then(Value::as_f64),
-        stop: vec![],
+        stop: decode_stop_param(body, "stop"),
         stream: body.get("stream").and_then(Value::as_bool).unwrap_or(false),
         metadata: body.get("metadata").cloned(),
     })
+}
+
+/// OpenAI `stop` accepts a single string or an array; canonical keeps a Vec.
+fn decode_stop_param(body: &Value, field: &str) -> Vec<String> {
+    match body.get(field) {
+        Some(Value::String(s)) => vec![s.clone()],
+        Some(Value::Array(items)) => items
+            .iter()
+            .filter_map(Value::as_str)
+            .map(ToOwned::to_owned)
+            .collect(),
+        _ => Vec::new(),
+    }
 }
 
 fn decode_anthropic_request(body: &Value) -> Result<CanonicalRequest, ConversionError> {
@@ -1638,6 +1651,10 @@ fn decode_responses_request(body: &Value) -> Result<CanonicalRequest, Conversion
                     // Reasoning items preserve the model's thinking
                     // from previous turns.  Attach to the last
                     // assistant message.
+                    let encrypted_signature = item
+                        .get("encrypted_content")
+                        .and_then(Value::as_str)
+                        .map(|value| value.to_string());
                     let summary = item
                         .get("summary")
                         .and_then(Value::as_array)
@@ -1668,7 +1685,7 @@ fn decode_responses_request(body: &Value) -> Result<CanonicalRequest, Conversion
                             messages.last_mut().unwrap().content.push(
                                 ContentBlock::Reasoning {
                                     text: summary,
-                                    signature: None,
+                                    signature: encrypted_signature.clone(),
                                 },
                             );
                         } else {
@@ -1676,7 +1693,7 @@ fn decode_responses_request(body: &Value) -> Result<CanonicalRequest, Conversion
                                 role: Role::Assistant,
                                 content: vec![ContentBlock::Reasoning {
                                     text: summary,
-                                    signature: None,
+                                    signature: encrypted_signature.clone(),
                                 }],
                             });
                         }
@@ -1829,7 +1846,7 @@ fn decode_responses_request(body: &Value) -> Result<CanonicalRequest, Conversion
         max_output_tokens: body.get("max_output_tokens").and_then(Value::as_u64),
         temperature: body.get("temperature").and_then(Value::as_f64),
         top_p: body.get("top_p").and_then(Value::as_f64),
-        stop: vec![],
+        stop: decode_stop_param(body, "stop"),
         stream: body.get("stream").and_then(Value::as_bool).unwrap_or(false),
         metadata: body.get("metadata").cloned(),
     })
@@ -1849,12 +1866,19 @@ fn canonical_blocks_to_openai_chat(
             ContentBlock::Text { text } => {
                 Ok(serde_json::json!({"type": "text", "text": text}))
             }
-            ContentBlock::Image { source } => Ok(serde_json::json!({
-                "type": "image_url",
-                "image_url": {
-                    "url": media_source_to_url(source, &format!("{path}[{index}]"))?
+            ContentBlock::Image { source } => {
+                // Give cross-namespace file ids the clearer "file" error
+                // before the generic URL-representation error below.
+                if let MediaSource::FileId { file_id } = &source {
+                    ensure_file_id_namespace(file_id, true, &format!("{path}[{index}]"))?;
                 }
-            })),
+                Ok(serde_json::json!({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": media_source_to_url(source, &format!("{path}[{index}]"))?
+                    }
+                }))
+            }
             ContentBlock::Audio { source, format } => {
                 let MediaSource::Base64 { data, .. } = source else {
                     return Err(ConversionError::invalid(
@@ -1874,6 +1898,7 @@ fn canonical_blocks_to_openai_chat(
             ContentBlock::File { source, filename } => {
                 let file = match source {
                     MediaSource::FileId { file_id } => {
+                        ensure_file_id_namespace(file_id, true, &format!("{path}[{index}]"))?;
                         serde_json::json!({"file_id":file_id,"filename":filename})
                     }
                     _ => serde_json::json!({
@@ -2139,6 +2164,32 @@ fn encode_openai_chat_request_inner(
     Ok(Value::Object(body))
 }
 
+/// File IDs are provider-namespaced (OpenAI: `file-…`, Anthropic: `file_…`)
+/// and cannot be translated across providers. Fail fast with a 422 instead of
+/// letting the upstream reject the request with an opaque 404 later.
+fn ensure_file_id_namespace(
+    file_id: &str,
+    openai_style: bool,
+    path: &str,
+) -> Result<(), ConversionError> {
+    let ok = if openai_style {
+        file_id.starts_with("file-")
+    } else {
+        file_id.starts_with("file_")
+    };
+    if ok {
+        Ok(())
+    } else {
+        Err(ConversionError::invalid(
+            "file",
+            path,
+            format!(
+                "file id '{file_id}' belongs to a different provider namespace and must be re-uploaded to the target provider"
+            ),
+        ))
+    }
+}
+
 fn canonical_blocks_to_anthropic(
     blocks: &[ContentBlock],
     path: &str,
@@ -2182,7 +2233,7 @@ fn canonical_blocks_to_anthropic(
                         serde_json::json!({"type":"base64","media_type":media_type,"data":data})
                     }
                     MediaSource::FileId { file_id } => {
-                        serde_json::json!({"type":"file","file_id":file_id})
+                        serde_json::json!({"type":"file","file_id":ensure_file_id_namespace(file_id, false, &format!("{path}[{index}]"))?})
                     }
                 };
                 Ok(serde_json::json!({"type":"image","source":source}))
@@ -2196,7 +2247,7 @@ fn canonical_blocks_to_anthropic(
                         serde_json::json!({"type":"base64","media_type":media_type,"data":data})
                     }
                     MediaSource::FileId { file_id } => {
-                        serde_json::json!({"type":"file","file_id":file_id})
+                        serde_json::json!({"type":"file","file_id":ensure_file_id_namespace(file_id, false, &format!("{path}[{index}]"))?})
                     }
                 };
                 Ok(serde_json::json!({
@@ -2210,11 +2261,20 @@ fn canonical_blocks_to_anthropic(
                 format!("{path}[{index}]"),
                 "Anthropic Messages does not provide a portable audio content block",
             )),
-            ContentBlock::Reasoning { text, signature } => Ok(serde_json::json!({
-                "type":"thinking",
-                "thinking":text,
-                "signature":signature,
-            })),
+            ContentBlock::Reasoning { text, signature } => {
+                let signature = signature.clone().ok_or_else(|| {
+                    ConversionError::invalid(
+                        "thinking",
+                        format!("{path}[{index}]"),
+                        "reasoning block cannot be replayed to Anthropic without its original signature",
+                    )
+                })?;
+                Ok(serde_json::json!({
+                    "type":"thinking",
+                    "thinking":text,
+                    "signature":signature,
+                }))
+            }
             ContentBlock::Refusal { text } => {
                 Ok(serde_json::json!({"type":"text","text":text}))
             }
@@ -2250,7 +2310,25 @@ fn encode_anthropic_request(
             }))
         })
         .collect::<Result<Vec<_>, ConversionError>>()?;
-    body.insert("messages".into(), Value::Array(messages));
+    // Anthropic requires strictly alternating user/assistant turns. Chat-style
+    // continuations can decode into adjacent user messages (e.g. consecutive
+    // role:"tool" results), so merge same-role neighbours into one turn.
+    let mut merged: Vec<Value> = Vec::with_capacity(messages.len());
+    for message in messages {
+        if let Some(last) = merged.last_mut() {
+            if last["role"] == message["role"] {
+                let mut content =
+                    last["content"].as_array().cloned().unwrap_or_default();
+                if let Some(extra) = message["content"].as_array() {
+                    content.extend(extra.iter().cloned());
+                }
+                last["content"] = Value::Array(content);
+                continue;
+            }
+        }
+        merged.push(message);
+    }
+    body.insert("messages".into(), Value::Array(merged));
     if !request.tools.is_empty() {
         body.insert(
             "tools".into(),
@@ -2342,6 +2420,18 @@ fn encode_anthropic_request(
     if let Some(top_p) = request.top_p {
         body.insert("top_p".into(), Value::from(top_p));
     }
+    if !request.stop.is_empty() {
+        body.insert(
+            "stop_sequences".into(),
+            Value::Array(
+                request
+                    .stop
+                    .iter()
+                    .map(|s| Value::String(s.clone()))
+                    .collect(),
+            ),
+        );
+    }
     if request.stream {
         body.insert("stream".into(), Value::Bool(true));
     }
@@ -2393,6 +2483,11 @@ fn encode_responses_request(
                 })),
                 ContentBlock::Image { source } => match source {
                     MediaSource::FileId { file_id } => {
+                        ensure_file_id_namespace(
+                            file_id,
+                            true,
+                            &format!("$.messages[{message_index}].content[{block_index}]"),
+                        )?;
                         content.push(serde_json::json!({
                             "type":"input_image",
                             "file_id":file_id
@@ -2408,6 +2503,11 @@ fn encode_responses_request(
                 },
                 ContentBlock::File { source, filename } => match source {
                     MediaSource::FileId { file_id } => {
+                        ensure_file_id_namespace(
+                            file_id,
+                            true,
+                            &format!("$.messages[{message_index}].content[{block_index}]"),
+                        )?;
                         content.push(serde_json::json!({
                             "type":"input_file",
                             "file_id":file_id,
@@ -3563,5 +3663,175 @@ mod tests {
 
         assert_eq!(converted["thinking"], json!({"type": "adaptive"}));
         assert_eq!(converted["output_config"]["effort"], "high");
+    }
+    #[test]
+    fn stop_param_survives_openai_decoding() {
+        // Chat: single string stop -> Anthropic stop_sequences
+        let converted = convert_request(
+            &json!({
+                "model":"m",
+                "messages":[{"role":"user","content":"hi"}],
+                "max_tokens":16,
+                "stop":"END"
+            }),
+            ProtocolKind::OpenAiChat,
+            ProtocolKind::AnthropicMessages,
+        )
+        .expect("request should be representable");
+        assert_eq!(converted["stop_sequences"], json!(["END"]));
+
+        // Responses: stop array -> Chat stop
+        let converted = convert_request(
+            &json!({
+                "model":"m",
+                "input":"hi",
+                "max_output_tokens":16,
+                "stop":["A","B"]
+            }),
+            ProtocolKind::OpenAiResponses,
+            ProtocolKind::OpenAiChat,
+        )
+        .expect("request should be representable");
+        assert_eq!(converted["stop"], json!(["A", "B"]));
+    }
+
+    #[test]
+    fn chat_tool_results_merge_into_single_anthropic_user_turn() {
+        let input = json!({
+            "model":"claude-x",
+            "messages":[
+                {"role":"user","content":"weather in tokyo and paris?"},
+                {"role":"assistant","content":null,"tool_calls":[
+                    {"id":"call_a","type":"function","function":{"name":"weather","arguments":"{\"city\":\"tokyo\"}"}},
+                    {"id":"call_b","type":"function","function":{"name":"weather","arguments":"{\"city\":\"paris\"}"}}
+                ]},
+                {"role":"tool","tool_call_id":"call_a","content":"sunny"},
+                {"role":"tool","tool_call_id":"call_b","content":"rainy"}
+            ],
+            "max_tokens":64
+        });
+        let converted = convert_request(
+            &input,
+            ProtocolKind::OpenAiChat,
+            ProtocolKind::AnthropicMessages,
+        )
+        .expect("request should be representable");
+
+        let messages = converted["messages"].as_array().unwrap();
+        // assistant turn with two tool_use blocks, then exactly ONE user turn
+        assert_eq!(
+            messages.len(),
+            3,
+            "tool results must merge into a single user turn: {messages:?}"
+        );
+        let last = &messages[2];
+        assert_eq!(last["role"], "user");
+        let results: Vec<&serde_json::Value> = last["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|b| b["type"] == "tool_result")
+            .collect();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0]["tool_use_id"], "call_a");
+        assert_eq!(results[1]["tool_use_id"], "call_b");
+    }
+
+    #[test]
+    fn cross_provider_file_id_is_rejected_upfront() {
+        // OpenAI-issued file id cannot be replayed to an Anthropic target
+        let error = convert_request(
+            &json!({
+                "model":"m",
+                "messages":[
+                    {"role":"user","content":[
+                        {"type":"file","file":{"file_id":"file-abc123","filename":"a.pdf"}}
+                    ]}
+                ],
+                "max_tokens":16
+            }),
+            ProtocolKind::OpenAiChat,
+            ProtocolKind::AnthropicMessages,
+        )
+        .unwrap_err();
+        assert_eq!(error.feature, "file");
+
+        // Anthropic-issued file id cannot be replayed to an OpenAI target
+        let error = convert_request(
+            &json!({
+                "model":"m",
+                "messages":[
+                    {"role":"user","content":[
+                        {"type":"image","source":{"type":"base64","media_type":"image/png","data":"aGk="}},
+                        {"type":"text","text":"what is this?"}
+                    ]},
+                    {"role":"assistant","content":"a cat"},
+                    {"role":"user","content":[
+                        {"type":"image","source":{"type":"file","file_id":"file_011CNha8iCJcUtwTFGDEUrNq"}}
+                    ]}
+                ],
+                "max_tokens":16
+            }),
+            ProtocolKind::AnthropicMessages,
+            ProtocolKind::OpenAiChat,
+        )
+        .unwrap_err();
+        assert_eq!(error.feature, "file");
+
+        // OpenAI Chat -> Responses keeps the same namespace: still allowed.
+        convert_request(
+            &json!({
+                "model":"m",
+                "messages":[
+                    {"role":"user","content":[
+                        {"type":"file","file":{"file_id":"file-abc123","filename":"a.pdf"}}
+                    ]}
+                ],
+                "max_tokens":16
+            }),
+            ProtocolKind::OpenAiChat,
+            ProtocolKind::OpenAiResponses,
+        )
+        .expect("openai namespace is valid for openai targets");
+    }
+
+    #[test]
+    fn unsigned_thinking_block_cannot_be_replayed_to_anthropic() {
+        // Responses reasoning without encrypted_content decodes to a
+        // signature-less Reasoning block: replaying it to Anthropic must be
+        // an explicit 422, never {"signature":null} that upstream rejects.
+        let error = convert_request(
+            &json!({
+                "model":"claude-x",
+                "input":[
+                    {"type":"message","role":"user","content":[{"type":"input_text","text":"hi"}]},
+                    {"type":"reasoning","summary":[{"type":"summary_text","text":"hmm"}]},
+                    {"type":"message","role":"assistant","content":[{"type":"output_text","text":"hello"}]},
+                    {"type":"message","role":"user","content":[{"type":"input_text","text":"more"}]}
+                ],
+                "max_output_tokens":64
+            }),
+            ProtocolKind::OpenAiResponses,
+            ProtocolKind::AnthropicMessages,
+        )
+        .unwrap_err();
+        assert_eq!(error.feature, "thinking");
+
+        // With a signature preserved the replay is representable.
+        convert_request(
+            &json!({
+                "model":"claude-x",
+                "input":[
+                    {"type":"message","role":"user","content":[{"type":"input_text","text":"hi"}]},
+                    {"type":"reasoning","summary":[{"type":"summary_text","text":"hmm"}],"encrypted_content":"enc_1"},
+                    {"type":"message","role":"assistant","content":[{"type":"output_text","text":"hello"}]},
+                    {"type":"message","role":"user","content":[{"type":"input_text","text":"more"}]}
+                ],
+                "max_output_tokens":64
+            }),
+            ProtocolKind::OpenAiResponses,
+            ProtocolKind::AnthropicMessages,
+        )
+        .expect("signed reasoning should be replayable");
     }
 }

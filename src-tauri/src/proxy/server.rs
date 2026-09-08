@@ -988,7 +988,7 @@ async fn proxy_request(
     let system_to_user = outbound_protocol
         == crate::proxy::protocols::ProtocolKind::OpenAiChat
         && !route.provider.supports_system_role;
-    let upstream_body = if system_to_user {
+    let mut upstream_body = if system_to_user {
         crate::proxy::protocols::convert_request_with_system_to_user(
             &source_body,
             inbound_protocol,
@@ -1012,6 +1012,20 @@ async fn proxy_request(
             )),
         )
     })?;
+
+    // Ask Chat-protocol upstreams to include a final usage chunk so token
+    // accounting works for streamed responses (count_stream_tokens reads it).
+    if outbound_protocol == crate::proxy::protocols::ProtocolKind::OpenAiChat
+        && upstream_body
+            .get("stream")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        && upstream_body.get("stream_options").is_none()
+    {
+        if let Some(obj) = upstream_body.as_object_mut() {
+            obj.insert("stream_options".into(), json!({"include_usage": true}));
+        }
+    }
 
     let start = Instant::now();
     let runtime = state.runtime.read().await;
