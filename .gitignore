@@ -40,9 +40,7 @@ Cargo.lock
 .playwright-mcp/
 
 # IDE config
-.trae/
 .claude/
-.zcode/
 
 # Test results
 test-results/
