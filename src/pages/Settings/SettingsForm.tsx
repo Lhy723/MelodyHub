@@ -4,6 +4,8 @@ import './settings.css';
 import { getVersion } from '@tauri-apps/api/app';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useProviderStore } from '../../store/providerStore';
+import { useAggregationStore } from '../../store/aggregationStore';
 import { useT, t } from '../../i18n';
 import {
   Button,
@@ -303,6 +305,9 @@ export const SettingsForm: React.FC = () => {
   const tokenCopyIcon = useIconMorph({ preset: 'copy-check', active: tokenCopy.copied });
   const [confirmRefreshToken, setConfirmRefreshToken] = useState(false);
   const [confirmResetData, setConfirmResetData] = useState(false);
+  const [exportingConfig, setExportingConfig] = useState(false);
+  const [pendingImport, setPendingImport] = useState<{ providers: number; aggregations: number; raw: string } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   // 令牌刷新是纯图标按钮，保留铬、外壳不动，进行态交给 useAsyncAction（防重入 + 自动复位）。
   const refreshTokenAction = useAsyncAction({
     action: async () => {
@@ -482,6 +487,18 @@ export const SettingsForm: React.FC = () => {
     setConfirmRefreshToken(true);
   };
 
+  const handleExportConfig = async () => {
+    setExportingConfig(true);
+    try {
+      await desktopApi.exportConfig();
+      toast(translate('settings.dataManagement.exportSuccess'), 'success');
+    } catch (err) {
+      toast(errorMessage(err, translate('settings.dataManagement.exportFailed')), 'error');
+    } finally {
+      setExportingConfig(false);
+    }
+  };
+
   const handleConfirmRefreshToken = () => {
     setConfirmRefreshToken(false);
     refreshTokenAction.run();
@@ -615,7 +632,7 @@ export const SettingsForm: React.FC = () => {
             </SettingsRow>
           </SettingsGroup>
 
-          <SettingsGroup title={translate('settings.appStartup')} isNew>
+          <SettingsGroup title={translate('settings.appStartup')}>
             <SettingsRow label={translate('settings.appStartupLaunch')} hint={translate('settings.appStartupLaunchHint')}>
               <Switch checked={settings.launchAtLogin} onChange={(v) => updateSettings({ launchAtLogin: v })} />
             </SettingsRow>
@@ -954,8 +971,10 @@ export const SettingsForm: React.FC = () => {
           {/* ── Data management (kept but de-emphasized) ─── */}
           <SettingsGroup title={translate('settings.dataManagement.title')}>
             <SettingsRow label="" isLast>
-              <Button onClick={() => toast(t('settings.dataManagement.exportToast'), 'info')}>{translate('settings.dataManagement.export')}</Button>
-              <Button variant="secondary" onClick={() => toast(t('settings.dataManagement.importToast'), 'info')}>
+              <Button onClick={handleExportConfig} disabled={exportingConfig}>
+                {translate('settings.dataManagement.export')}
+              </Button>
+              <Button variant="secondary" onClick={() => importInputRef.current?.click()}>
                 {translate('settings.dataManagement.import')}
               </Button>
               <Button variant="secondary" onClick={() => setConfirmResetData(true)}>
@@ -1036,6 +1055,62 @@ export const SettingsForm: React.FC = () => {
               )}
             </Modal>
 
+      {/* 导入配置：选择文件 → 校验 → 确认覆盖 → 导入并热更新 */}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file) return;
+          try {
+            const raw = await file.text();
+            const parsed = JSON.parse(raw) as {
+              kind?: string;
+              settings?: unknown;
+              providers?: unknown[];
+              aggregations?: unknown[];
+            };
+            if (parsed.kind !== 'melody-hub-config' || !parsed.settings || !Array.isArray(parsed.providers) || !Array.isArray(parsed.aggregations)) {
+              toast(translate('settings.dataManagement.importInvalid'), 'error');
+              return;
+            }
+            setPendingImport({ providers: parsed.providers.length, aggregations: parsed.aggregations.length, raw });
+          } catch {
+            toast(translate('settings.dataManagement.importInvalid'), 'error');
+          }
+        }}
+      />
+      <ConfirmDialog
+        open={pendingImport !== null}
+        title={translate('settings.dataManagement.importConfirmTitle')}
+        message={translate('settings.dataManagement.importConfirmBody')
+          .replace('{providers}', String(pendingImport?.providers ?? 0))
+          .replace('{aggregations}', String(pendingImport?.aggregations ?? 0))}
+        variant="danger"
+        confirmLabel={translate('settings.dataManagement.import')}
+        cancelLabel={translate('common.cancel')}
+        onConfirm={async () => {
+          if (!pendingImport) return;
+          const raw = pendingImport.raw;
+          setPendingImport(null);
+          try {
+            await desktopApi.importConfig(raw);
+            // 重新拉取三域数据（设置/供应商/聚合）以反映导入结果。
+            await Promise.all([
+              useSettingsStore.getState().loadSettings(),
+              useProviderStore.getState().loadProviders(),
+              useAggregationStore.getState().loadAggregations(),
+            ]);
+            toast(translate('settings.dataManagement.importSuccess'), 'success');
+          } catch (err) {
+            toast(errorMessage(err, translate('settings.dataManagement.importFailed')), 'error');
+          }
+        }}
+        onCancel={() => setPendingImport(null)}
+      />
       <ConfirmDialog
         open={confirmResetData}
         title={translate('settings.dataManagement.reset')}

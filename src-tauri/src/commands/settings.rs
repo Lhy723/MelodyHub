@@ -104,7 +104,7 @@ fn read_settings(app_handle: &tauri::AppHandle) -> Result<Option<AppSettings>, S
     Ok(Some(data))
 }
 
-fn write_settings(
+pub(crate) fn write_settings(
     app_handle: &tauri::AppHandle,
     settings: &AppSettings,
 ) -> Result<(), String> {
@@ -291,7 +291,7 @@ pub async fn update_proxy_runtime_config(
     Ok(())
 }
 
-async fn restart_running_proxy_if_needed(
+pub(crate) async fn restart_running_proxy_if_needed(
     state: SharedAppState,
     settings: &AppSettings,
 ) -> Result<(), String> {

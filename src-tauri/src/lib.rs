@@ -94,6 +94,8 @@ pub fn run() {
             // Stats
             commands::stats::get_stats,
             commands::stats::get_recent_requests,
+            commands::config_transfer::export_config,
+            commands::config_transfer::import_config,
             commands::stats::get_daily_usage,
             commands::stats::get_provider_rates,
             commands::stats::reset_stats,

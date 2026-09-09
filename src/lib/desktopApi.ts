@@ -81,6 +81,10 @@ export interface DesktopApi {
   initLogDir(): Promise<void>;
   openLogDir(): Promise<void>;
   exportLogs(): Promise<string>;
+  /** 导出配置到下载目录，返回文件路径。 */
+  exportConfig(): Promise<string>;
+  /** 导入配置（整体覆盖，payload 为导出文件原文）。 */
+  importConfig(payloadJson: string): Promise<{ providers: number; aggregations: number }>;
   fetchProviderModels(
     flavor: string,
     apiBase: string,
@@ -125,6 +129,11 @@ export const desktopApi: DesktopApi = {
   initLogDir: () => invoke('init_log_dir'),
   openLogDir: () => invoke('open_log_dir'),
   exportLogs: () => invoke<string>('export_logs'),
+  exportConfig: () => invoke<string>('export_config'),
+  importConfig: (
+    payloadJson: string,
+  ): Promise<{ settingsApplied: boolean; providers: number; aggregations: number }> =>
+    invoke('import_config', { payloadJson }),
   fetchProviderModels: (flavor, apiBase, apiKey) => invoke('fetch_provider_models', { flavor, apiBase, apiKey }),
   testProviderConnection: (flavor, apiBase, apiKey) => invoke('test_provider_connection', { flavor, apiBase, apiKey }),
   getProviderHealth: () => invoke<Record<string, ProviderHealthSnapshot>>('get_provider_health'),
