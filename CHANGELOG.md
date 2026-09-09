@@ -1,6 +1,25 @@
 # Changelog
 
-## 0.1.12 (2026-09-04)
+## 0.1.14 (2026-09-09)
+
+### 新增
+
+- 仪表盘新增「近 24 小时」统计：滚动 24 小时窗口 KPI 对比、逐小时趋势曲线（后端按小时分桶）
+- Agent Apps 改为显式同意制：未接管仅展示检测状态与说明，用户确认后才写入配置；新增一键「断开接管」；Claude 写入托管标记，手写配置不再被自动认领
+- Agent Apps 配置管理更新：断开时结构化清理我们写入的键；OpenCode 默认模型改用顶层 model 键（修复按字母序读取导致的错乱）、清理残留模型条目、保留自定义 SDK 包；Claude 同步根 model；Codex thinking 读写对称；保存不再重排用户 JSON 键序
+- WizardSteps 新增 fill 高度模式：向导可垂直撑满视口，底部按钮钉在卡片底部
+
+### 修复
+
+- 协议转换层 5 个问题：`stop` 参数解码遗漏；Chat 上游流式 usage 统计记 0（注入 `stream_options.include_usage`）；无签名 thinking 块显式 422（不再生成会被上游拒绝的 `signature:null`）；连续 tool 消息合并为单条 user turn（消除角色交替 400）；跨厂商 file ID 命名空间防呆
+- 日志清理加最近 7 天硬保护，删除时打印文件名便于审计
+- 热力图恢复全量历史数据（24h 改造引起的数据源回归）
+- Codex 配置路径尊重 `CODEX_HOME` 环境变量
+- 添加供应商向导宽度 860→1200 并垂直撑满视口
+- 深色模式下 info 通知白底白字不可读
+- 清理 4 个死依赖（three / @react-three/fiber / @react-three/postprocessing / ogl）与 8 个死文件；Dropdown 默认占位符 i18n 化；README 补 Agent Apps 说明
+
+## 0.1.13 (2026-09-04)## 0.1.12 (2026-09-04)
 
 ### 新增
 
