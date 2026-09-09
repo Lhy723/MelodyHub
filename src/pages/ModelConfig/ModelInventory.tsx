@@ -295,7 +295,7 @@ export const ModelInventory: React.FC = () => {
         label={t('models.inventory.filterLabel')}
         columns={3}
         rowHeight={132}
-        maxRows={4}
+        maxRows="auto"
         gap={16}
         emptyLabel={t('models.inventory.emptyFilter')}
       />

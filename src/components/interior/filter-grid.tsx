@@ -106,7 +106,9 @@ export type FilterGridProps<T> = {
   onValueChange?: (id: string) => void;
   columns?: number;
   rowHeight?: number;
-  maxRows?: number;
+  /** 行数上限：数字 = 固定行数（超出在列表内部滚动）；
+   *  'auto' = 不设上限，列表随内容增长、由页面滚动（模型配置页等长列表场景）。 */
+  maxRows?: number | 'auto';
   gap?: number;
   emptyLabel?: string;
   className?: string;
@@ -145,7 +147,10 @@ export function FilterGrid<T>({
   const heldFocus = useRef(false);
 
   const cols = Math.max(1, Math.floor(columns));
-  const rows = Math.min(Math.max(1, Math.ceil(total / cols)), Math.max(1, maxRows));
+  const uncapped = maxRows === 'auto';
+  const rows = uncapped
+    ? Math.max(1, Math.ceil(total / cols))
+    : Math.min(Math.max(1, Math.ceil(total / cols)), Math.max(1, maxRows as number));
   const box = rows * rowHeight + (rows - 1) * gap;
 
   const index = Math.max(
@@ -200,7 +205,7 @@ export function FilterGrid<T>({
   const step = reduced ? INSTANT : { layout: MOVE, duration: 0.2, ease: EASE };
   const leave = reduced ? INSTANT : LEAVE;
 
-  const capped = Math.ceil(total / cols) > Math.max(1, maxRows);
+  const capped = !uncapped && Math.ceil(total / cols) > Math.max(1, maxRows as number);
 
   return (
     <div className={`mh-filter-grid ${className}`}>
@@ -285,7 +290,7 @@ export function FilterGrid<T>({
               gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
               gridAutoRows: `${rowHeight}px`,
               gap: `${gap}px`,
-              height: `${box}px`,
+              ...(uncapped ? {} : { height: `${box}px` }),
             }
           }
         >
