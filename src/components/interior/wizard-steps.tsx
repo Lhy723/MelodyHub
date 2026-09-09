@@ -119,7 +119,7 @@ export type WizardStepsProps = {
 
   complete?: boolean;
   /** MelodyHub 扩展：'auto' 时测量当前面板内容高度（ResizeObserver 跟随动态内容），长表单不再关进滚动盒。 */
-  height?: number | 'auto';
+  height?: number | 'auto' | 'fill';
   /** MelodyHub 扩展：下一步/完成按钮是否可点（如下一步校验 canProceed）。 */
   canNext?: boolean;
   /** MelodyHub 扩展：去掉视口的卡片铬（边框/底色/阴影/内边距），由调用方提供容器。 */
@@ -236,7 +236,14 @@ export function WizardSteps({
   const position = `Step ${at + 1} of ${total}: ${step.label}`;
 
   return (
-    <div className={`mh-wizard-steps${bare ? ' is-bare' : ''} ${className}`}>
+    <div
+      className={`mh-wizard-steps${bare ? ' is-bare' : ''} ${className}`}
+      style={
+        height === 'fill'
+          ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }
+          : undefined
+      }
+    >
       <p aria-live="polite" className="mh-wizard-steps__sr">
         {position}
       </p>
@@ -316,7 +323,13 @@ export function WizardSteps({
         tabIndex={-1}
         role="group"
         aria-label={position}
-        style={autoHeight ? { height: autoH || 'auto' } : { height }}
+        style={
+          height === 'fill'
+            ? { flex: 1, minHeight: 0 }
+            : autoHeight
+              ? { height: autoH || 'auto' }
+              : { height }
+        }
         className="mh-wizard-steps__viewport"
       >
         <AnimatePresence initial={false} custom={direction}>

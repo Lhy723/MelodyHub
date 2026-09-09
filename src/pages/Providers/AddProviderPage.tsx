@@ -506,7 +506,17 @@ export const AddProviderPage: React.FC = () => {
   // ── Render ────────────────────────────────────────────────
 
   return (
-    <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 1200,
+        margin: '0 auto',
+        // 撑满视口剩余高度：Shell 顶栏 ≈68px（24+28+16）+ 内容区底部内边距 24px。
+        minHeight: 'calc(100vh - 92px)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {/* Header with back button */}
       <div
         style={{
@@ -553,6 +563,10 @@ export const AddProviderPage: React.FC = () => {
       {/* WizardSteps */}
       <div
         style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
           background: 'var(--bg-base-default)',
           border: '1px solid var(--border-neutral-l1)',
           borderRadius: 'var(--radius-12)',
@@ -566,7 +580,7 @@ export const AddProviderPage: React.FC = () => {
           onIndexChange={(i) => setCurrentStep(i + 1)}
           onComplete={handleFinish}
           canNext={canProceed && !saving}
-          height="auto"
+          height="fill"
           bare
           railNavigation={false}
           backLabel="返回"
