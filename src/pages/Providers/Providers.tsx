@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
-import { desktopApi, type ProviderHealthSnapshot } from '../../lib/desktopApi';
+import { desktopApi, type ProviderHealthSnapshot, type ProviderRate } from '../../lib/desktopApi';
 import { AnimatedContent, Card } from '../../components/ui';
 import { ProviderCard } from './ProviderCard';
 import { Plus, Cpu } from 'lucide-react';
@@ -14,6 +14,7 @@ export const Providers: React.FC = () => {
   const loadProviders = useProviderStore((s) => s.loadProviders);
   const loaded = useProviderStore((s) => s.loaded);
   const [healthMap, setHealthMap] = useState<Record<string, ProviderHealthSnapshot>>({});
+  const [ratesMap, setRatesMap] = useState<Record<string, ProviderRate>>({});
 
   useEffect(() => {
     if (!loaded) loadProviders();
@@ -25,6 +26,12 @@ export const Providers: React.FC = () => {
       setHealthMap(map);
     } catch (e) {
       console.error('Failed to fetch provider health:', e);
+    }
+    try {
+      const rates = await desktopApi.getProviderRates();
+      setRatesMap(Object.fromEntries(rates.map((r) => [r.providerId, r])));
+    } catch (e) {
+      console.error('Failed to fetch provider rates:', e);
     }
   }, []);
 
@@ -121,7 +128,7 @@ export const Providers: React.FC = () => {
         >
           {providers.map((p, idx) => (
             <AnimatedContent key={p.id} delay={80 + idx * 70}>
-              <ProviderCard providerId={p.id} health={healthMap[p.id]} />
+              <ProviderCard providerId={p.id} health={healthMap[p.id]} rates={ratesMap[p.id]} />
             </AnimatedContent>
           ))}
         </div>

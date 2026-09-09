@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProviderStore } from '../../store/providerStore';
 import type { Model } from '../../types/provider';
-import type { ProviderHealthSnapshot } from '../../lib/desktopApi';
+import type { ProviderHealthSnapshot, ProviderRate } from '../../lib/desktopApi';
 import { ConfirmDialog, SpotlightCard, Tag, toast, ProviderLogo, ModelLogo } from '../../components/ui';
 import { Pencil, Trash2, Box, Loader2 } from 'lucide-react';
 import { useCopyToClipboard } from '../../components/interior/copy-button';
@@ -44,9 +44,20 @@ const getStatusConfig = (
   auth_error: { tagVariant: 'danger', label: t('providers.status.authFailed'), cardStatus: 'failed' },
 });
 
-export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealthSnapshot }> = ({
+const formatRate = (value: number): string => {
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+  return value.toFixed(value > 0 && value < 10 ? 1 : 0);
+};
+
+export const ProviderCard: React.FC<{
+  providerId: string;
+  health?: ProviderHealthSnapshot;
+  rates?: ProviderRate;
+}> = ({
   providerId,
   health,
+  rates,
 }) => {
   const navigate = useNavigate();
   const t = useT();
@@ -289,6 +300,36 @@ export const ProviderCard: React.FC<{ providerId: string; health?: ProviderHealt
             </span>
           )}
         </div>
+        {rates && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span
+              style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)', flexShrink: 0 }}
+              title={t('providers.ratesHint')}
+            >
+              {t('providers.ratesLabel')}
+            </span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'baseline',
+                gap: 'var(--spacer-8)',
+                fontSize: 'var(--body-sm-font-size)',
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-family-metric)',
+              }}
+            >
+              <span>
+                {formatRate(rates.tpm)}
+                <span style={{ color: 'var(--text-tertiary)', marginLeft: 2 }}>TPM</span>
+              </span>
+              <span style={{ color: 'var(--text-tertiary)' }}>/</span>
+              <span>
+                {formatRate(rates.rpm)}
+                <span style={{ color: 'var(--text-tertiary)', marginLeft: 2 }}>RPM</span>
+              </span>
+            </span>
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 'var(--body-sm-font-size)', color: 'var(--text-tertiary)', flexShrink: 0 }}>
             模型数量

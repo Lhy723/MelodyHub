@@ -50,3 +50,11 @@ export interface DailyUsage {
 }
 
 export type TimeRange = '24h' | '7d' | '30d' | '90d';
+
+export interface ProviderRate {
+  providerId: string;
+  /** 近 1 小时平均：每分钟请求数。 */
+  rpm: number;
+  /** 近 1 小时平均：每分钟 token 数。 */
+  tpm: number;
+}

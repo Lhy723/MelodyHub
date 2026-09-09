@@ -3,6 +3,7 @@ const zh: Record<string, string> = {
   'sidebar.dashboard': '仪表盘',
   'sidebar.providers': 'API 供应商',
   'sidebar.models': '模型配置',
+  'sidebar.requests': '调用记录',
   'sidebar.applicationSettings': '应用设置',
   'sidebar.settings': '系统设置',
   'sidebar.running': '服务运行中',
@@ -17,6 +18,7 @@ const zh: Record<string, string> = {
   'shell.dashboard': '仪表盘',
   'shell.providers': 'API 供应商',
   'shell.models': '模型配置',
+  'shell.requests': '调用记录',
   'shell.applicationSettings': '应用设置',
   'shell.settings': '系统设置',
 

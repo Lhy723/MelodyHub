@@ -1,0 +1,11 @@
+/* 调用记录页表格表头（interior sortable-table 规范）。 */
+.mh-dash-table th {
+  padding: var(--spacer-16) var(--spacer-8);
+  border-bottom: 1px solid var(--border-neutral-l1);
+  text-align: left;
+  font-size: var(--body-xs-font-size);
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}

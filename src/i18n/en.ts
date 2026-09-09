@@ -3,6 +3,7 @@ const en: Record<string, string> = {
   'sidebar.dashboard': 'Dashboard',
   'sidebar.providers': 'Providers',
   'sidebar.models': 'Models',
+  'sidebar.requests': 'Requests',
   'sidebar.applicationSettings': 'Agent Apps',
   'sidebar.settings': 'Settings',
   'sidebar.running': 'Running',
@@ -17,6 +18,7 @@ const en: Record<string, string> = {
   'shell.dashboard': 'Dashboard',
   'shell.providers': 'API Providers',
   'shell.models': 'Model Config',
+  'shell.requests': 'Requests',
   'shell.applicationSettings': 'Agent App Settings',
   'shell.settings': 'Settings',
 

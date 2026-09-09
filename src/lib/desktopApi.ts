@@ -3,7 +3,9 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { AppSettings } from '../types/settings';
 import type { Provider } from '../types/provider';
 import type { Aggregation } from '../types/aggregation';
-import type { UsageStats, RequestRecord, DailyUsage, TimeRange } from '../types/stats';
+import type { UsageStats, RequestRecord, DailyUsage, TimeRange, ProviderRate } from '../types/stats';
+
+export type { ProviderRate } from '../types/stats';
 
 export interface ProviderHealthSnapshot {
   providerId: string;
@@ -90,6 +92,7 @@ export interface DesktopApi {
     apiKey: string,
   ): Promise<{ success: boolean; modelCount?: number; error?: { kind: string; message: string }; message: string }>;
   getProviderHealth(): Promise<Record<string, ProviderHealthSnapshot>>;
+  getProviderRates(): Promise<ProviderRate[]>;
   loadAgentApps(): Promise<AgentAppStatus[]>;
   saveAgentAppConfig(config: AgentAppConfigInput): Promise<AgentAppStatus>;
   saveAgentAppText(id: AgentAppId, content: string): Promise<AgentAppStatus>;
@@ -125,6 +128,7 @@ export const desktopApi: DesktopApi = {
   fetchProviderModels: (flavor, apiBase, apiKey) => invoke('fetch_provider_models', { flavor, apiBase, apiKey }),
   testProviderConnection: (flavor, apiBase, apiKey) => invoke('test_provider_connection', { flavor, apiBase, apiKey }),
   getProviderHealth: () => invoke<Record<string, ProviderHealthSnapshot>>('get_provider_health'),
+  getProviderRates: () => invoke<ProviderRate[]>('get_provider_rates'),
   loadAgentApps: () => invoke<AgentAppStatus[]>('load_agent_apps'),
   saveAgentAppConfig: (config) => invoke<AgentAppStatus>('save_agent_app_config', { config }),
   saveAgentAppText: (id, content) => invoke<AgentAppStatus>('save_agent_app_text', { id, content }),

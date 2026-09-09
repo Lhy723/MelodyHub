@@ -95,6 +95,7 @@ pub fn run() {
             commands::stats::get_stats,
             commands::stats::get_recent_requests,
             commands::stats::get_daily_usage,
+            commands::stats::get_provider_rates,
             commands::stats::reset_stats,
             // Settings (single source of truth)
             commands::settings::save_settings,

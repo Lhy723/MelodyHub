@@ -7,7 +7,6 @@ import { TimeRangeTabs } from './TimeRangeTabs';
 import { TokenTrendChart } from './TokenTrendChart';
 import { ModelDonutChart } from './ModelDonutChart';
 import { UsageHeatmap } from './UsageHeatmap';
-import { RecentRequests } from './RecentRequests';
 import { ProxyControl } from './ProxyControl';
 import { TriangleAlert } from 'lucide-react';
 import { LoadingButton } from '../../components/interior/loading-button';
@@ -133,7 +132,6 @@ export const Dashboard: React.FC = () => {
         <ModelDonutChart />
       </div>
       <UsageHeatmap />
-      <RecentRequests />
     </div>
   );
 };

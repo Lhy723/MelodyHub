@@ -19,6 +19,9 @@ const EditProviderPage = lazy(() =>
 const ProviderDetailPage = lazy(() =>
   import('./pages/Providers/ProviderDetailPage').then((m) => ({ default: m.ProviderDetailPage })),
 );
+const RequestsPage = lazy(() =>
+  import('./pages/Requests/index').then((m) => ({ default: m.RequestsPage })),
+);
 const Settings = lazy(() => import('./pages/Settings/Settings').then((m) => ({ default: m.Settings })));
 const ApplicationSettings = lazy(() =>
   import('./pages/ApplicationSettings/ApplicationSettings').then((m) => ({ default: m.ApplicationSettings })),
@@ -88,6 +91,10 @@ function App() {
                 <ModelDetailPage />
               </Suspense>
             }
+          />
+          <Route
+            path="/requests"
+            element={<RequestsPage />}
           />
           <Route
             path="/providers"

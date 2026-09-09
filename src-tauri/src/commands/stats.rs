@@ -12,6 +12,8 @@ use std::collections::HashMap;
 use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
 
 use crate::proxy::SharedAppState;
+use serde::Serialize;
+
 use crate::types::{DailyUsage, RequestRecord, UsageStats};
 
 #[tauri::command]
@@ -46,6 +48,46 @@ pub async fn get_daily_usage(
     let records = state.metrics.snapshot().await;
     let filtered = filter_records_by_range(&records, time_range.as_deref());
     Ok(compute_daily_usage(&filtered, time_range.as_deref()))
+}
+
+/// Per-provider average rates over the last hour (rolling window):
+/// RPM = requests / minute, TPM = tokens / minute.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderRate {
+    pub provider_id: String,
+    pub rpm: f64,
+    pub tpm: f64,
+}
+
+#[tauri::command]
+pub async fn get_provider_rates(
+    state: tauri::State<'_, SharedAppState>,
+) -> Result<Vec<ProviderRate>, String> {
+    let records = state.metrics.snapshot().await;
+    Ok(compute_provider_rates(&records))
+}
+
+fn compute_provider_rates(records: &[RequestRecord]) -> Vec<ProviderRate> {
+    let start = hours_ago(1);
+    let mut by_provider: HashMap<String, (u32, i64)> = HashMap::new();
+    for r in records {
+        if record_datetime(r).is_some_and(|ts| ts >= start) {
+            let entry = by_provider.entry(r.provider.clone()).or_insert((0, 0));
+            entry.0 += 1;
+            entry.1 += r.tokens;
+        }
+    }
+    let mut rates: Vec<ProviderRate> = by_provider
+        .into_iter()
+        .map(|(provider_id, (count, tokens))| ProviderRate {
+            provider_id,
+            rpm: round1(count as f64 / 60.0),
+            tpm: round1(tokens as f64 / 60.0),
+        })
+        .collect();
+    rates.sort_by(|a, b| a.provider_id.cmp(&b.provider_id));
+    rates
 }
 
 /// Reset all in-memory statistics. Persisted JSONL files on disk

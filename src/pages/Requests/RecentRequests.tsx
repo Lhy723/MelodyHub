@@ -7,6 +7,7 @@ import { Pagination } from '../../components/interior/pagination';
 import { Drawer } from '../../components/interior/drawer';
 import { CopyButton } from '../../components/interior/copy-button';
 import { useT } from '../../i18n';
+import './requests.css';
 
 /** provider → --chart-* 色彩（与 statsStore VENDOR_PATTERNS 同一套 token），认不出的统一 neutral。 */
 const providerTagColor = (provider: string): string => {
@@ -170,7 +171,7 @@ export const RecentRequests: React.FC = () => {
             <table className="ds-table mh-dash-table" style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {/* 表头铬收敛到 dashboard.css 的 .mh-dash-table th（interior sortable-table 规范）。 */}
+                  {/* 表头铬收敛到 requests.css 的 .mh-dash-table th（interior sortable-table 规范）。 */}
                   <th>{t('dashboard.table.time')}</th>
                   <th>{t('dashboard.table.model')}</th>
                   <th>{t('dashboard.table.provider')}</th>

@@ -16,6 +16,7 @@ export const Shell: React.FC = () => {
     '/dashboard': t('shell.dashboard'),
     '/providers': t('shell.providers'),
     '/models': t('shell.models'),
+    '/requests': t('shell.requests'),
     '/applications': t('shell.applicationSettings'),
     '/settings': t('shell.settings'),
   };
