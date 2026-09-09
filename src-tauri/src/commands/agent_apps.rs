@@ -19,6 +19,9 @@ const MELODY_PROVIDER_NAME: &str = "Melody Hub";
 const CODEX_FEATURE_KEYS: [&str; 4] =
     ["web_search", "shell_tool", "computer_use", "multi_agent"];
 const CLAUDE_FEATURE_KEYS: [&str; 1] = ["showThinkingSummaries"];
+/// Marker env var written on takeover so a hand-written settings.json
+/// (e.g. pointing at another gateway) is never auto-claimed as managed.
+const CLAUDE_MANAGED_MARKER: &str = "MELODY_HUB_MANAGED";
 const OPENCODE_FEATURE_KEYS: [&str; 1] = ["encryptedReasoning"];
 const CLAUDE_PERSISTENT_EFFORT_LEVELS: [&str; 4] = ["low", "medium", "high", "xhigh"];
 
@@ -330,6 +333,7 @@ fn disconnect_claude(path: &Path) -> Result<(), String> {
             "ANTHROPIC_BASE_URL",
             "ANTHROPIC_MODEL",
             "ANTHROPIC_AUTH_TOKEN",
+            CLAUDE_MANAGED_MARKER,
         ] {
             env.remove(key);
         }
@@ -657,6 +661,11 @@ fn save_claude(target: SaveTarget<'_>) -> Result<(), String> {
         }
         if let Some(token) = auth_token {
             set_json_optional_string(env, "ANTHROPIC_AUTH_TOKEN", token);
+            // Consent marker: written only via the explicit takeover flow.
+            env.insert(
+                CLAUDE_MANAGED_MARKER.to_string(),
+                Value::String("1".to_string()),
+            );
         }
     }
     if model.is_empty() {
@@ -737,12 +746,13 @@ fn read_claude(path: &Path) -> Result<AgentConfigValues, String> {
             .and_then(Value::as_bool)
             .unwrap_or(false),
         feature_flags: read_json_bool_flags(&root, &CLAUDE_FEATURE_KEYS),
-        // Managed means we wrote (or would write) the gateway env block;
-        // a hand-written settings.json without ANTHROPIC_BASE_URL is not ours.
+        // Managed only when the explicit consent marker is present; a
+        // hand-written settings.json pointing at another gateway stays
+        // unmanaged until the user opts in.
         is_managed: env
-            .and_then(|env| env.get("ANTHROPIC_BASE_URL"))
+            .and_then(|env| env.get(CLAUDE_MANAGED_MARKER))
             .and_then(Value::as_str)
-            .map(|url| !url.trim().is_empty())
+            .map(|value| value == "1")
             .unwrap_or(false),
     })
 }

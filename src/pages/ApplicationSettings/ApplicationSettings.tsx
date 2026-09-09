@@ -747,6 +747,40 @@ export const ApplicationSettings: React.FC = () => {
   };
 
   const [disconnectTarget, setDisconnectTarget] = useState<AgentAppStatus | null>(null);
+  const [takeoverTarget, setTakeoverTarget] = useState<AgentAppStatus | null>(null);
+
+  // 接管 = 用户显式同意后才写入托管键；写入后表单与编辑器解锁。
+  const confirmTakeOver = async () => {
+    if (!takeoverTarget) return;
+    const id = takeoverTarget.id;
+    const form = formsRef.current[id] ?? formFor(id);
+    try {
+      const updated = await desktopApi.saveAgentAppConfig({
+        id,
+        endpoint: form.endpoint,
+        model: form.model,
+        availableModels: form.availableModels,
+        reasoningEffort: form.reasoningEffort === 'auto' ? '' : form.reasoningEffort,
+        thinkingEnabled: form.thinkingEnabled,
+        featureFlags: form.featureFlags,
+        authToken: form.tokenMode === 'melody' ? appTokenRef.current : null,
+      });
+      rawDirtyRef.current[id] = false;
+      setStatus(updated);
+      const nextForm = formFromStatus(updated, fallbackEndpoint(id), Boolean(appTokenRef.current));
+      formsRef.current = { ...formsRef.current, [id]: nextForm };
+      configTextsRef.current = { ...configTextsRef.current, [id]: updated.configText };
+      setForms((current) => ({ ...current, [id]: nextForm }));
+      setConfigTexts((current) => ({ ...current, [id]: updated.configText }));
+      setVisualStates((current) => ({ ...current, [id]: 'saved' }));
+      setTextStates((current) => ({ ...current, [id]: 'saved' }));
+      toast(t('applications.takenOver'), 'success');
+    } catch (error) {
+      toast(errorMessage(error, t('applications.takeoverFailed')), 'error');
+    } finally {
+      setTakeoverTarget(null);
+    }
+  };
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const disconnectConfig = async (id: AgentAppId) => {
@@ -955,15 +989,17 @@ export const ApplicationSettings: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-12)', flexShrink: 0 }}>
                       <SaveIndicator state={activeVisualState} error={saveErrors[activeAgent.id]} t={t} />
-                      <Button
-                        variant="primary"
-                        size="md"
-                        loading={activeVisualState === 'saving'}
-                        disabled={activeVisualState !== 'dirty'}
-                        onClick={() => handleManualVisualSave(activeAgent.id)}
-                      >
-                        {t('applications.save')}
-                      </Button>
+                      {activeStatus.isManaged && (
+                        <Button
+                          variant="primary"
+                          size="md"
+                          loading={activeVisualState === 'saving'}
+                          disabled={activeVisualState !== 'dirty'}
+                          onClick={() => handleManualVisualSave(activeAgent.id)}
+                        >
+                          {t('applications.save')}
+                        </Button>
+                      )}
                       {activeStatus.backupExists && (
                         <Button
                           variant="secondary"
@@ -1001,16 +1037,48 @@ export const ApplicationSettings: React.FC = () => {
                     </StatusBanner>
                   )}
 
-                  {!activeStatus.isManaged && activeStatus.configExists && !activeStatus.error && (
-                    <StatusBanner
-                      tone="warning"
-                      icon={AlertCircle}
-                      style={{ margin: 'var(--spacer-16) var(--spacer-20) 0' }}
+                  {!activeStatus.isManaged && !activeStatus.error && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 'var(--spacer-10)',
+                        padding: 'var(--spacer-24) var(--spacer-20)',
+                        textAlign: 'center',
+                      }}
                     >
-                      {t('applications.notManagedHint')}
-                    </StatusBanner>
+                      <Unplug size={24} style={{ color: 'var(--icon-tertiary)' }} />
+                      <div
+                        style={{
+                          fontSize: 'var(--body-md-font-size)',
+                          fontWeight: 'var(--font-weight-strong)',
+                          color: 'var(--text-default)',
+                        }}
+                      >
+                        {t('applications.takeoverTitle')}
+                      </div>
+                      <div
+                        style={{
+                          maxWidth: 420,
+                          fontSize: 'var(--body-sm-font-size)',
+                          color: 'var(--text-tertiary)',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {t('applications.takeoverDesc')}
+                      </div>
+                      <Button
+                        variant="brand"
+                        size="md"
+                        onClick={() => setTakeoverTarget(activeStatus)}
+                      >
+                        {t('applications.takeover')}
+                      </Button>
+                    </div>
                   )}
 
+                  {activeStatus.isManaged && (
                   <div style={{ padding: 'var(--spacer-16)' }}>
                     <div
                       style={{
@@ -1291,10 +1359,11 @@ export const ApplicationSettings: React.FC = () => {
                       )}
                     </div>
                   </div>
+                  )}
 
                 </Card>
 
-                {activeAgent.id === 'codex' && (
+                {activeStatus.isManaged && activeAgent.id === 'codex' && (
                   <CodexSettingsEditor
                     settings={activeStatus.codexSettings ?? {}}
                     onSettingChange={updateCodexSetting}
@@ -1303,7 +1372,7 @@ export const ApplicationSettings: React.FC = () => {
                   />
                 )}
 
-                {activeAgent.id === 'claude' && (
+                {activeStatus.isManaged && activeAgent.id === 'claude' && (
                   <ClaudeSettingsEditor
                     content={activeConfigText}
                     onChange={(content) => updateConfigText('claude', content)}
@@ -1311,6 +1380,7 @@ export const ApplicationSettings: React.FC = () => {
                   />
                 )}
 
+                  {activeStatus.isManaged && (
                   <div style={{ borderTop: '1px solid var(--border-neutral-l1)', padding: 'var(--spacer-20)' }}>
                   <div
                     style={{
@@ -1375,11 +1445,25 @@ export const ApplicationSettings: React.FC = () => {
                     </p>
                   </div>
                   </div>
+                  )}
                 </div>
               )
             }
           />
       )}
+      <ConfirmDialog
+        open={takeoverTarget !== null}
+        title={t('applications.takeover')}
+        message={t('applications.takeoverConfirm', {
+          app: takeoverTarget ? t(AGENTS.find((agent) => agent.id === takeoverTarget.id)?.nameKey ?? '') : '',
+        })}
+        confirmLabel={t('applications.takeover')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          void confirmTakeOver();
+        }}
+        onCancel={() => setTakeoverTarget(null)}
+      />
       <ConfirmDialog
         open={disconnectTarget !== null}
         title={t('applications.disconnect')}

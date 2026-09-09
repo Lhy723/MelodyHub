@@ -272,7 +272,12 @@ const en: Record<string, string> = {
   'applications.statusDetected': 'Configuration detected',
   'applications.statusNotDetected': 'Not configured',
   'applications.statusError': 'Invalid configuration',
-  'applications.notManagedHint': 'Not connected via Melody Hub proxy (e.g. using ChatGPT login). Values shown below are from the config file as-is. Clicking Save will switch to Melody Hub proxy.',
+  'applications.takeover': 'Take over',
+  'applications.takeoverTitle': 'Not managed by Melody Hub',
+  'applications.takeoverDesc': 'Melody Hub will not touch this config until you opt in. Taking over writes the gateway endpoint, auth token and model settings (a backup is saved first), and you can disconnect anytime.',
+  'applications.takeoverConfirm': 'Melody Hub will write its gateway endpoint, auth token and model settings into the config file of {app}. The original file is backed up first, and you can disconnect anytime. Take over?',
+  'applications.takenOver': 'Taken over — you can now edit settings',
+  'applications.takeoverFailed': 'Failed to take over',
   'applications.endpoint': 'Local API URL',
   'applications.endpointHint':
     'Address the agent uses to reach the Melody Hub proxy. Defaults to the local proxy port. Requests sent by the agent pass through Melody Hub before being forwarded to the upstream model provider.',
