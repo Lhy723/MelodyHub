@@ -21,6 +21,10 @@ export interface ModelBreakdown {
   name: string;
   percentage: number;
   color: string;
+  /** 该模型累计 token 数。 */
+  tokens: number;
+  /** token 占比（与 percentage 同一筛选范围）。 */
+  tokenPercentage: number;
 }
 
 /** Raw request record as delivered over IPC (camelCase). */

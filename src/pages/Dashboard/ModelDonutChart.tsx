@@ -11,10 +11,45 @@ function resolveColor(input: string): string {
   return input;
 }
 
+/** 单个环形图：ECharts 环 + 中心内容 + 底部说明文字。两个饼共用尺寸与配色。 */
+const DonutRing: React.FC<{ option: EChartsOption; caption: string; center: React.ReactNode }> = ({
+  option,
+  caption,
+  center,
+}) => (
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ position: 'relative', width: 150, height: 150 }}>
+      <EChart option={option} />
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        {center}
+      </div>
+    </div>
+    <div
+      style={{
+        marginTop: 'var(--spacer-4)',
+        fontSize: 'var(--body-xs-font-size)',
+        color: 'var(--text-tertiary)',
+      }}
+    >
+      {caption}
+    </div>
+  </div>
+);
+
 export const ModelDonutChart: React.FC = () => {
   const t = useT();
   const modelBreakdown = useStatsStore((s) => s.modelBreakdown);
   const totalRequests = useStatsStore((s) => s.stats.totalRequests);
+  const totalTokens = useStatsStore((s) => s.stats.totalTokens);
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
   const themeVersion = useThemeVersion();
 
@@ -30,14 +65,15 @@ export const ModelDonutChart: React.FC = () => {
     });
   };
 
-  const option = useMemo<EChartsOption>(() => {
+  // 两个饼图共用图例与隐藏集合；value 取对应维度的占比。
+  const buildOption = (metric: 'calls' | 'tokens'): EChartsOption => {
     const hasData = filteredData.length > 0;
     const borderColor = getCssVar('--bg-base-secondary') || '#F5F5F5';
     const emptyColor = getCssVar('--bg-overlay-l3') || '#D4D4D4';
     const data = hasData
       ? filteredData.map((d) => ({
           name: d.name,
-          value: d.percentage,
+          value: metric === 'calls' ? d.percentage : d.tokenPercentage,
           itemStyle: { color: resolveColor(d.color) },
         }))
       : [{ name: '', value: 100, itemStyle: { color: emptyColor } }];
@@ -80,7 +116,17 @@ export const ModelDonutChart: React.FC = () => {
         },
       ],
     };
-  }, [filteredData, themeVersion]);
+  };
+
+  const callsOption = useMemo(() => buildOption('calls'), [filteredData, themeVersion]);
+  const tokensOption = useMemo(() => buildOption('tokens'), [filteredData, themeVersion]);
+
+  /** token 中心数紧凑格式（饼图内空间有限，1.2K / 3.4M）。 */
+  const compactTokens = (value: number): string => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 10000) return `${(value / 1000).toFixed(1)}K`;
+    return value.toLocaleString();
+  };
 
   return (
     <Card>
@@ -109,52 +155,76 @@ export const ModelDonutChart: React.FC = () => {
           </div>
         ) : (
           <>
-            <div style={{ position: 'relative', width: 160, height: 160 }}>
-              <EChart option={option} />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  textAlign: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-family-metric)',
-                    fontSize: 22,
-                    fontWeight: 'var(--font-weight-strong)',
-                    color: 'var(--text-default)',
-                    lineHeight: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Counter
-                    value={totalRequests}
-                    fontSize={22}
-                    gap={1}
-                    horizontalPadding={0}
-                    gradientHeight={0}
-                    gradientFrom="transparent"
-                    gradientTo="transparent"
-                    textColor="var(--text-default)"
-                    fontWeight="var(--font-weight-strong)"
-                  />
-                </div>
-                <div
-                  style={{
-                    fontSize: 'var(--body-xs-font-size)',
-                    color: 'var(--text-tertiary)',
-                    lineHeight: 'var(--body-xs-line-height)',
-                  }}
-                >
-                  {t('dashboard.chart.totalRequests')}
-                </div>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 'var(--spacer-24)' }}>
+              <DonutRing
+                option={callsOption}
+                caption={t('dashboard.chart.byCalls')}
+                center={
+                  <>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-family-metric)',
+                        fontSize: 22,
+                        fontWeight: 'var(--font-weight-strong)',
+                        color: 'var(--text-default)',
+                        lineHeight: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Counter
+                        value={totalRequests}
+                        fontSize={22}
+                        gap={1}
+                        horizontalPadding={0}
+                        gradientHeight={0}
+                        gradientFrom="transparent"
+                        gradientTo="transparent"
+                        textColor="var(--text-default)"
+                        fontWeight="var(--font-weight-strong)"
+                      />
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 'var(--body-xs-font-size)',
+                        color: 'var(--text-tertiary)',
+                        lineHeight: 'var(--body-xs-line-height)',
+                      }}
+                    >
+                      {t('dashboard.chart.totalRequests')}
+                    </div>
+                  </>
+                }
+              />
+              <DonutRing
+                option={tokensOption}
+                caption={t('dashboard.chart.byTokens')}
+                center={
+                  <>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-family-metric)',
+                        fontSize: 20,
+                        fontWeight: 'var(--font-weight-strong)',
+                        color: 'var(--text-default)',
+                        lineHeight: '28px',
+                      }}
+                    >
+                      {compactTokens(totalTokens)}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 'var(--body-xs-font-size)',
+                        color: 'var(--text-tertiary)',
+                        lineHeight: 'var(--body-xs-line-height)',
+                      }}
+                    >
+                      {t('dashboard.chart.totalTokens')}
+                    </div>
+                  </>
+                }
+              />
             </div>
 
             <div

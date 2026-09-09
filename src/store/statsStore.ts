@@ -82,23 +82,41 @@ function resolveModelColor(modelName: string, usedColors: Set<string>): string {
 function computeModelBreakdown(requests: RequestRecord[]): ModelBreakdown[] {
   if (requests.length === 0) return [];
   const counts: Record<string, number> = {};
-  for (const r of requests) counts[r.model] = (counts[r.model] || 0) + 1;
+  const tokenSums: Record<string, number> = {};
+  let totalTokens = 0;
+  for (const r of requests) {
+    counts[r.model] = (counts[r.model] || 0) + 1;
+    tokenSums[r.model] = (tokenSums[r.model] || 0) + r.tokens;
+    totalTokens += r.tokens;
+  }
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const total = requests.length;
   const breakdown: ModelBreakdown[] = [];
   const usedColors = new Set<string>();
   const otherColor = 'var(--chart-other)';
   const topModels = sorted.slice(0, 5);
+  // 「其他」聚合其余模型（两个饼图共用同一分组，保证图例一致）。
   const otherCount = sorted.slice(5).reduce((sum, [, count]) => sum + count, 0);
+  const otherTokens = sorted
+    .slice(5)
+    .reduce((sum, [name]) => sum + (tokenSums[name] || 0), 0);
   for (const [name, count] of topModels) {
     breakdown.push({
       name,
       percentage: Math.round((count / total) * 100),
       color: resolveModelColor(name, usedColors),
+      tokens: tokenSums[name] || 0,
+      tokenPercentage: totalTokens > 0 ? Math.round(((tokenSums[name] || 0) / totalTokens) * 100) : 0,
     });
   }
   if (otherCount > 0) {
-    breakdown.push({ name: '其他', percentage: Math.round((otherCount / total) * 100), color: otherColor });
+    breakdown.push({
+      name: '其他',
+      percentage: Math.round((otherCount / total) * 100),
+      color: otherColor,
+      tokens: otherTokens,
+      tokenPercentage: totalTokens > 0 ? Math.round((otherTokens / totalTokens) * 100) : 0,
+    });
   }
   return breakdown;
 }
