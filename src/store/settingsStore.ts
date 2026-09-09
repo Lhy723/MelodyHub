@@ -7,7 +7,7 @@ const errorMessage = (e: unknown, fallback: string) => (e instanceof Error ? e.m
 const DEFAULT_SETTINGS: AppSettings = {
   port: 8080,
   host: '127.0.0.1',
-  autoStart: true,
+  autoStart: false,
   maxConcurrency: 20,
   language: 'zh-CN',
   theme: 'light',

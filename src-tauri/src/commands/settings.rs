@@ -64,7 +64,7 @@ impl Default for AppSettings {
         Self {
             port: 8080,
             host: "127.0.0.1".into(),
-            auto_start: true,
+            auto_start: false,
             max_concurrency: 20,
             language: "zh-CN".into(),
             theme: "light".into(),
