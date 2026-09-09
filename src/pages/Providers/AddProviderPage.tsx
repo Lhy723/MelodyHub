@@ -506,7 +506,7 @@ export const AddProviderPage: React.FC = () => {
   // ── Render ────────────────────────────────────────────────
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
       {/* Header with back button */}
       <div
         style={{
