@@ -1548,10 +1548,12 @@ fn decode_responses_request(body: &Value) -> Result<CanonicalRequest, Conversion
                                 )?,
                             });
                         }
-                        Some("developer") => {
-                            // Developer messages carry system-level
+                        Some("developer" | "system") => {
+                            // Developer / system messages carry system-level
                             // instructions with higher priority than
-                            // the top-level `instructions` field.
+                            // the top-level `instructions` field. The
+                            // Responses API accepts both roles in input
+                            // items (zcode 等客户端发送 `role: "system"`).
                             let blocks = text_blocks(
                                 item.get("content")
                                     .unwrap_or(&Value::String(String::new())),
@@ -3100,6 +3102,38 @@ mod tests {
                 "max_tokens": 64,
                 "stream": true
             })
+        );
+    }
+
+    #[test]
+    fn responses_system_role_input_item_merges_into_system() {
+        // zcode 等客户端在 Responses input item 里发送 `role: "system"`，
+        // 该角色在 Responses API 中合法，应并入顶层 system 块而不是 422。
+        let input = json!({
+            "model": "gpt-5",
+            "input": [
+                {
+                    "role": "system",
+                    "content": [{"type": "input_text", "text": "你是资深工程师。"}]
+                },
+                {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "你好"}]
+                }
+            ],
+            "stream": true
+        });
+
+        let converted = convert_request(
+            &input,
+            ProtocolKind::OpenAiResponses,
+            ProtocolKind::AnthropicMessages,
+        )
+        .expect("system-role input item should be accepted");
+
+        assert_eq!(
+            converted.get("system"),
+            Some(&json!([{"type": "text", "text": "你是资深工程师。"}]))
         );
     }
 
