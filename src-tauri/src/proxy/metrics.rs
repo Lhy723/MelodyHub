@@ -103,7 +103,16 @@ impl MetricsStore {
             else {
                 continue;
             };
-            if date < cutoff {
+            // Hard floor: never prune the most recent 7 days regardless of
+            // the configured retention, so a bad setting can't wipe recent
+            // history in one save.
+            let floor = chrono::Utc::now().date_naive() - chrono::Duration::days(7);
+            if date < cutoff && date < floor {
+                println!(
+                    "[metrics] Pruning expired log file {} (retention {}d)",
+                    path.display(),
+                    retention_days
+                );
                 std::fs::remove_file(&path).map_err(|e| e.to_string())?;
                 removed += 1;
             }
