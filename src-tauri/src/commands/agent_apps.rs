@@ -61,7 +61,15 @@ impl AgentApp {
         let home = dirs::home_dir()
             .ok_or_else(|| "Unable to resolve the home directory".to_string())?;
         Ok(match self {
-            Self::Codex => home.join(".codex").join("config.toml"),
+            // Codex resolves its state dir from $CODEX_HOME (default ~/.codex);
+            // mirror the official lookup so we read/write the file the CLI
+            // and the desktop app (`codex app`) actually use.
+            Self::Codex => {
+                let codex_home = std::env::var_os("CODEX_HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| home.join(".codex"));
+                codex_home.join("config.toml")
+            }
             Self::Claude => home.join(".claude").join("settings.json"),
             Self::OpenCode => opencode_config_path(&home),
         })
