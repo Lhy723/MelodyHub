@@ -35,9 +35,17 @@ Melody Hub 基于 Tauri、React 和 Rust 构建，用一个本地地址统一接
 
 ## 界面预览
 
-| 仪表盘 | 模型配置 | 应用设置 |
-|---|---|---|
-| <img src="./docs/screenshots/dashboard.png" alt="Melody Hub 仪表盘" width="280" /> | <img src="./docs/screenshots/models.png" alt="Melody Hub 模型配置（脱敏预览）" width="280" /> | <img src="./docs/screenshots/settings.png" alt="Melody Hub 应用设置" width="280" /> |
+### 仪表盘
+
+<img src="./docs/screenshots/dashboard.png" alt="Melody Hub 仪表盘" width="860" />
+
+### 模型配置
+
+<img src="./docs/screenshots/models.png" alt="Melody Hub 模型配置（脱敏预览）" width="860" />
+
+### 应用设置
+
+<img src="./docs/screenshots/settings.png" alt="Melody Hub 应用设置" width="860" />
 
 
 ## 安装指南
