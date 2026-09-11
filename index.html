@@ -8,7 +8,18 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div
+        class="app-loading"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading"
+        style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:100%;font:14px system-ui,sans-serif;color:#555;background:#fff;"
+      >
+        <span class="app-loading__spinner" aria-hidden="true"></span>
+        <span>Loading…</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

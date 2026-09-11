@@ -52,6 +52,14 @@ impl AgentApp {
         }
     }
 
+    fn command_name(self) -> &'static str {
+        match self {
+            Self::Codex => "codex",
+            Self::Claude => "claude",
+            Self::OpenCode => "opencode",
+        }
+    }
+
     fn config_label(self) -> &'static str {
         match self {
             Self::Codex => "~/.codex/config.toml",
@@ -106,6 +114,9 @@ pub struct AgentAppStatus {
     pub config_path: String,
     pub config_label: String,
     pub config_exists: bool,
+    /// Whether the agent's CLI command can be found through the current PATH.
+    pub command_found: bool,
+    pub command_path: Option<String>,
     pub backup_exists: bool,
     pub is_managed: bool,
     pub endpoint: String,
@@ -384,6 +395,7 @@ pub fn restore_agent_app_config(id: String) -> Result<AgentAppStatus, String> {
 
 fn load_status(app: AgentApp) -> Result<AgentAppStatus, String> {
     let path = app.config_path()?;
+    let command_path = find_executable_on_path(app.command_name());
     let exists = path.is_file();
     let config_text = if exists {
         fs::read_to_string(&path).unwrap_or_default()
@@ -411,6 +423,8 @@ fn load_status(app: AgentApp) -> Result<AgentAppStatus, String> {
         config_path: path.to_string_lossy().to_string(),
         config_label: app.config_label().to_string(),
         config_exists: exists,
+        command_found: command_path.is_some(),
+        command_path: command_path.map(|path| path.to_string_lossy().to_string()),
         backup_exists: backup_path(&path).is_file(),
         is_managed: values.0.is_managed,
         endpoint: values.0.endpoint,
@@ -429,6 +443,38 @@ fn load_status(app: AgentApp) -> Result<AgentAppStatus, String> {
         config_text,
         error: values.1,
     })
+}
+
+/// Resolve an agent CLI from PATH without spawning it. On Windows this also
+/// checks PATHEXT so npm-installed `.cmd` shims are detected alongside `.exe`
+/// binaries. A command being found means it is available to Melody Hub's
+/// current process; it does not attempt to launch the agent or inspect its
+/// version.
+fn find_executable_on_path(name: &str) -> Option<PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    let mut candidate_names = vec![name.to_string()];
+
+    #[cfg(windows)]
+    {
+        let pathext = std::env::var_os("PATHEXT")
+            .map(|value| value.to_string_lossy().into_owned())
+            .unwrap_or_else(|| ".COM;.EXE;.BAT;.CMD".to_string());
+        candidate_names.extend(pathext.split(';').filter_map(|extension| {
+            let extension = extension.trim();
+            (!extension.is_empty()).then(|| format!("{name}{extension}"))
+        }));
+    }
+
+    for directory in std::env::split_paths(&path) {
+        for candidate_name in &candidate_names {
+            let candidate = directory.join(candidate_name);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+
+    None
 }
 
 fn empty_config_values() -> AgentConfigValues {
@@ -1344,6 +1390,13 @@ fn preserve_permissions(original: &Path, temporary: &Path) {
             .map(|metadata| metadata.permissions().mode())
             .unwrap_or(0o600);
         let _ = fs::set_permissions(temporary, fs::Permissions::from_mode(mode));
+    }
+
+    #[cfg(not(unix))]
+    {
+        // Windows has no Unix permission mode to copy, but keep the
+        // cross-platform function signature explicit and warning-free.
+        let _ = (original, temporary);
     }
 }
 

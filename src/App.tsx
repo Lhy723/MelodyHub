@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Shell } from './components/shell/Shell';
 import { useSettingsStore } from './store/settingsStore';
 import { applyAccentColor } from './lib/colorUtils';
+import { useT } from './i18n';
 
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard').then((m) => ({ default: m.Dashboard })));
 const ModelConfig = lazy(() => import('./pages/ModelConfig/ModelConfig').then((m) => ({ default: m.ModelConfig })));
@@ -26,6 +27,17 @@ const Settings = lazy(() => import('./pages/Settings/Settings').then((m) => ({ d
 const ApplicationSettings = lazy(() =>
   import('./pages/ApplicationSettings/ApplicationSettings').then((m) => ({ default: m.ApplicationSettings })),
 );
+
+function PageLoading() {
+  const t = useT();
+
+  return (
+    <div className="app-page-loading" role="status" aria-live="polite">
+      <span className="app-page-loading__spinner" aria-hidden="true" />
+      <span>{t('common.loading')}</span>
+    </div>
+  );
+}
 
 function resolveTheme(theme: string): string {
   if (theme !== 'system') return theme;
@@ -71,7 +83,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <Dashboard />
               </Suspense>
             }
@@ -79,7 +91,7 @@ function App() {
           <Route
             path="/models"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <ModelConfig />
               </Suspense>
             }
@@ -87,7 +99,7 @@ function App() {
           <Route
             path="/models/:modelName"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <ModelDetailPage />
               </Suspense>
             }
@@ -99,7 +111,7 @@ function App() {
           <Route
             path="/providers"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <Providers />
               </Suspense>
             }
@@ -107,7 +119,7 @@ function App() {
           <Route
             path="/providers/new"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <AddProviderPage />
               </Suspense>
             }
@@ -115,7 +127,7 @@ function App() {
           <Route
             path="/providers/:providerId"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <ProviderDetailPage />
               </Suspense>
             }
@@ -123,7 +135,7 @@ function App() {
           <Route
             path="/providers/:providerId/edit"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <EditProviderPage />
               </Suspense>
             }
@@ -131,7 +143,7 @@ function App() {
           <Route
             path="/settings"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <Settings />
               </Suspense>
             }
@@ -139,7 +151,7 @@ function App() {
           <Route
             path="/applications"
             element={
-              <Suspense fallback={null}>
+              <Suspense fallback={<PageLoading />}>
                 <ApplicationSettings />
               </Suspense>
             }

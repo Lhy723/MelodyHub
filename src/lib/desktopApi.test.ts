@@ -65,6 +65,8 @@ const agentStatusFixture: AgentAppStatus = {
   configPath: '/tmp/.codex/config.toml',
   configLabel: '~/.codex/config.toml',
   configExists: true,
+  commandFound: true,
+  commandPath: '/usr/local/bin/codex',
   backupExists: false,
   isManaged: true,
   endpoint: 'http://127.0.0.1:8080/v1',

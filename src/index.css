@@ -416,6 +416,45 @@ code {
   height: 100%;
 }
 
+/* Keep the first paint meaningful while a lazy route is being transformed
+   by Vite or the WebView is waiting for the initial bundle. */
+.app-page-loading,
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacer-10);
+  width: 100%;
+  min-height: 18rem;
+  color: var(--text-secondary);
+  background: var(--bg-base-default);
+  font-size: var(--body-sm-font-size);
+}
+
+.app-page-loading__spinner,
+.app-loading__spinner {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 2px solid var(--border-neutral-l1);
+  border-top-color: var(--bg-brand);
+  border-radius: 50%;
+  animation: app-loading-spin 0.8s linear infinite;
+}
+
+@keyframes app-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-page-loading__spinner,
+  .app-loading__spinner {
+    animation: none;
+  }
+}
+
 a {
   text-decoration: none;
   color: inherit;

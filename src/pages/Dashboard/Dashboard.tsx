@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useStatsStore } from '../../store/statsStore';
-import { onRequestCompleted } from '../../lib/desktopApi';
+import { onBootstrapComplete, onRequestCompleted } from '../../lib/desktopApi';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { KPICards } from './KPICards';
 import { TimeRangeTabs } from './TimeRangeTabs';
@@ -50,6 +50,7 @@ export const Dashboard: React.FC = () => {
     // from the Rust backend and debounce-refresh all three data
     // sources. Replaces the former 10-second polling interval.
     let unlisten: UnlistenFn | null = null;
+    let unlistenBootstrap: UnlistenFn | null = null;
     let cancelled = false;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -70,6 +71,18 @@ export const Dashboard: React.FC = () => {
         console.warn('[Dashboard] Failed to listen for request-completed events:', e);
       });
 
+    onBootstrapComplete(scheduleRefresh)
+      .then((fn) => {
+        if (cancelled) {
+          fn();
+        } else {
+          unlistenBootstrap = fn;
+        }
+      })
+      .catch((e) => {
+        console.warn('[Dashboard] Failed to listen for bootstrap-complete event:', e);
+      });
+
     // Re-fetch when the tab becomes visible again (no polling).
     const onVisibility = () => {
       if (!document.hidden) {
@@ -82,6 +95,7 @@ export const Dashboard: React.FC = () => {
       cancelled = true;
       if (debounceTimer) clearTimeout(debounceTimer);
       if (unlisten) unlisten();
+      if (unlistenBootstrap) unlistenBootstrap();
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [fetchStats, fetchRequests, fetchDailyUsage]);

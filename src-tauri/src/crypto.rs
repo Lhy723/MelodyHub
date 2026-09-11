@@ -21,6 +21,7 @@ use aes_gcm::{
 };
 use keyring::Entry;
 use rand::RngCore;
+use std::sync::OnceLock;
 
 use crate::paths;
 
@@ -28,6 +29,12 @@ const KEY_LEN: usize = 32; // AES-256
 const NONCE_LEN: usize = 12; // GCM standard nonce
 const KEYRING_SERVICE: &str = "com.melody-hub.app";
 const KEYRING_ACCOUNT: &str = "api-key-encryption-key";
+
+// Provider loading can decrypt several API keys in one startup. Keep the
+// process-local key after the first lookup so every provider does not make a
+// separate Windows Credential Manager call (or repeat the backup-file
+// fallback when the keyring entry is unavailable).
+static ENCRYPTION_KEY: OnceLock<Result<[u8; KEY_LEN], String>> = OnceLock::new();
 
 /// Decode a base64-encoded key into a fixed-size array.
 fn decode_key(encoded: &str) -> Option<[u8; KEY_LEN]> {
@@ -50,7 +57,6 @@ fn decode_key(encoded: &str) -> Option<[u8; KEY_LEN]> {
 fn write_key_backup(path: &std::path::Path, b64: &str) {
     if let Err(e) = std::fs::write(path, b64) {
         eprintln!("[crypto] Failed to write key backup file: {}", e);
-        return;
     }
     #[cfg(unix)]
     {
@@ -67,6 +73,12 @@ fn write_key_backup(path: &std::path::Path, b64: &str) {
 /// OS keyring first, falling back to the backup file. If both are
 /// empty, a new key is generated and written to both stores.
 fn get_or_create_key(app_handle: &tauri::AppHandle) -> Result<[u8; KEY_LEN], String> {
+    ENCRYPTION_KEY
+        .get_or_init(|| load_or_create_key(app_handle))
+        .clone()
+}
+
+fn load_or_create_key(app_handle: &tauri::AppHandle) -> Result<[u8; KEY_LEN], String> {
     let entry = Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT)
         .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
     let backup_path = paths::key_file(app_handle);
