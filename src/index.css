@@ -517,6 +517,17 @@ button {
   }
 }
 
+@keyframes rbRouteFade {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
 @keyframes rbShine {
   0% {
     background-position: 180% 50%;
@@ -633,6 +644,10 @@ button {
 .rb-animated-content {
   animation: rbEnter var(--rb-duration, 360ms) var(--ease-out-expo) both;
   animation-delay: var(--rb-delay, 0ms);
+}
+
+.rb-animated-content.rb-route-transition {
+  animation-name: rbRouteFade;
 }
 
 .rb-spotlight-card {

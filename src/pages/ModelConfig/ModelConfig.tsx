@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useProviderStore } from '../../store/providerStore';
 import { useAggregationStore } from '../../store/aggregationStore';
-import { AnimatedContent } from '../../components/ui';
 import { ModelInventory } from './ModelInventory';
 import { useT } from '../../i18n';
 
@@ -44,9 +43,7 @@ export const ModelConfig: React.FC = () => {
       </div>
 
       {/* Exposed Models Overview */}
-      <AnimatedContent delay={80}>
-        <ModelInventory />
-      </AnimatedContent>
+      <ModelInventory />
     </div>
   );
 };

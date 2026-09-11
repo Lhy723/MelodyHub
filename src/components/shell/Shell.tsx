@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { GradualBlur, ToastContainer } from '../ui';
+import { AnimatedContent, GradualBlur, ToastContainer } from '../ui';
 import { isMac, useWindowFilled, WindowControls } from './WindowControls';
 import { useT } from '../../i18n';
 
@@ -22,11 +22,13 @@ export const Shell: React.FC = () => {
   };
   const pageTitle = pageTitles[location.pathname] || pageTitles[rootPath] || 'Melody Hub';
   const mainRef = useRef<HTMLElement>(null);
+  const hasMountedRef = useRef(false);
   const windowFilled = useWindowFilled();
 
   // Scroll to top on route change
   useEffect(() => {
     if (mainRef.current) mainRef.current.scrollTop = 0;
+    hasMountedRef.current = true;
   }, [location.pathname]);
 
   return (
@@ -76,7 +78,6 @@ export const Shell: React.FC = () => {
             overflowY: 'auto',
             scrollbarGutter: 'stable',
           }}
-          key={location.pathname}
         >
           {/* Visual layer: sticky header with blur.
               pointer-events: none so mouse events pass through to the drag
@@ -118,7 +119,12 @@ export const Shell: React.FC = () => {
                 padding: 'var(--spacer-24) var(--spacer-24) var(--spacer-16)',
               }}
             >
-              <h1
+              <AnimatedContent
+                as="h1"
+                key={location.pathname}
+                className="rb-route-transition"
+                duration={700}
+                disabled={!hasMountedRef.current}
                 style={{
                   fontFamily: 'var(--font-family-heading)',
                   fontSize: 'var(--heading-md-font-size)',
@@ -134,13 +140,20 @@ export const Shell: React.FC = () => {
                 }}
               >
                 {pageTitle}
-              </h1>
+              </AnimatedContent>
             </div>
           </div>
 
           {/* Page content */}
           <div style={{ padding: '0 var(--spacer-24) var(--spacer-24)' }}>
-            <Outlet />
+            <AnimatedContent
+              key={location.pathname}
+              className="rb-route-transition"
+              duration={700}
+              disabled={!hasMountedRef.current}
+            >
+              <Outlet />
+            </AnimatedContent>
           </div>
         </main>
 

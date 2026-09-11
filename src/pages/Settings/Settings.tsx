@@ -1,4 +1,3 @@
-import { AnimatedContent } from '../../components/ui';
 import { SettingsForm } from './SettingsForm';
 
 export const Settings: React.FC = () => {
@@ -15,9 +14,7 @@ export const Settings: React.FC = () => {
         boxSizing: 'border-box',
       }}
     >
-      <AnimatedContent distance={6}>
-        <SettingsForm />
-      </AnimatedContent>
+      <SettingsForm />
     </div>
   );
 };
