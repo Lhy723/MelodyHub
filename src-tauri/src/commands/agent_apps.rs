@@ -135,21 +135,33 @@ fn codex_auth_state_from(path: &Path) -> CodexAuthState {
             .map(|token| !token.trim().is_empty())
             .unwrap_or(false)
     };
-    let has_subscription = token_present("access_token")
-        || token_present("refresh_token")
-        || value
-            .get("auth_mode")
-            .and_then(Value::as_str)
-            .map(|mode| mode.eq_ignore_ascii_case("chatgpt"))
-            .unwrap_or(false);
+    // 只认真实凭据：`tokens` 三件套非空才算 OAuth 登录，
+    // 纯元数据（如 `last_refresh`、`tokens.account_id`）不算。
+    let has_oauth_material = ["id_token", "access_token", "refresh_token"]
+        .iter()
+        .any(|key| token_present(key));
     let has_api_key = value
         .get("OPENAI_API_KEY")
         .and_then(Value::as_str)
         .map(|key| !key.trim().is_empty())
         .unwrap_or(false);
+    // 与 Codex 一致：显式 auth_mode 优先，否则按凭据存在性判定、兜底 ChatGPT。
+    let explicit_mode = value
+        .get("auth_mode")
+        .and_then(Value::as_str)
+        .map(|mode| mode.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    let resolved_mode = if !explicit_mode.is_empty() {
+        explicit_mode.as_str()
+    } else if has_api_key {
+        "apikey"
+    } else {
+        "chatgpt"
+    };
+    let has_subscription = resolved_mode == "chatgpt" && has_oauth_material;
     let login = if has_subscription {
         "chatgpt"
-    } else if has_api_key {
+    } else if matches!(resolved_mode, "apikey" | "api_key") && has_api_key {
         "api_key"
     } else {
         "none"
@@ -1748,6 +1760,22 @@ mod tests {
         let state = codex_auth_state_from(&path);
         assert!(!state.has_subscription);
         assert_eq!(state.login, "api_key");
+        let _ = fs::remove_file(&path);
+    }
+
+    /// 只有元数据残留（无 tokens 三件套）不算订阅登录。
+    #[test]
+    fn codex_auth_state_ignores_metadata_only_residue() {
+        let path = unique_temp_path("auth-metadata").with_extension("json");
+        fs::write(
+            &path,
+            r#"{"auth_mode":"chatgpt","last_refresh":"2026-09-11T00:00:00Z","tokens":{"account_id":"acct"}}"#,
+        )
+        .unwrap();
+
+        let state = codex_auth_state_from(&path);
+        assert!(!state.has_subscription);
+        assert_eq!(state.login, "none");
         let _ = fs::remove_file(&path);
     }
 
