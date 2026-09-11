@@ -25,12 +25,20 @@ mod types;
 use commands::settings;
 use commands::updater::PendingUpdate;
 use proxy::SharedAppState;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tauri::{Emitter, Manager};
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_state: SharedAppState = proxy::AppState::new();
+    let should_show_window = Arc::new(AtomicBool::new(false));
+    let page_loaded = Arc::new(AtomicBool::new(false));
+    let should_show_for_page_load = Arc::clone(&should_show_window);
+    let page_loaded_for_page_load = Arc::clone(&page_loaded);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::new().build())
@@ -39,13 +47,46 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .manage(PendingUpdate::default())
+        // Keep the main window hidden until WebView2 has loaded the initial
+        // document. `index.html` contains an inline loading view, so the
+        // first revealed frame is useful instead of an unpainted black page.
+        .on_page_load(move |webview, payload| {
+            if webview.label() != "main"
+                || !matches!(payload.event(), tauri::webview::PageLoadEvent::Finished)
+            {
+                return;
+            }
+
+            page_loaded_for_page_load.store(true, Ordering::Release);
+            if should_show_for_page_load.load(Ordering::Acquire) {
+                show_main_window(webview.app_handle());
+            }
+        })
         .setup({
             let state = app_state.clone();
+            let should_show_window = Arc::clone(&should_show_window);
+            let page_loaded = Arc::clone(&page_loaded);
             move |app| {
                 let handle = app.handle().clone();
 
+                // Read this small file before initializing the tray or
+                // starting the heavier backend work. The main window is
+                // revealed after its inline loading view has loaded.
+                let startup_settings = settings::load_or_init(&handle).ok();
+
                 #[cfg(desktop)]
                 {
+                    let should_show = startup_settings
+                        .as_ref()
+                        .is_none_or(|settings| !settings.start_minimized);
+                    should_show_window.store(should_show, Ordering::Release);
+
+                    // Handle the unlikely case where the page-load callback
+                    // fires before setup has finished reading settings.
+                    if should_show && page_loaded.load(Ordering::Acquire) {
+                        show_main_window(&handle);
+                    }
+
                     use tauri_plugin_autostart::MacosLauncher;
                     let _ = handle.plugin(tauri_plugin_autostart::init(
                         MacosLauncher::LaunchAgent,
@@ -54,7 +95,7 @@ pub fn run() {
                     init_tray(&handle);
                 }
 
-                bootstrap(&handle, &state);
+                bootstrap(&handle, &state, startup_settings);
                 Ok(())
             }
         })
@@ -132,20 +173,27 @@ pub fn run() {
         });
 }
 
-/// Synchronous-ish bootstrap: performs async setup on the Tauri
-/// runtime. Errors are logged but do not abort startup so the UI
-/// still comes up (the user can fix config from Settings).
-fn bootstrap(app_handle: &tauri::AppHandle, state: &SharedAppState) {
+/// Background bootstrap: performs the heavier async setup after the
+/// window is visible. Errors are logged but do not abort startup so
+/// the UI still comes up (the user can fix config from Settings).
+fn bootstrap(
+    app_handle: &tauri::AppHandle,
+    state: &SharedAppState,
+    initial_settings: Option<settings::AppSettings>,
+) {
     let handle = app_handle.clone();
     let state = state.clone();
-    tauri::async_runtime::block_on(async move {
+    tauri::async_runtime::spawn(async move {
         // 1. Load (or initialize) settings — heals missing token.
-        let s = match settings::load_or_init(&handle) {
-            Ok(s) => s,
-            Err(e) => {
-                eprintln!("[bootstrap] Failed to load settings: {}", e);
-                return;
-            }
+        let s = match initial_settings {
+            Some(s) => s,
+            None => match settings::load_or_init(&handle) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("[bootstrap] Failed to load settings: {}", e);
+                    return;
+                }
+            },
         };
 
         // 1b. Inject the AppHandle so the proxy can emit
@@ -181,13 +229,10 @@ fn bootstrap(app_handle: &tauri::AppHandle, state: &SharedAppState) {
         #[cfg(desktop)]
         set_autostart_enabled(&handle, s.launch_at_login);
 
-        // 7. Show main window unless start-minimized.
-        if !s.start_minimized {
-            if let Some(w) = handle.get_webview_window("main") {
-                let _ = w.show();
-                let _ = w.set_focus();
-            }
-        }
+        // 7. Notify the frontend that state initialization is complete. The
+        // window is already visible, so this lets the dashboard refresh if
+        // its first IPC requests raced the bootstrap work.
+        let _ = handle.emit("bootstrap-complete", ());
 
         // 8. Auto-check for updates (notification-only — never auto-installs).
         // The frontend listens for the `update-available` event and shows
@@ -506,7 +551,22 @@ fn set_autostart_enabled(app: &tauri::AppHandle, enabled: bool) {
         if let Err(e) = manager.enable() {
             eprintln!("[autostart] Failed to enable: {}", e);
         }
-    } else if let Err(e) = manager.disable() {
-        eprintln!("[autostart] Failed to disable: {}", e);
+    } else {
+        // `disable()` returns an OS error when the startup entry does not
+        // exist yet (for example on the first launch with autostart off).
+        // Treat that state as already disabled instead of logging a false
+        // failure. Only call `disable()` when the plugin reports an active
+        // autostart entry.
+        match manager.is_enabled() {
+            Ok(true) => {
+                if let Err(e) = manager.disable() {
+                    eprintln!("[autostart] Failed to disable: {}", e);
+                }
+            }
+            Ok(false) => {}
+            Err(e) => {
+                eprintln!("[autostart] Failed to check status: {}", e);
+            }
+        }
     }
 }

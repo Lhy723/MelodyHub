@@ -144,6 +144,13 @@ function formFromStatus(status: AgentAppStatus, fallbackEndpoint: string, hasMel
 
 function statusColor(status: AgentAppStatus): string {
   if (status.error) return 'var(--status-error-default)';
+  if (status.commandFound && status.configExists) return 'var(--status-success-default)';
+  if (status.commandFound || status.configExists) return 'var(--status-warning-default)';
+  return 'var(--text-tertiary)';
+}
+
+function configStatusColor(status: AgentAppStatus): string {
+  if (status.error) return 'var(--status-error-default)';
   if (status.configExists) return 'var(--status-success-default)';
   return 'var(--text-tertiary)';
 }
@@ -906,7 +913,11 @@ export const ApplicationSettings: React.FC = () => {
                 badge: (
                   <span
                     aria-label={
-                      status?.configExists ? t('applications.statusDetected') : t('applications.statusNotDetected')
+                      status
+                        ? `${status.commandFound ? t('applications.commandFound') : t('applications.commandNotFound')} · ${
+                            status.configExists ? t('applications.statusDetected') : t('applications.statusNotDetected')
+                          }`
+                        : t('applications.loading')
                     }
                     style={{
                       display: 'inline-block',
@@ -963,28 +974,64 @@ export const ApplicationSettings: React.FC = () => {
                           style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacer-8)' }}
                         >
                           <CardTitle style={{ margin: 0 }}>{t(activeAgent.nameKey)}</CardTitle>
-                          <span
+                          <div
                             style={{
                               display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              color: statusColor(activeStatus),
+                              flexDirection: 'column',
+                              alignItems: 'flex-start',
+                              gap: 2,
                               fontSize: 'var(--body-xs-font-size)',
                             }}
                           >
-                            {activeStatus.error ? (
-                              <AlertCircle size={12} />
-                            ) : activeStatus.configExists ? (
-                              <CheckCircle2 size={12} />
-                            ) : null}
-                            {activeStatus.error
-                              ? t('applications.statusError')
-                              : activeStatus.configExists
-                                ? t('applications.statusDetected')
-                                : t('applications.statusNotDetected')}
-                          </span>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                color: activeStatus.commandFound
+                                  ? 'var(--status-success-default)'
+                                  : 'var(--status-warning-default)',
+                              }}
+                            >
+                              {activeStatus.commandFound && <CheckCircle2 size={12} />}
+                              {activeStatus.commandFound
+                                ? t('applications.commandFound')
+                                : t('applications.commandNotFound')}
+                            </span>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                color: configStatusColor(activeStatus),
+                              }}
+                            >
+                              {activeStatus.error ? (
+                                <AlertCircle size={12} />
+                              ) : activeStatus.configExists ? (
+                                <CheckCircle2 size={12} />
+                              ) : null}
+                              {activeStatus.error
+                                ? t('applications.statusError')
+                                : activeStatus.configExists
+                                  ? t('applications.statusDetected')
+                                  : t('applications.statusNotDetected')}
+                            </span>
+                          </div>
                         </div>
                         <CardDesc>{t(activeAgent.descriptionKey)}</CardDesc>
+                        {activeStatus.commandFound && activeStatus.commandPath && (
+                          <div
+                            style={{
+                              marginTop: 'var(--spacer-4)',
+                              color: 'var(--text-tertiary)',
+                              fontSize: 'var(--body-xs-font-size)',
+                              wordBreak: 'break-all',
+                            }}
+                          >
+                            {t('applications.commandPath')}: {activeStatus.commandPath}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-12)', flexShrink: 0 }}>

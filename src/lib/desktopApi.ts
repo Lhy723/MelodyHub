@@ -30,6 +30,8 @@ export interface AgentAppStatus {
   configPath: string;
   configLabel: string;
   configExists: boolean;
+  commandFound: boolean;
+  commandPath: string | null;
   backupExists: boolean;
   isManaged: boolean;
   endpoint: string;
@@ -165,6 +167,15 @@ export function onRequestCompleted(callback: (record: RequestRecord) => void): P
   return listen<RequestRecord>('request-completed', (event) => {
     callback(event.payload);
   });
+}
+
+/**
+ * Subscribe to the one-shot backend bootstrap completion event. This is used
+ * to refresh data when the window is shown before the backend finishes its
+ * disk and provider initialization.
+ */
+export function onBootstrapComplete(callback: () => void): Promise<UnlistenFn> {
+  return listen('bootstrap-complete', callback);
 }
 
 /**
