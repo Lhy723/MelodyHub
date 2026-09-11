@@ -168,9 +168,7 @@ export const ModelInventory: React.FC = () => {
   // 正方形格子内容（三行：名称 / 元信息 / 能力图标，不换行，垂直居中）。
   const renderEntry = (entry: ExposedEntry): React.ReactNode => {
     const caps = entryCaps(entry);
-    const paramSources = entry.sources.filter(
-      (s): s is DirectMapping => s.kind === 'direct' || s.kind === 'alias',
-    );
+    const paramSources = entry.sources.filter((s): s is DirectMapping => s.kind === 'direct' || s.kind === 'alias');
     const maxCtx = Math.max(0, ...paramSources.map((s) => s.model.contextWindow || 0));
     const icons: Array<{ icon: React.ReactNode; label: string }> = [];
     if (caps.vision) icons.push({ icon: <Eye size={13} />, label: t('capability.vision') });
@@ -240,7 +238,10 @@ export const ModelInventory: React.FC = () => {
         >
           {meta}
         </span>
-        <span aria-hidden style={{ display: 'flex', gap: 'var(--spacer-8)', height: 16, color: 'var(--text-tertiary)' }}>
+        <span
+          aria-hidden
+          style={{ display: 'flex', gap: 'var(--spacer-8)', height: 16, color: 'var(--text-tertiary)' }}
+        >
           {icons.map((c) => (
             <span key={c.label} title={c.label} style={{ display: 'inline-flex' }}>
               {c.icon}
@@ -255,38 +256,6 @@ export const ModelInventory: React.FC = () => {
 
   return (
     <div className="mc-section" style={{ marginBottom: 'var(--spacer-32)' }}>
-      {/* Section title */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 'var(--spacer-16)',
-        }}
-      >
-        <div>
-          <h3
-            style={{
-              fontSize: 'var(--heading-xs-font-size)',
-              fontWeight: 'var(--font-weight-strong)',
-              color: 'var(--text-default)',
-              margin: 0,
-            }}
-          >
-            {t('models.inventory.title')}
-          </h3>
-          <p
-            style={{
-              fontSize: 'var(--body-sm-font-size)',
-              color: 'var(--text-tertiary)',
-              margin: 'var(--spacer-4) 0 0',
-            }}
-          >
-            {t('models.inventory.desc')}
-          </p>
-        </div>
-      </div>
-
       <FilterGrid
         items={entries}
         filters={gridFilters}

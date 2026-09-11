@@ -13,7 +13,9 @@ import {
   RotateCcw,
   Search,
   Terminal,
-  X, Unplug } from 'lucide-react';
+  X,
+  Unplug,
+} from 'lucide-react';
 import { t as translate, useT } from '../../i18n';
 import {
   Button,
@@ -23,6 +25,7 @@ import {
   Dropdown,
   Input,
   Switch,
+  Tag,
   toast,
   ConfirmDialog,
 } from '../../components/ui';
@@ -149,12 +152,6 @@ function statusColor(status: AgentAppStatus): string {
   return 'var(--text-tertiary)';
 }
 
-function configStatusColor(status: AgentAppStatus): string {
-  if (status.error) return 'var(--status-error-default)';
-  if (status.configExists) return 'var(--status-success-default)';
-  return 'var(--text-tertiary)';
-}
-
 function SaveIndicator({ state, error, t }: { state: SaveState; error?: string; t: (key: string) => string }) {
   if (state === 'saving') {
     return (
@@ -250,10 +247,7 @@ function SwitchGrid({ items, last = false }: { items: SwitchItem[]; last?: boole
       }}
     >
       {items.map((item) => (
-        <div
-          key={item.key}
-          style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacer-10)', minWidth: 0 }}
-        >
+        <div key={item.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacer-10)', minWidth: 0 }}>
           <Switch checked={item.checked} onChange={item.onChange} aria-label={item.label} />
           <div style={{ minWidth: 0 }}>
             <div
@@ -346,11 +340,7 @@ function MultiSelectDropdown({
   };
 
   const summaryLabel =
-    options.length === 0
-      ? emptyText
-      : selected.length === 0
-        ? placeholder
-        : `${selected.length} / ${options.length}`;
+    options.length === 0 ? emptyText : selected.length === 0 ? placeholder : `${selected.length} / ${options.length}`;
 
   // 已选项：tag-input 的 chip 形态（radius-6 / 24px / --bg-overlay-l1 / remove 钮 focus 环）
   const chips = (
@@ -901,48 +891,54 @@ export const ApplicationSettings: React.FC = () => {
           {t('applications.loading')}
         </Card>
       ) : (
-          <Tabs
-            label={t('applications.tabsLabel')}
-            items={AGENTS.map((agent) => {
-              const status = statuses[agent.id];
-              const Icon = agent.icon;
-              return {
-                value: agent.id,
-                icon: <Icon size={16} />,
-                label: t(agent.nameKey),
-                badge: (
-                  <span
-                    aria-label={
-                      status
-                        ? `${status.commandFound ? t('applications.commandFound') : t('applications.commandNotFound')} · ${
-                            status.configExists ? t('applications.statusDetected') : t('applications.statusNotDetected')
-                          }`
-                        : t('applications.loading')
-                    }
-                    style={{
-                      display: 'inline-block',
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: status ? statusColor(status) : 'var(--text-tertiary)',
-                    }}
-                  />
-                ),
-              };
-            })}
-            value={activeId}
-            onValueChange={(v) => setActiveId(v as AgentAppId)}
-            renderPanel={() =>
-              !activeStatus ? (
-                <div style={{ padding: 'var(--spacer-32)', color: 'var(--text-tertiary)', textAlign: 'center' }}>
-                  {t('applications.loading')}
-                </div>
-              ) : (
-                <div role="tabpanel" aria-label={t(activeAgent.nameKey)}>
-                  <Card
-                    padding="0"
-                    style={{ overflow: 'hidden', background: 'transparent', border: 'none', borderRadius: 0, boxShadow: 'none' }}
-                  >
+        <Tabs
+          label={t('applications.tabsLabel')}
+          items={AGENTS.map((agent) => {
+            const status = statuses[agent.id];
+            const Icon = agent.icon;
+            return {
+              value: agent.id,
+              icon: <Icon size={16} />,
+              label: t(agent.nameKey),
+              badge: (
+                <span
+                  aria-label={
+                    status
+                      ? `${status.commandFound ? t('applications.commandFound') : t('applications.commandNotFound')} · ${
+                          status.configExists ? t('applications.statusDetected') : t('applications.statusNotDetected')
+                        }`
+                      : t('applications.loading')
+                  }
+                  style={{
+                    display: 'inline-block',
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: status ? statusColor(status) : 'var(--text-tertiary)',
+                  }}
+                />
+              ),
+            };
+          })}
+          value={activeId}
+          onValueChange={(v) => setActiveId(v as AgentAppId)}
+          renderPanel={() =>
+            !activeStatus ? (
+              <div style={{ padding: 'var(--spacer-32)', color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                {t('applications.loading')}
+              </div>
+            ) : (
+              <div role="tabpanel" aria-label={t(activeAgent.nameKey)}>
+                <Card
+                  padding="0"
+                  style={{
+                    overflow: 'hidden',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 0,
+                    boxShadow: 'none',
+                  }}
+                >
                   <div
                     style={{
                       display: 'flex',
@@ -977,34 +973,21 @@ export const ApplicationSettings: React.FC = () => {
                           <div
                             style={{
                               display: 'inline-flex',
-                              flexDirection: 'column',
-                              alignItems: 'flex-start',
-                              gap: 2,
-                              fontSize: 'var(--body-xs-font-size)',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: 'var(--spacer-6)',
                             }}
                           >
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                color: activeStatus.commandFound
-                                  ? 'var(--status-success-default)'
-                                  : 'var(--status-warning-default)',
-                              }}
-                            >
-                              {activeStatus.commandFound && <CheckCircle2 size={12} />}
+                            <Tag variant={activeStatus.commandFound ? 'success' : 'warning'}>
+                              {activeStatus.commandFound ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                               {activeStatus.commandFound
-                                ? t('applications.commandFound')
-                                : t('applications.commandNotFound')}
-                            </span>
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                color: configStatusColor(activeStatus),
-                              }}
+                                ? t('applications.commandFoundShort')
+                                : t('applications.commandNotFoundShort')}
+                            </Tag>
+                            <Tag
+                              variant={
+                                activeStatus.error ? 'danger' : activeStatus.configExists ? 'success' : 'neutral'
+                              }
                             >
                               {activeStatus.error ? (
                                 <AlertCircle size={12} />
@@ -1012,11 +995,11 @@ export const ApplicationSettings: React.FC = () => {
                                 <CheckCircle2 size={12} />
                               ) : null}
                               {activeStatus.error
-                                ? t('applications.statusError')
+                                ? t('applications.statusErrorShort')
                                 : activeStatus.configExists
-                                  ? t('applications.statusDetected')
-                                  : t('applications.statusNotDetected')}
-                            </span>
+                                  ? t('applications.statusDetectedShort')
+                                  : t('applications.statusNotDetectedShort')}
+                            </Tag>
                           </div>
                         </div>
                         <CardDesc>{t(activeAgent.descriptionKey)}</CardDesc>
@@ -1115,299 +1098,295 @@ export const ApplicationSettings: React.FC = () => {
                       >
                         {t('applications.takeoverDesc')}
                       </div>
-                      <Button
-                        variant="brand"
-                        size="md"
-                        onClick={() => setTakeoverTarget(activeStatus)}
-                      >
+                      <Button variant="brand" size="md" onClick={() => setTakeoverTarget(activeStatus)}>
                         {t('applications.takeover')}
                       </Button>
                     </div>
                   )}
 
                   {activeStatus.isManaged && (
-                  <div style={{ padding: 'var(--spacer-16)' }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 'var(--spacer-12)',
-                        marginBottom: 'var(--spacer-16)',
-                      }}
-                    >
+                    <div style={{ padding: 'var(--spacer-16)' }}>
                       <div
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 'var(--spacer-6)',
-                          color: 'var(--text-tertiary)',
-                          fontSize: 'var(--body-xs-font-size)',
+                          justifyContent: 'space-between',
+                          gap: 'var(--spacer-12)',
+                          marginBottom: 'var(--spacer-16)',
                         }}
-                      >
-                        <FileCog size={13} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {activeStatus.configLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div
-                        style={{
-                          paddingBottom: 'var(--spacer-6)',
-                          color: 'var(--text-default)',
-                          fontSize: 'var(--body-sm-font-size)',
-                          fontWeight: 'var(--font-weight-strong)',
-                        }}
-                      >
-                        {t('applications.basicSection')}
-                      </div>
-                      <SettingRow
-                        label={t('applications.endpoint')}
-                        hint={
-                          activeAgent.id === 'claude'
-                            ? t('applications.claude.endpointHint')
-                            : t('applications.endpointHint')
-                        }
-                      >
-                        <Input
-                          value={activeForm.endpoint}
-                          onChange={(event) => updateForm(activeAgent.id, { endpoint: event.target.value })}
-                          placeholder={fallbackEndpoint(activeAgent.id)}
-                          aria-label={`${t(activeAgent.nameKey)} ${t('applications.endpoint')}`}
-                        />
-                      </SettingRow>
-                      <SettingRow label={t('applications.protocol')} hint={t('applications.protocolFixed')}>
-                        <Dropdown
-                          options={[
-                            { value: 'responses', label: t('applications.protocol.responses') },
-                            { value: 'messages', label: t('applications.protocol.messages') },
-                          ]}
-                          value={activeAgent.protocolValue}
-                          onChange={() => undefined}
-                          disabled
-                          size="sm"
-                          style={{ width: '100%' }}
-                        />
-                      </SettingRow>
-                      <SettingRow
-                        label={
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-8)' }}>
-                            {t('applications.model')}
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                color: 'var(--text-tertiary)',
-                                fontSize: 'var(--body-xs-font-size)',
-                                fontWeight: 'var(--font-weight-default)',
-                              }}
-                            >
-                              {t('applications.modelCustom')}
-                              <Switch
-                                checked={activeModelCustom}
-                                onChange={(enabled) => {
-                                  setCustomModelById((current) => ({ ...current, [activeAgent.id]: enabled }));
-                                  if (enabled) {
-                                    // 开启自定义模型时，认证令牌自动切换到手动输入，并清空可用模型列表
-                                    updateForm(activeAgent.id, {
-                                      tokenMode: 'custom',
-                                      availableModels: [],
-                                    });
-                                  } else {
-                                    // 关闭自定义模型时，清空自定义模型值并切回 Melody 令牌
-                                    const nextModel = activeForm.model && configuredModelValues.includes(activeForm.model)
-                                      ? activeForm.model
-                                      : '';
-                                    updateForm(activeAgent.id, {
-                                      model: nextModel,
-                                      tokenMode: appTokenRef.current ? 'melody' : 'keep',
-                                    });
-                                  }
-                                }}
-                                aria-label={t('applications.modelCustom')}
-                              />
-                            </span>
-                          </span>
-                        }
-                        hint={t('applications.modelHint')}
                       >
                         <div
                           style={{
                             display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'stretch',
-                            gap: 'var(--spacer-8)',
-                            width: '100%',
+                            alignItems: 'center',
+                            gap: 'var(--spacer-6)',
+                            color: 'var(--text-tertiary)',
+                            fontSize: 'var(--body-xs-font-size)',
                           }}
                         >
-                          <Dropdown
-                            options={modelOptions}
-                            value={activeModelCustom ? CUSTOM_MODEL_VALUE : activeForm.model}
-                            onChange={(value) => {
-                              if (value === CUSTOM_MODEL_VALUE) {
-                                setCustomModelById((current) => ({ ...current, [activeAgent.id]: true }));
-                                return;
-                              }
-                              setCustomModelById((current) => ({ ...current, [activeAgent.id]: false }));
-                              updateForm(activeAgent.id, { model: value });
-                            }}
-                            disabled={activeModelCustom}
-                            placeholder={t('applications.modelMode.auto')}
-                            size="sm"
-                            style={{ width: '100%' }}
-                          />
-                          {activeModelCustom && (
-                            <Input
-                              value={activeForm.model}
-                              onChange={(event) => updateForm(activeAgent.id, { model: event.target.value })}
-                              placeholder={t('applications.modelPlaceholder')}
-                              aria-label={`${t(activeAgent.nameKey)} ${t('applications.customModel')}`}
-                            />
-                          )}
+                          <FileCog size={13} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {activeStatus.configLabel}
+                          </span>
                         </div>
-                      </SettingRow>
-                      {!activeModelCustom && (
-                        <SettingRow
-                          label={t('applications.availableModels')}
-                          hint={t('applications.availableModelsHint')}
+                      </div>
+
+                      <div>
+                        <div
+                          style={{
+                            paddingBottom: 'var(--spacer-6)',
+                            color: 'var(--text-default)',
+                            fontSize: 'var(--body-sm-font-size)',
+                            fontWeight: 'var(--font-weight-strong)',
+                          }}
                         >
-                          <MultiSelectDropdown
-                            options={configuredModelValues.filter((m) => m !== activeForm.model)}
-                            selected={activeForm.availableModels}
-                            onChange={(next) => updateForm(activeAgent.id, { availableModels: next })}
-                            placeholder={t('applications.availableModelsPlaceholder')}
-                            emptyText={t('applications.availableModelsEmpty')}
-                            searchPlaceholder={t('applications.availableModelsSearch')}
-                            noMatchText={t('applications.availableModelsNoMatch')}
+                          {t('applications.basicSection')}
+                        </div>
+                        <SettingRow
+                          label={t('applications.endpoint')}
+                          hint={
+                            activeAgent.id === 'claude'
+                              ? t('applications.claude.endpointHint')
+                              : t('applications.endpointHint')
+                          }
+                        >
+                          <Input
+                            value={activeForm.endpoint}
+                            onChange={(event) => updateForm(activeAgent.id, { endpoint: event.target.value })}
+                            placeholder={fallbackEndpoint(activeAgent.id)}
+                            aria-label={`${t(activeAgent.nameKey)} ${t('applications.endpoint')}`}
                           />
                         </SettingRow>
-                      )}
-                      <SettingRow label={t('applications.authToken')} hint={t('applications.authTokenHint')}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'stretch',
-                            gap: 'var(--spacer-8)',
-                            width: '100%',
-                          }}
-                        >
+                        <SettingRow label={t('applications.protocol')} hint={t('applications.protocolFixed')}>
                           <Dropdown
-                            options={(['melody', 'keep', 'custom'] as TokenMode[]).map((mode) => ({
-                              value: mode,
-                              label: t(`applications.tokenMode.${mode}`),
-                            }))}
-                            value={activeForm.tokenMode}
-                            onChange={(value) => updateForm(activeAgent.id, { tokenMode: value as TokenMode })}
+                            options={[
+                              { value: 'responses', label: t('applications.protocol.responses') },
+                              { value: 'messages', label: t('applications.protocol.messages') },
+                            ]}
+                            value={activeAgent.protocolValue}
+                            onChange={() => undefined}
+                            disabled
                             size="sm"
                             style={{ width: '100%' }}
                           />
-                          {activeForm.tokenMode === 'custom' && (
-                            <Input
-                              type="password"
-                              value={activeForm.token}
-                              onChange={(event) => updateForm(activeAgent.id, { token: event.target.value })}
-                              placeholder={
-                                activeStatus.authTokenSet
-                                  ? t('applications.tokenKeepHint')
-                                  : t('applications.tokenPlaceholder')
-                              }
-                              autoComplete="new-password"
-                              aria-label={`${t(activeAgent.nameKey)} ${t('applications.customToken')}`}
-                            />
-                          )}
-                          {activeForm.tokenMode === 'keep' && activeStatus.authTokenSet && (
-                            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)' }}>
-                              {activeStatus.authTokenMasked} {t('applications.tokenKeepHint')}
+                        </SettingRow>
+                        <SettingRow
+                          label={
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacer-8)' }}>
+                              {t('applications.model')}
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  color: 'var(--text-tertiary)',
+                                  fontSize: 'var(--body-xs-font-size)',
+                                  fontWeight: 'var(--font-weight-default)',
+                                }}
+                              >
+                                {t('applications.modelCustom')}
+                                <Switch
+                                  checked={activeModelCustom}
+                                  onChange={(enabled) => {
+                                    setCustomModelById((current) => ({ ...current, [activeAgent.id]: enabled }));
+                                    if (enabled) {
+                                      // 开启自定义模型时，认证令牌自动切换到手动输入，并清空可用模型列表
+                                      updateForm(activeAgent.id, {
+                                        tokenMode: 'custom',
+                                        availableModels: [],
+                                      });
+                                    } else {
+                                      // 关闭自定义模型时，清空自定义模型值并切回 Melody 令牌
+                                      const nextModel =
+                                        activeForm.model && configuredModelValues.includes(activeForm.model)
+                                          ? activeForm.model
+                                          : '';
+                                      updateForm(activeAgent.id, {
+                                        model: nextModel,
+                                        tokenMode: appTokenRef.current ? 'melody' : 'keep',
+                                      });
+                                    }
+                                  }}
+                                  aria-label={t('applications.modelCustom')}
+                                />
+                              </span>
                             </span>
-                          )}
-                        </div>
-                      </SettingRow>
-
-                      <div
-                        style={{
-                          marginTop: 'var(--spacer-12)',
-                          paddingBottom: 'var(--spacer-6)',
-                          color: 'var(--text-default)',
-                          fontSize: 'var(--body-sm-font-size)',
-                          fontWeight: 'var(--font-weight-strong)',
-                        }}
-                      >
-                        {t('applications.reasoningSection')}
-                      </div>
-                      <SettingRow
-                        label={t('applications.reasoningEffort')}
-                        hint={t('applications.reasoningEffortHint')}
-                        last={!activeAgent.showThinkingToggle && activeAgent.featureKeys.length === 0}
-                      >
-                        <Dropdown
-                          options={activeAgent.reasoningEfforts.map((effort) => ({
-                            value: effort,
-                            label: t(`applications.reasoning.${effort}`),
-                          }))}
-                          value={
-                            activeAgent.reasoningEfforts.includes(activeForm.reasoningEffort)
-                              ? activeForm.reasoningEffort
-                              : 'auto'
                           }
-                          onChange={(value) =>
-                            updateForm(activeAgent.id, { reasoningEffort: value as ReasoningEffort })
-                          }
-                          size="sm"
-                          style={{ width: '100%' }}
-                        />
-                      </SettingRow>
-                      {activeAgent.showThinkingToggle && (
-                        <SwitchGrid
-                          last={activeAgent.featureKeys.length === 0}
-                          items={[
-                            {
-                              key: 'thinkingEnabled',
-                              label: t('applications.thinkingEnabled'),
-                              hint: t('applications.thinkingEnabledHint'),
-                              checked: activeForm.thinkingEnabled,
-                              onChange: (enabled: boolean) =>
-                                updateForm(activeAgent.id, { thinkingEnabled: enabled }),
-                            },
-                          ]}
-                        />
-                      )}
-
-                      {activeAgent.featureKeys.length > 0 && (
-                        <>
+                          hint={t('applications.modelHint')}
+                        >
                           <div
                             style={{
-                              marginTop: 'var(--spacer-12)',
-                              paddingBottom: 'var(--spacer-6)',
-                              color: 'var(--text-default)',
-                              fontSize: 'var(--body-sm-font-size)',
-                              fontWeight: 'var(--font-weight-strong)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'stretch',
+                              gap: 'var(--spacer-8)',
+                              width: '100%',
                             }}
                           >
-                            {t('applications.featuresSection')}
+                            <Dropdown
+                              options={modelOptions}
+                              value={activeModelCustom ? CUSTOM_MODEL_VALUE : activeForm.model}
+                              onChange={(value) => {
+                                if (value === CUSTOM_MODEL_VALUE) {
+                                  setCustomModelById((current) => ({ ...current, [activeAgent.id]: true }));
+                                  return;
+                                }
+                                setCustomModelById((current) => ({ ...current, [activeAgent.id]: false }));
+                                updateForm(activeAgent.id, { model: value });
+                              }}
+                              disabled={activeModelCustom}
+                              placeholder={t('applications.modelMode.auto')}
+                              size="sm"
+                              style={{ width: '100%' }}
+                            />
+                            {activeModelCustom && (
+                              <Input
+                                value={activeForm.model}
+                                onChange={(event) => updateForm(activeAgent.id, { model: event.target.value })}
+                                placeholder={t('applications.modelPlaceholder')}
+                                aria-label={`${t(activeAgent.nameKey)} ${t('applications.customModel')}`}
+                              />
+                            )}
                           </div>
-                          <SwitchGrid
-                            last
-                            items={activeAgent.featureKeys.map((featureKey) => ({
-                              key: featureKey,
-                              label: t(FEATURE_LABEL_KEYS[featureKey]),
-                              hint: t(FEATURE_HINT_KEYS[featureKey]),
-                              checked: Boolean(activeForm.featureFlags[featureKey]),
-                              onChange: (enabled: boolean) =>
-                                updateForm(activeAgent.id, {
-                                  featureFlags: { ...activeForm.featureFlags, [featureKey]: enabled },
-                                }),
-                            }))}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  )}
+                        </SettingRow>
+                        {!activeModelCustom && (
+                          <SettingRow
+                            label={t('applications.availableModels')}
+                            hint={t('applications.availableModelsHint')}
+                          >
+                            <MultiSelectDropdown
+                              options={configuredModelValues.filter((m) => m !== activeForm.model)}
+                              selected={activeForm.availableModels}
+                              onChange={(next) => updateForm(activeAgent.id, { availableModels: next })}
+                              placeholder={t('applications.availableModelsPlaceholder')}
+                              emptyText={t('applications.availableModelsEmpty')}
+                              searchPlaceholder={t('applications.availableModelsSearch')}
+                              noMatchText={t('applications.availableModelsNoMatch')}
+                            />
+                          </SettingRow>
+                        )}
+                        <SettingRow label={t('applications.authToken')} hint={t('applications.authTokenHint')}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'stretch',
+                              gap: 'var(--spacer-8)',
+                              width: '100%',
+                            }}
+                          >
+                            <Dropdown
+                              options={(['melody', 'keep', 'custom'] as TokenMode[]).map((mode) => ({
+                                value: mode,
+                                label: t(`applications.tokenMode.${mode}`),
+                              }))}
+                              value={activeForm.tokenMode}
+                              onChange={(value) => updateForm(activeAgent.id, { tokenMode: value as TokenMode })}
+                              size="sm"
+                              style={{ width: '100%' }}
+                            />
+                            {activeForm.tokenMode === 'custom' && (
+                              <Input
+                                type="password"
+                                value={activeForm.token}
+                                onChange={(event) => updateForm(activeAgent.id, { token: event.target.value })}
+                                placeholder={
+                                  activeStatus.authTokenSet
+                                    ? t('applications.tokenKeepHint')
+                                    : t('applications.tokenPlaceholder')
+                                }
+                                autoComplete="new-password"
+                                aria-label={`${t(activeAgent.nameKey)} ${t('applications.customToken')}`}
+                              />
+                            )}
+                            {activeForm.tokenMode === 'keep' && activeStatus.authTokenSet && (
+                              <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--body-xs-font-size)' }}>
+                                {activeStatus.authTokenMasked} {t('applications.tokenKeepHint')}
+                              </span>
+                            )}
+                          </div>
+                        </SettingRow>
 
+                        <div
+                          style={{
+                            marginTop: 'var(--spacer-12)',
+                            paddingBottom: 'var(--spacer-6)',
+                            color: 'var(--text-default)',
+                            fontSize: 'var(--body-sm-font-size)',
+                            fontWeight: 'var(--font-weight-strong)',
+                          }}
+                        >
+                          {t('applications.reasoningSection')}
+                        </div>
+                        <SettingRow
+                          label={t('applications.reasoningEffort')}
+                          hint={t('applications.reasoningEffortHint')}
+                          last={!activeAgent.showThinkingToggle && activeAgent.featureKeys.length === 0}
+                        >
+                          <Dropdown
+                            options={activeAgent.reasoningEfforts.map((effort) => ({
+                              value: effort,
+                              label: t(`applications.reasoning.${effort}`),
+                            }))}
+                            value={
+                              activeAgent.reasoningEfforts.includes(activeForm.reasoningEffort)
+                                ? activeForm.reasoningEffort
+                                : 'auto'
+                            }
+                            onChange={(value) =>
+                              updateForm(activeAgent.id, { reasoningEffort: value as ReasoningEffort })
+                            }
+                            size="sm"
+                            style={{ width: '100%' }}
+                          />
+                        </SettingRow>
+                        {activeAgent.showThinkingToggle && (
+                          <SwitchGrid
+                            last={activeAgent.featureKeys.length === 0}
+                            items={[
+                              {
+                                key: 'thinkingEnabled',
+                                label: t('applications.thinkingEnabled'),
+                                hint: t('applications.thinkingEnabledHint'),
+                                checked: activeForm.thinkingEnabled,
+                                onChange: (enabled: boolean) =>
+                                  updateForm(activeAgent.id, { thinkingEnabled: enabled }),
+                              },
+                            ]}
+                          />
+                        )}
+
+                        {activeAgent.featureKeys.length > 0 && (
+                          <>
+                            <div
+                              style={{
+                                marginTop: 'var(--spacer-12)',
+                                paddingBottom: 'var(--spacer-6)',
+                                color: 'var(--text-default)',
+                                fontSize: 'var(--body-sm-font-size)',
+                                fontWeight: 'var(--font-weight-strong)',
+                              }}
+                            >
+                              {t('applications.featuresSection')}
+                            </div>
+                            <SwitchGrid
+                              last
+                              items={activeAgent.featureKeys.map((featureKey) => ({
+                                key: featureKey,
+                                label: t(FEATURE_LABEL_KEYS[featureKey]),
+                                hint: t(FEATURE_HINT_KEYS[featureKey]),
+                                checked: Boolean(activeForm.featureFlags[featureKey]),
+                                onChange: (enabled: boolean) =>
+                                  updateForm(activeAgent.id, {
+                                    featureFlags: { ...activeForm.featureFlags, [featureKey]: enabled },
+                                  }),
+                              }))}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </Card>
 
                 {activeStatus.isManaged && activeAgent.id === 'codex' && (
@@ -1427,76 +1406,76 @@ export const ApplicationSettings: React.FC = () => {
                   />
                 )}
 
-                  {activeStatus.isManaged && (
+                {activeStatus.isManaged && (
                   <div style={{ borderTop: '1px solid var(--border-neutral-l1)', padding: 'var(--spacer-20)' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                      gap: 'var(--spacer-12)',
-                      padding: 'var(--spacer-16) var(--spacer-20)',
-                      borderBottom: '1px solid var(--border-neutral-l1)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacer-10)' }}>
-                      <FileText size={17} style={{ color: 'var(--icon-secondary)', marginTop: 2 }} />
-                      <div>
-                        <CardTitle style={{ margin: 0 }}>{t('applications.finalConfig.title')}</CardTitle>
-                        <CardDesc>{t('applications.finalConfig.hint')}</CardDesc>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-12)', flexShrink: 0 }}>
-                      <SaveIndicator state={activeTextState} error={textErrors[activeAgent.id]} t={t} />
-                      <Button
-                        variant="primary"
-                        size="md"
-                        loading={activeTextState === 'saving'}
-                        disabled={activeTextState !== 'dirty'}
-                        onClick={() => handleManualTextSave(activeAgent.id)}
-                      >
-                        {t('applications.save')}
-                      </Button>
-                    </div>
-                  </div>
-                  <div style={{ padding: 'var(--spacer-16) var(--spacer-20) var(--spacer-20)' }}>
-                    <textarea
-                      value={activeConfigText}
-                      onChange={(event) => updateConfigText(activeAgent.id, event.target.value)}
-                      spellCheck={false}
-                      aria-label={t('applications.finalConfig.title')}
-                      placeholder={t('applications.finalConfig.empty')}
-                      className="mh-textarea"
+                    <div
                       style={{
-                        display: 'block',
-                        width: '100%',
-                        minHeight: 220,
-                        resize: 'vertical',
-                        boxSizing: 'border-box',
-                        padding: 'var(--spacer-12)',
-                        background: 'var(--bg-base-default)',
-                        color: 'var(--text-default)',
-                        fontFamily: 'var(--font-family-mono)',
-                        fontSize: 'var(--body-sm-font-size)',
-                        lineHeight: 1.6,
-                      }}
-                    />
-                    <p
-                      style={{
-                        margin: 'var(--spacer-8) 0 0',
-                        color: 'var(--text-tertiary)',
-                        fontSize: 'var(--body-xs-font-size)',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: 'var(--spacer-12)',
+                        padding: 'var(--spacer-16) var(--spacer-20)',
+                        borderBottom: '1px solid var(--border-neutral-l1)',
                       }}
                     >
-                      {t('applications.finalConfig.secretHint')}
-                    </p>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacer-10)' }}>
+                        <FileText size={17} style={{ color: 'var(--icon-secondary)', marginTop: 2 }} />
+                        <div>
+                          <CardTitle style={{ margin: 0 }}>{t('applications.finalConfig.title')}</CardTitle>
+                          <CardDesc>{t('applications.finalConfig.hint')}</CardDesc>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacer-12)', flexShrink: 0 }}>
+                        <SaveIndicator state={activeTextState} error={textErrors[activeAgent.id]} t={t} />
+                        <Button
+                          variant="primary"
+                          size="md"
+                          loading={activeTextState === 'saving'}
+                          disabled={activeTextState !== 'dirty'}
+                          onClick={() => handleManualTextSave(activeAgent.id)}
+                        >
+                          {t('applications.save')}
+                        </Button>
+                      </div>
+                    </div>
+                    <div style={{ padding: 'var(--spacer-16) var(--spacer-20) var(--spacer-20)' }}>
+                      <textarea
+                        value={activeConfigText}
+                        onChange={(event) => updateConfigText(activeAgent.id, event.target.value)}
+                        spellCheck={false}
+                        aria-label={t('applications.finalConfig.title')}
+                        placeholder={t('applications.finalConfig.empty')}
+                        className="mh-textarea"
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          minHeight: 220,
+                          resize: 'vertical',
+                          boxSizing: 'border-box',
+                          padding: 'var(--spacer-12)',
+                          background: 'var(--bg-base-default)',
+                          color: 'var(--text-default)',
+                          fontFamily: 'var(--font-family-mono)',
+                          fontSize: 'var(--body-sm-font-size)',
+                          lineHeight: 1.6,
+                        }}
+                      />
+                      <p
+                        style={{
+                          margin: 'var(--spacer-8) 0 0',
+                          color: 'var(--text-tertiary)',
+                          fontSize: 'var(--body-xs-font-size)',
+                        }}
+                      >
+                        {t('applications.finalConfig.secretHint')}
+                      </p>
+                    </div>
                   </div>
-                  </div>
-                  )}
-                </div>
-              )
-            }
-          />
+                )}
+              </div>
+            )
+          }
+        />
       )}
       <ConfirmDialog
         open={takeoverTarget !== null}

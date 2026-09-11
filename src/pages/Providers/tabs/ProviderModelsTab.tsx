@@ -400,7 +400,7 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '28px 1fr 80px 80px 40px 40px 40px 40px 40px 36px',
+              gridTemplateColumns: '28px 1fr 128px 128px 40px 40px 40px 40px 40px 36px',
               alignItems: 'center',
               padding: '6px 12px',
               borderBottom: '1px solid var(--border-neutral-l1)',
@@ -430,7 +430,7 @@ export const ProviderModelsTab: React.FC<ProviderModelsTabProps> = ({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '28px 1fr 80px 80px 40px 40px 40px 40px 40px 36px',
+                    gridTemplateColumns: '28px 1fr 128px 128px 40px 40px 40px 40px 40px 36px',
                     alignItems: 'center',
                     padding: '4px 12px',
                     borderBottom: '1px solid var(--border-neutral-l1)',

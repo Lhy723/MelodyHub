@@ -99,7 +99,7 @@ const en: Record<string, string> = {
 
   // ── Model Config ──
   'models.title': 'Model Configuration',
-  'models.subtitle': 'Manage exposed model mappings',
+  'models.subtitle': 'Manage model mappings available to clients.',
   'models.addProvider': 'Add Provider',
   'models.connected': 'Connected',
   'models.configuring': 'Configuring',
@@ -148,8 +148,6 @@ const en: Record<string, string> = {
   'models.quickAdd.selected': 'selected',
 
   // Model inventory
-  'models.inventory.title': 'Exposed Models',
-  'models.inventory.desc': 'All model endpoints available to clients',
   'models.inventory.sourceCount': '{n} sources',
   'models.inventory.collapseShow': 'Collapse, show only',
   'models.inventory.filterAll': 'All',
@@ -257,7 +255,8 @@ const en: Record<string, string> = {
   'applications.codexSettings.jsonPlaceholder': 'Enter a JSON object, array, or boolean',
   'applications.codexSettings.invalidFieldJson': 'Invalid JSON — fix it before leaving this field.',
   'applications.codexSettings.noResults': 'No matching Codex settings.',
-  'applications.codexSettings.rawPending': 'The raw TOML editor has unsaved changes. Wait for it to finish saving first.',
+  'applications.codexSettings.rawPending':
+    'The raw TOML editor has unsaved changes. Wait for it to finish saving first.',
   'applications.codexSettings.group.model': 'Models and reasoning',
   'applications.codexSettings.group.permissions': 'Permissions, approvals, and sandbox',
   'applications.codexSettings.group.tools': 'Tools and suggestions',
@@ -276,14 +275,21 @@ const en: Record<string, string> = {
   'applications.loadFailed': 'Failed to read agent configurations',
   'applications.commandFound': 'Command found',
   'applications.commandNotFound': 'Command not found in PATH',
+  'applications.commandFoundShort': 'Command OK',
+  'applications.commandNotFoundShort': 'Command missing',
   'applications.commandPath': 'Command path',
   'applications.statusDetected': 'Configuration detected',
   'applications.statusNotDetected': 'Not configured',
   'applications.statusError': 'Invalid configuration',
+  'applications.statusDetectedShort': 'Config OK',
+  'applications.statusNotDetectedShort': 'Not configured',
+  'applications.statusErrorShort': 'Config error',
   'applications.takeover': 'Take over',
   'applications.takeoverTitle': 'Not managed by Melody Hub',
-  'applications.takeoverDesc': 'Melody Hub will not touch this config until you opt in. Taking over writes the gateway endpoint, auth token and model settings (a backup is saved first), and you can disconnect anytime.',
-  'applications.takeoverConfirm': 'Melody Hub will write its gateway endpoint, auth token and model settings into the config file of {app}. The original file is backed up first, and you can disconnect anytime. Take over?',
+  'applications.takeoverDesc':
+    'Melody Hub will not touch this config until you opt in. Taking over writes the gateway endpoint, auth token and model settings (a backup is saved first), and you can disconnect anytime.',
+  'applications.takeoverConfirm':
+    'Melody Hub will write its gateway endpoint, auth token and model settings into the config file of {app}. The original file is backed up first, and you can disconnect anytime. Take over?',
   'applications.takenOver': 'Taken over — you can now edit settings',
   'applications.takeoverFailed': 'Failed to take over',
   'applications.endpoint': 'Local API URL',
@@ -364,7 +370,8 @@ const en: Record<string, string> = {
   'applications.restored': 'Previous config restored',
   'applications.restoreFailed': 'Failed to restore agent config',
   'applications.disconnect': 'Disconnect',
-  'applications.disconnectConfirm': 'This removes the settings Melody Hub wrote into this agent\'s config (provider, model, token and related keys). A backup is saved first. Continue?',
+  'applications.disconnectConfirm':
+    "This removes the settings Melody Hub wrote into this agent's config (provider, model, token and related keys). A backup is saved first. Continue?",
   'applications.disconnectSuccess': 'Agent disconnected from Melody Hub',
   'applications.disconnectFailed': 'Failed to disconnect agent config',
   'applications.saveState.idle': 'Synced',
@@ -518,7 +525,8 @@ const en: Record<string, string> = {
   'settings.dataManagement.exportFailed': 'Export failed',
   'settings.dataManagement.importInvalid': 'Not a valid Melody Hub config file',
   'settings.dataManagement.importConfirmTitle': 'Import Config',
-  'settings.dataManagement.importConfirmBody': 'Importing will overwrite all current settings and replace them with {providers} providers and {aggregations} aggregations from the file. This cannot be undone. Continue?',
+  'settings.dataManagement.importConfirmBody':
+    'Importing will overwrite all current settings and replace them with {providers} providers and {aggregations} aggregations from the file. This cannot be undone. Continue?',
   'settings.dataManagement.importSuccess': 'Config imported successfully',
   'settings.dataManagement.importFailed': 'Import failed',
   'settings.dataManagement.resetConfirm': 'Are you sure you want to reset all data? This action cannot be undone.',

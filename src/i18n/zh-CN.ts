@@ -71,7 +71,8 @@ const zh: Record<string, string> = {
   'dashboard.requestDetail.failoverPath': '故障转移',
   'dashboard.requestDetail.copy': '复制 ID',
   'dashboard.requestDetail.copied': '已复制',
-  'dashboard.requestDetail.copyFailed': '复制失败',  'dashboard.loadError': '数据加载失败：',
+  'dashboard.requestDetail.copyFailed': '复制失败',
+  'dashboard.loadError': '数据加载失败：',
   'dashboard.loadFailed': '加载失败',
   'dashboard.retry': '重试',
   'dashboard.retrying': '重试中...',
@@ -97,7 +98,7 @@ const zh: Record<string, string> = {
 
   // ── 模型配置 ──
   'models.title': '模型配置',
-  'models.subtitle': '管理对外暴露的模型映射',
+  'models.subtitle': '管理客户端可调用的模型映射。',
   'models.addProvider': '添加提供商',
   'models.connected': '已连接',
   'models.configuring': '配置中',
@@ -149,8 +150,6 @@ const zh: Record<string, string> = {
   'models.quickAdd.selected': '已选',
 
   // 模型库存
-  'models.inventory.title': '对外暴露的模型',
-  'models.inventory.desc': '客户端可调用的所有模型入口',
   'models.inventory.sourceCount': '{n} 个来源',
   'models.inventory.collapseShow': '收起，仅显示',
   'models.inventory.filterAll': '全部',
@@ -272,26 +271,36 @@ const zh: Record<string, string> = {
   'applications.loadFailed': '读取 Agent 配置失败',
   'applications.commandFound': '已找到命令',
   'applications.commandNotFound': '未找到命令（不在 PATH 中）',
+  'applications.commandFoundShort': '命令正常',
+  'applications.commandNotFoundShort': '命令缺失',
   'applications.commandPath': '命令路径',
   'applications.statusDetected': '已检测到配置',
   'applications.statusNotDetected': '尚未配置',
   'applications.statusError': '配置格式异常',
+  'applications.statusDetectedShort': '配置正常',
+  'applications.statusNotDetectedShort': '未配置',
+  'applications.statusErrorShort': '配置异常',
   'applications.takeover': '接管',
   'applications.takeoverTitle': '未由 Melody Hub 托管',
-  'applications.takeoverDesc': '在你确认前，Melody Hub 不会改动此配置。接管后将写入接入端点、认证令牌与模型设置（会先自动备份），随时可以断开。',
-  'applications.takeoverConfirm': 'Melody Hub 将向 {app} 的配置文件写入接入端点、认证令牌与模型设置，原文件会先自动备份，之后可随时断开接管。确认接管？',
+  'applications.takeoverDesc':
+    '在你确认前，Melody Hub 不会改动此配置。接管后将写入接入端点、认证令牌与模型设置（会先自动备份），随时可以断开。',
+  'applications.takeoverConfirm':
+    'Melody Hub 将向 {app} 的配置文件写入接入端点、认证令牌与模型设置，原文件会先自动备份，之后可随时断开接管。确认接管？',
   'applications.takenOver': '已接管，可编辑设置',
   'applications.takeoverFailed': '接管失败',
   'applications.endpoint': '本地 API 地址',
-  'applications.endpointHint': 'Agent 通过此地址访问 Melody Hub 代理服务。默认为本机代理端口，Agent 发送的请求会先经过 Melody Hub，再转发给上游模型供应商。',
+  'applications.endpointHint':
+    'Agent 通过此地址访问 Melody Hub 代理服务。默认为本机代理端口，Agent 发送的请求会先经过 Melody Hub，再转发给上游模型供应商。',
   'applications.basicSection': '连接与模型',
-  'applications.modelHint': '从已配置的供应商模型中选择一个作为默认模型；若所需的模型不在列表中，可开启「自定义模型」手动输入模型 ID。关闭自定义模型后，模型上下文、目录等参数将根据已有配置自动设置。',
+  'applications.modelHint':
+    '从已配置的供应商模型中选择一个作为默认模型；若所需的模型不在列表中，可开启「自定义模型」手动输入模型 ID。关闭自定义模型后，模型上下文、目录等参数将根据已有配置自动设置。',
   'applications.model': '默认模型（可选）',
   'applications.modelPlaceholder': '例如 gpt-5.1-codex-mini 或 deepseek-v4-flash',
   'applications.modelCustom': '自定义模型',
   'applications.customModel': '自定义模型名称',
   'applications.availableModels': '可用模型列表',
-  'applications.availableModelsHint': '供 Agent 在运行时切换使用的额外模型。所选模型会写入 Agent 配置文件，Agent 可在对话中动态切换；默认模型已自动包含，无需重复添加。关闭自定义模型后此选项不生效。',
+  'applications.availableModelsHint':
+    '供 Agent 在运行时切换使用的额外模型。所选模型会写入 Agent 配置文件，Agent 可在对话中动态切换；默认模型已自动包含，无需重复添加。关闭自定义模型后此选项不生效。',
   'applications.availableModelsEmpty': '暂无已配置的模型，请先在模型配置中添加。',
   'applications.availableModelsPlaceholder': '点击选择模型',
   'applications.availableModelsSearch': '搜索模型…',
@@ -299,20 +308,24 @@ const zh: Record<string, string> = {
   'applications.modelMode.auto': '不指定默认模型',
   'applications.modelMode.custom': '手动输入模型',
   'applications.authToken': '认证令牌',
-  'applications.authTokenHint': 'Agent 访问 Melody Hub 代理时使用的认证令牌。「Melody 令牌」使用系统设置中配置的令牌；「保留现有令牌」不修改配置文件中的令牌；「手动输入」可写入自定义令牌。开启自定义模型时将自动切换为手动输入。',
+  'applications.authTokenHint':
+    'Agent 访问 Melody Hub 代理时使用的认证令牌。「Melody 令牌」使用系统设置中配置的令牌；「保留现有令牌」不修改配置文件中的令牌；「手动输入」可写入自定义令牌。开启自定义模型时将自动切换为手动输入。',
   'applications.protocol': '接入协议',
   'applications.protocol.responses': 'OpenAI Responses API',
   'applications.protocol.messages': 'Anthropic Messages API',
-  'applications.protocolFixed': '由当前 Agent 适配器固定，不可更改。Codex 使用 Responses API，Claude Code 使用 Messages API。',
+  'applications.protocolFixed':
+    '由当前 Agent 适配器固定，不可更改。Codex 使用 Responses API，Claude Code 使用 Messages API。',
   'applications.customToken': '自定义认证令牌',
   'applications.tokenPlaceholder': '输入要写入 Agent 的令牌',
   'applications.tokenKeepHint': '保留配置文件中的现有令牌',
   'applications.tokenRequired': '请输入令牌，或选择其它令牌方式',
   'applications.endpointRequired': '请输入 API 地址',
-  'applications.claude.endpointHint': 'Claude Code 会自动追加 /v1/messages 路径，请填写地址根路径（如 http://127.0.0.1:8080），无需手动添加后缀。',
+  'applications.claude.endpointHint':
+    'Claude Code 会自动追加 /v1/messages 路径，请填写地址根路径（如 http://127.0.0.1:8080），无需手动添加后缀。',
   'applications.reasoningSection': '推理设置',
   'applications.reasoningEffort': '思考强度',
-  'applications.reasoningEffortHint': '控制模型在回答前投入的推理预算。强度越高，模型思考越深入但耗时和 token 消耗也越多。「自动」由模型根据任务复杂度自行判断；「最少」适合简单问答；「最大」适合复杂数学、代码、逻辑推理任务。',
+  'applications.reasoningEffortHint':
+    '控制模型在回答前投入的推理预算。强度越高，模型思考越深入但耗时和 token 消耗也越多。「自动」由模型根据任务复杂度自行判断；「最少」适合简单问答；「最大」适合复杂数学、代码、逻辑推理任务。',
   'applications.reasoning.auto': '自动',
   'applications.reasoning.minimal': '最少',
   'applications.reasoning.low': '低',
@@ -321,20 +334,27 @@ const zh: Record<string, string> = {
   'applications.reasoning.xhigh': '极高',
   'applications.reasoning.max': '最大',
   'applications.thinkingEnabled': '启用扩展思考',
-  'applications.thinkingEnabledHint': '允许 Agent 在回答前进行更深入的逐步推理，适合复杂问题求解。开启后响应时间会增加，但答案质量通常更好；关闭后模型直接给出答案，速度更快。',
+  'applications.thinkingEnabledHint':
+    '允许 Agent 在回答前进行更深入的逐步推理，适合复杂问题求解。开启后响应时间会增加，但答案质量通常更好；关闭后模型直接给出答案，速度更快。',
   'applications.featuresSection': '功能特性',
   'applications.feature.webSearch': '网页搜索',
-  'applications.feature.webSearchHint': '允许 Codex 在回答问题时主动检索互联网，获取最新资讯、文档或代码示例。适合需要查找实时信息的场景（如最新 API、版本变更）；关闭后只能依赖训练数据，可能无法回答新近发生的内容。',
+  'applications.feature.webSearchHint':
+    '允许 Codex 在回答问题时主动检索互联网，获取最新资讯、文档或代码示例。适合需要查找实时信息的场景（如最新 API、版本变更）；关闭后只能依赖训练数据，可能无法回答新近发生的内容。',
   'applications.feature.shellTool': 'Shell 工具',
-  'applications.feature.shellToolHint': '允许 Codex 在沙箱中执行本地 Shell 命令（如 ls、git、npm 等），用于读取文件、运行测试、提交代码等操作。关闭后 Codex 仅能给出建议，无法实际执行命令。',
+  'applications.feature.shellToolHint':
+    '允许 Codex 在沙箱中执行本地 Shell 命令（如 ls、git、npm 等），用于读取文件、运行测试、提交代码等操作。关闭后 Codex 仅能给出建议，无法实际执行命令。',
   'applications.feature.computerUse': '计算机操作',
-  'applications.feature.computerUseHint': '允许 Codex 通过模拟点击、输入等方式操作图形界面（浏览器、桌面应用等）。适合需要与 GUI 软件交互的自动化任务；关闭后仅支持命令行和 API 调用。',
+  'applications.feature.computerUseHint':
+    '允许 Codex 通过模拟点击、输入等方式操作图形界面（浏览器、桌面应用等）。适合需要与 GUI 软件交互的自动化任务；关闭后仅支持命令行和 API 调用。',
   'applications.feature.multiAgent': '多 Agent',
-  'applications.feature.multiAgentHint': '允许 Codex 启动多个子 Agent 并行处理子任务（如同时调研多个方案、分模块实现代码），最后汇总结果。适合大型复杂任务；关闭后所有工作由单个 Agent 串行完成。',
+  'applications.feature.multiAgentHint':
+    '允许 Codex 启动多个子 Agent 并行处理子任务（如同时调研多个方案、分模块实现代码），最后汇总结果。适合大型复杂任务；关闭后所有工作由单个 Agent 串行完成。',
   'applications.feature.showThinkingSummaries': '显示思考摘要',
-  'applications.feature.showThinkingSummariesHint': '在 Claude Code 回答前展示其推理过程的简要摘要，便于理解它是如何得出结论的。适合需要审阅推理逻辑的场景；关闭后只输出最终答案。',
+  'applications.feature.showThinkingSummariesHint':
+    '在 Claude Code 回答前展示其推理过程的简要摘要，便于理解它是如何得出结论的。适合需要审阅推理逻辑的场景；关闭后只输出最终答案。',
   'applications.feature.encryptedReasoning': '传递加密推理内容',
-  'applications.feature.encryptedReasoningHint': '将模型生成的加密推理 token 原样转发给上游 API（如 OpenAI Responses API 的 reasoning.encrypted 字段），用于在多轮对话中保持推理上下文。适合需要跨请求延续思维链的场景。',
+  'applications.feature.encryptedReasoningHint':
+    '将模型生成的加密推理 token 原样转发给上游 API（如 OpenAI Responses API 的 reasoning.encrypted 字段），用于在多轮对话中保持推理上下文。适合需要跨请求延续思维链的场景。',
   'applications.tokenMode.melody': '使用 Melody 令牌',
   'applications.tokenMode.keep': '保留现有令牌',
   'applications.tokenMode.custom': '手动输入',
@@ -346,7 +366,8 @@ const zh: Record<string, string> = {
   'applications.restored': '已恢复上次配置',
   'applications.restoreFailed': '恢复 Agent 配置失败',
   'applications.disconnect': '断开接管',
-  'applications.disconnectConfirm': '将从该工具的配置文件中移除 Melody Hub 写入的设置（供应商、模型、令牌等键），其余内容保留，操作前会自动备份。确认继续？',
+  'applications.disconnectConfirm':
+    '将从该工具的配置文件中移除 Melody Hub 写入的设置（供应商、模型、令牌等键），其余内容保留，操作前会自动备份。确认继续？',
   'applications.disconnectSuccess': '已断开接管',
   'applications.disconnectFailed': '断开 Agent 配置失败',
   'applications.saveState.idle': '已同步',
@@ -500,7 +521,8 @@ const zh: Record<string, string> = {
   'settings.dataManagement.exportFailed': '导出失败',
   'settings.dataManagement.importInvalid': '不是有效的 Melody Hub 配置文件',
   'settings.dataManagement.importConfirmTitle': '导入配置',
-  'settings.dataManagement.importConfirmBody': '导入将覆盖当前全部设置，并替换为文件中的 {providers} 个供应商、{aggregations} 个聚合模型。此操作不可撤销，确定继续？',
+  'settings.dataManagement.importConfirmBody':
+    '导入将覆盖当前全部设置，并替换为文件中的 {providers} 个供应商、{aggregations} 个聚合模型。此操作不可撤销，确定继续？',
   'settings.dataManagement.importSuccess': '配置导入成功',
   'settings.dataManagement.importFailed': '导入失败',
   'settings.dataManagement.resetConfirm': '确定重置所有数据？此操作不可撤销。',
