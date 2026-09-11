@@ -452,10 +452,11 @@ fn load_status(app: AgentApp) -> Result<AgentAppStatus, String> {
 /// version.
 fn find_executable_on_path(name: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
-    let mut candidate_names = vec![name.to_string()];
+    let candidate_names = vec![name.to_string()];
 
     #[cfg(windows)]
-    {
+    let candidate_names = {
+        let mut candidate_names = candidate_names;
         let pathext = std::env::var_os("PATHEXT")
             .map(|value| value.to_string_lossy().into_owned())
             .unwrap_or_else(|| ".COM;.EXE;.BAT;.CMD".to_string());
@@ -463,7 +464,8 @@ fn find_executable_on_path(name: &str) -> Option<PathBuf> {
             let extension = extension.trim();
             (!extension.is_empty()).then(|| format!("{name}{extension}"))
         }));
-    }
+        candidate_names
+    };
 
     for directory in std::env::split_paths(&path) {
         for candidate_name in &candidate_names {
