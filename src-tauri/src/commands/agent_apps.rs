@@ -391,8 +391,18 @@ pub fn save_agent_app_setting(
     if path.exists() {
         backup_config(&path)?;
     }
-    let mut document = read_toml_document(&path)?;
+    let before = read_toml_document(&path)?;
+    let was_managed = codex_is_managed(&before);
+    let mut document = before.clone();
     set_toml_json_path(&mut document, &setting.key, setting.value.as_ref())?;
+    // 未托管时手动把 model_provider 改成 melody-hub 也会进入托管态：
+    // 此时同样先留快照，保证「断开」能精确还原而不是只能清理。
+    if !was_managed
+        && codex_is_managed(&document)
+        && read_codex_restore_record(&path).is_none()
+    {
+        capture_codex_restore_record(&path, &before)?;
+    }
     write_text_atomic(&path, &document.to_string())
         .map_err(|error| format!("Unable to write {}: {}", app.config_label(), error))?;
     load_status(app)
@@ -1793,6 +1803,46 @@ mod tests {
         assert_eq!(state.login, "none");
         assert!(state.auth_file_exists);
         let _ = fs::remove_file(&broken);
+    }
+
+    /// 未托管时手动把 model_provider 改成 melody-hub：应留下快照，断开可还原。
+    #[test]
+    fn codex_manual_managed_switch_keeps_restore_snapshot() {
+        let path = unique_temp_path("codex-manual-managed");
+        fs::write(
+            &path,
+            "model = \"gpt-5.6-luna\"\nmodel_reasoning_effort = \"max\"\n",
+        )
+        .unwrap();
+
+        // 与 save_agent_app_setting 相同的单键写入路径。
+        let before = read_toml_document(&path).unwrap();
+        let was_managed = codex_is_managed(&before);
+        let mut document = before.clone();
+        set_toml_json_path(
+            &mut document,
+            "model_provider",
+            Some(&serde_json::json!(MELODY_PROVIDER_ID)),
+        )
+        .unwrap();
+        assert!(!was_managed && codex_is_managed(&document));
+        if !was_managed
+            && codex_is_managed(&document)
+            && read_codex_restore_record(&path).is_none()
+        {
+            capture_codex_restore_record(&path, &before).unwrap();
+        }
+        write_text_atomic(&path, &document.to_string()).unwrap();
+
+        assert!(codex_restore_path(&path).exists());
+        disconnect_codex(&path).unwrap();
+        let restored = read_toml_document(&path).unwrap();
+        assert_eq!(
+            restored.get("model").and_then(Item::as_str),
+            Some("gpt-5.6-luna")
+        );
+        assert!(restored.get("model_provider").is_none());
+        cleanup(&path);
     }
 
     /// 接管不得写入 Codex 的 `model_catalog_json`（该键要求路径且会让配置
