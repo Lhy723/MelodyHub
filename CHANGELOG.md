@@ -1,6 +1,27 @@
 # Changelog
 
-## 0.1.18 (2026-09-11)
+## 0.1.19 (2026-09-11)
+
+### 新增
+
+- Agent Apps 识别 Codex 的 ChatGPT 订阅登录：读取 `~/.codex/auth.json`（尊重 `CODEX_HOME`）区分订阅 / API Key / 未登录，只回传登录方式、不读取令牌内容，界面显示状态横幅
+- Codex 的「配置编辑」与「模型来源」解耦：功能开关与高级选项在**未接管**时也能编辑（该写入路径只改单个键，不触碰 `model_provider` / `model`），订阅用户不再因为改设置而被强制切到本地端口
+- 配置项清单对齐 Codex 0.154：顶层覆盖 101/101，feature 开关 102 → 135 项，并补齐 `browser_use.*`、`computer_use.*`、`goals`、`profiles`/`profile` 等新键（含中文说明）
+
+### 修复
+
+- 断开接管时**精确还原**原始模型来源：接管前记录 `model` / `model_provider` / 模型目录 / 推理参数与功能开关，断开时按记录还原；此前直接删除会把订阅下的模型一并丢掉
+- 接管不再写坏 Codex 配置：`model_catalog_json` 在 Codex 中是指向目录 JSON 文件的**路径**，写入内联数组会导致整份配置加载失败（实测 `codex doctor` 报 `config could not be loaded`）。现改为写入 MelodyHub 自己的旁挂文件，并自动清理旧版本留下的非法值
+- 未接管时不再暴露模型来源设置（`model` / `model_provider` / `model_catalog_json` / `model_providers.*`），后端同时对单键写入做硬约束；手写整份配置的路径补记还原快照
+- 订阅判定只认真实凭据：仅 `last_refresh`、`account_id` 等元数据残留不再被误判为已登录
+- 对齐 `tauri-plugin-updater` 前后端版本（Rust 2.10.1 → 2.11.0），消除启动时的版本不匹配报错；`src-tauri/Cargo.lock` 纳入版本控制，并新增 CI 断言防止两侧再次漂移
+
+### 文档
+
+- 重拍界面预览三张截图（设置页改为「系统设置」而非「应用设置」），README 改为纵向排列、按正文宽度展示
+- 新增 Codex 配置核对方法与结论文档（`plan/codex-config-audit-0.154.md`）
+
+## 0.1.18 (2026-09-11)## 0.1.18 (2026-09-11)
 
 ### 变更
 
