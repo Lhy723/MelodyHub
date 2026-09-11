@@ -366,6 +366,20 @@ pub fn save_agent_app_text(
     if path.exists() {
         backup_config(&path)?;
     }
+    // 手写文本把 Codex 指向 Melody Hub 时同样进入托管态：先留快照，
+    // 保证后续「断开」能精确还原用户原本的模型来源。
+    if app == AgentApp::Codex {
+        let before = read_toml_document(&path)?;
+        let managed_before = codex_is_managed(&before);
+        let managed_after = content
+            .parse::<Document>()
+            .map(|document| codex_is_managed(&document))
+            .unwrap_or(false);
+        if !managed_before && managed_after && read_codex_restore_record(&path).is_none()
+        {
+            capture_codex_restore_record(&path, &before)?;
+        }
+    }
     write_text_atomic(&path, &content)
         .map_err(|error| format!("Unable to write {}: {}", app.config_label(), error))?;
     load_status(app)
@@ -391,18 +405,14 @@ pub fn save_agent_app_setting(
     if path.exists() {
         backup_config(&path)?;
     }
-    let before = read_toml_document(&path)?;
-    let was_managed = codex_is_managed(&before);
-    let mut document = before.clone();
-    set_toml_json_path(&mut document, &setting.key, setting.value.as_ref())?;
-    // 未托管时手动把 model_provider 改成 melody-hub 也会进入托管态：
-    // 此时同样先留快照，保证「断开」能精确还原而不是只能清理。
-    if !was_managed
-        && codex_is_managed(&document)
-        && read_codex_restore_record(&path).is_none()
-    {
-        capture_codex_restore_record(&path, &before)?;
+    let mut document = read_toml_document(&path)?;
+    if !codex_is_managed(&document) && is_codex_model_source_key(&setting.key) {
+        return Err(
+            "Codex is not managed by Melody Hub: model source keys can only be changed by taking over"
+                .to_string(),
+        );
     }
+    set_toml_json_path(&mut document, &setting.key, setting.value.as_ref())?;
     write_text_atomic(&path, &document.to_string())
         .map_err(|error| format!("Unable to write {}: {}", app.config_label(), error))?;
     load_status(app)
@@ -1462,6 +1472,17 @@ fn normalize_endpoint(endpoint: &str) -> Result<String, String> {
     Ok(endpoint.to_string())
 }
 
+/// 决定「请求走哪个模型来源」的键：未接管（保留 Codex 自身配置）时禁止修改，
+/// 只能通过接管写入，避免订阅用户在编辑功能开关时误把模型来源指向本地端口。
+const CODEX_MODEL_SOURCE_KEYS: [&str; 3] =
+    ["model", "model_provider", "model_catalog_json"];
+
+fn is_codex_model_source_key(key: &str) -> bool {
+    CODEX_MODEL_SOURCE_KEYS.contains(&key)
+        || key == "model_providers"
+        || key.starts_with("model_providers.")
+}
+
 /// 接管时会改写的顶层键（断开时按快照还原）。
 const CODEX_MANAGED_TOP_LEVEL_KEYS: [&str; 5] = [
     "model",
@@ -1805,36 +1826,44 @@ mod tests {
         let _ = fs::remove_file(&broken);
     }
 
-    /// 未托管时手动把 model_provider 改成 melody-hub：应留下快照，断开可还原。
+    /// 未托管时不得通过单键写入改模型来源（后端硬约束，不只靠界面隐藏）。
     #[test]
-    fn codex_manual_managed_switch_keeps_restore_snapshot() {
-        let path = unique_temp_path("codex-manual-managed");
+    fn codex_unmanaged_single_key_write_rejects_model_source() {
+        assert!(is_codex_model_source_key("model"));
+        assert!(is_codex_model_source_key("model_provider"));
+        assert!(is_codex_model_source_key("model_catalog_json"));
+        assert!(is_codex_model_source_key("model_providers.melody-hub"));
+        // 功能与推理开关不受限制。
+        assert!(!is_codex_model_source_key("features.web_search"));
+        assert!(!is_codex_model_source_key("model_reasoning_effort"));
+    }
+
+    /// 手写文本把 Codex 指向 Melody Hub：应留下快照，断开可精确还原。
+    #[test]
+    fn codex_raw_text_switch_to_managed_keeps_restore_snapshot() {
+        let path = unique_temp_path("codex-raw-text");
         fs::write(
             &path,
             "model = \"gpt-5.6-luna\"\nmodel_reasoning_effort = \"max\"\n",
         )
         .unwrap();
 
-        // 与 save_agent_app_setting 相同的单键写入路径。
+        // 模拟 save_agent_app_text 的快照时机。
         let before = read_toml_document(&path).unwrap();
-        let was_managed = codex_is_managed(&before);
-        let mut document = before.clone();
-        set_toml_json_path(
-            &mut document,
-            "model_provider",
-            Some(&serde_json::json!(MELODY_PROVIDER_ID)),
-        )
-        .unwrap();
-        assert!(!was_managed && codex_is_managed(&document));
-        if !was_managed
-            && codex_is_managed(&document)
-            && read_codex_restore_record(&path).is_none()
+        let managed_before = codex_is_managed(&before);
+        let content = "model = \"gpt-4.1\"\nmodel_provider = \"melody-hub\"\n\n[model_providers.melody-hub]\nbase_url = \"http://127.0.0.1:8080/v1\"\nwire_api = \"responses\"\n";
+        let managed_after = content
+            .parse::<Document>()
+            .map(|document| codex_is_managed(&document))
+            .unwrap_or(false);
+        assert!(!managed_before && managed_after);
+        if !managed_before && managed_after && read_codex_restore_record(&path).is_none()
         {
             capture_codex_restore_record(&path, &before).unwrap();
         }
-        write_text_atomic(&path, &document.to_string()).unwrap();
-
+        fs::write(&path, content).unwrap();
         assert!(codex_restore_path(&path).exists());
+
         disconnect_codex(&path).unwrap();
         let restored = read_toml_document(&path).unwrap();
         assert_eq!(
@@ -1842,6 +1871,7 @@ mod tests {
             Some("gpt-5.6-luna")
         );
         assert!(restored.get("model_provider").is_none());
+        assert!(restored.get("model_providers").is_none());
         cleanup(&path);
     }
 

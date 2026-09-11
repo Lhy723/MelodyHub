@@ -1407,7 +1407,6 @@ export const ApplicationSettings: React.FC = () => {
                     settings={activeStatus.codexSettings ?? {}}
                     onSettingChange={updateCodexSetting}
                     t={t}
-                    managed={activeStatus.isManaged && !activeModelCustom}
                   />
                 )}
 
