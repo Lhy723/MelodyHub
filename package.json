@@ -18,7 +18,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:dev:win": "tauri dev --config src-tauri/tauri.windows.conf.json",
-    "tauri:build:win": "tauri build --config src-tauri/tauri.windows.conf.json"
+    "tauri:build:win": "tauri build --config src-tauri/tauri.windows.conf.json",
+    "check:tauri-versions": "node tools/check-tauri-versions.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

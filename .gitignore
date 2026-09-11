@@ -34,7 +34,10 @@ src-tauri/gen/
 
 # Rust artifacts
 **/*.rs.bk
+# 应用需要可复现构建：忽略其他 Cargo.lock，但 src-tauri 的必须入库
+# （与前端 pnpm-lock.yaml 对称；tools/check-tauri-versions.mjs 依赖它）
 Cargo.lock
+!src-tauri/Cargo.lock
 
 # Playwright MCP runtime artifacts
 .playwright-mcp/
