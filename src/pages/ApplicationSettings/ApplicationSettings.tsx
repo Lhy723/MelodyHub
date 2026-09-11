@@ -15,6 +15,7 @@ import {
   Terminal,
   X,
   Unplug,
+  BadgeCheck,
 } from 'lucide-react';
 import { t as translate, useT } from '../../i18n';
 import {
@@ -1067,6 +1068,16 @@ export const ApplicationSettings: React.FC = () => {
                     </StatusBanner>
                   )}
 
+                  {activeAgent.id === 'codex' && activeStatus.codexAuth?.hasSubscription && (
+                    <StatusBanner
+                      tone="success"
+                      icon={BadgeCheck}
+                      style={{ margin: 'var(--spacer-16) var(--spacer-20) 0' }}
+                    >
+                      {t('applications.subscriptionPreserved')}
+                    </StatusBanner>
+                  )}
+
                   {!activeStatus.isManaged && !activeStatus.error && (
                     <div
                       style={{
@@ -1389,12 +1400,14 @@ export const ApplicationSettings: React.FC = () => {
                   )}
                 </Card>
 
-                {activeStatus.isManaged && activeAgent.id === 'codex' && (
+                {/* Codex 功能开关与高级选项：未接管（订阅登录）时同样可编辑，
+                    这条写入路径只改单个键，不触碰 model_provider / model。 */}
+                {activeAgent.id === 'codex' && activeStatus.configExists && (
                   <CodexSettingsEditor
                     settings={activeStatus.codexSettings ?? {}}
                     onSettingChange={updateCodexSetting}
                     t={t}
-                    managed={!activeModelCustom}
+                    managed={activeStatus.isManaged && !activeModelCustom}
                   />
                 )}
 

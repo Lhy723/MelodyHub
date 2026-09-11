@@ -287,9 +287,13 @@ const en: Record<string, string> = {
   'applications.takeover': 'Take over',
   'applications.takeoverTitle': 'Not managed by Melody Hub',
   'applications.takeoverDesc':
-    'Melody Hub will not touch this config until you opt in. Taking over writes the gateway endpoint, auth token and model settings (a backup is saved first), and you can disconnect anytime.',
+    'Melody Hub will not touch this config until you opt in. Taking over writes the gateway endpoint, auth token and model settings, and points the model source at the local gateway. The original model and provider are recorded before takeover and restored exactly when you disconnect (the original file is backed up too).',
   'applications.takeoverConfirm':
-    'Melody Hub will write its gateway endpoint, auth token and model settings into the config file of {app}. The original file is backed up first, and you can disconnect anytime. Take over?',
+    'Melody Hub will write its gateway endpoint, auth token and model settings into the config file of {app}, switching the model source to the local gateway. The original model and provider are recorded before takeover and restored exactly on disconnect; the original file is backed up too. Take over?',
+  'applications.subscriptionPreserved':
+    'ChatGPT subscription login detected: Melody Hub never rewrites the Codex login cache and never forces the model source. Feature options below stay editable; only when you take over explicitly does the model route through the local gateway.',
+  'applications.apiKeyDetected': 'Codex is signed in with an API key',
+  'applications.loginUnknown': 'No Codex login detected',
   'applications.takenOver': 'Taken over — you can now edit settings',
   'applications.takeoverFailed': 'Failed to take over',
   'applications.endpoint': 'Local API URL',

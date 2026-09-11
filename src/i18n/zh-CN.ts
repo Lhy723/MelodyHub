@@ -283,9 +283,13 @@ const zh: Record<string, string> = {
   'applications.takeover': '接管',
   'applications.takeoverTitle': '未由 Melody Hub 托管',
   'applications.takeoverDesc':
-    '在你确认前，Melody Hub 不会改动此配置。接管后将写入接入端点、认证令牌与模型设置（会先自动备份），随时可以断开。',
+    '在你确认前，Melody Hub 不会改动此配置。接管后会写入接入端点、认证令牌与模型设置，并把模型来源指向本地端口；原始模型与 provider 会在接管前记录、断开时自动还原（原文件同时会先备份）。',
   'applications.takeoverConfirm':
-    'Melody Hub 将向 {app} 的配置文件写入接入端点、认证令牌与模型设置，原文件会先自动备份，之后可随时断开接管。确认接管？',
+    'Melody Hub 将向 {app} 的配置文件写入接入端点、认证令牌与模型设置，模型来源将改为本地端口。原始模型与 provider 会在接管前记录、断开接管时精确还原，原文件同时会先备份。确认接管？',
+  'applications.subscriptionPreserved':
+    '检测到 ChatGPT 订阅登录：Melody Hub 不会改写 Codex 的登录缓存，也不会强制切换模型来源。下方功能选项可直接编辑；只有你主动「接管」，模型请求才会改为经本地端口。',
+  'applications.apiKeyDetected': 'Codex 使用 API Key 登录',
+  'applications.loginUnknown': '未检测到 Codex 登录',
   'applications.takenOver': '已接管，可编辑设置',
   'applications.takeoverFailed': '接管失败',
   'applications.endpoint': '本地 API 地址',

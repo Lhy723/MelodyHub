@@ -75,15 +75,97 @@ impl AgentApp {
             // Codex resolves its state dir from $CODEX_HOME (default ~/.codex);
             // mirror the official lookup so we read/write the file the CLI
             // and the desktop app (`codex app`) actually use.
-            Self::Codex => {
-                let codex_home = std::env::var_os("CODEX_HOME")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| home.join(".codex"));
-                codex_home.join("config.toml")
-            }
+            Self::Codex => codex_home_dir()?.join("config.toml"),
             Self::Claude => home.join(".claude").join("settings.json"),
             Self::OpenCode => opencode_config_path(&home),
         })
+    }
+}
+
+/// Codex 状态目录：`$CODEX_HOME` 优先，默认 `~/.codex`。CLI 与桌面版
+/// (`codex app`) 共用该目录，`auth.json` 与 `config.toml` 都在其中。
+fn codex_home_dir() -> Result<PathBuf, String> {
+    let home = dirs::home_dir()
+        .ok_or_else(|| "Unable to resolve the home directory".to_string())?;
+    Ok(std::env::var_os("CODEX_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home.join(".codex")))
+}
+
+/// Codex 登录态摘要。**不含任何令牌内容**：只区分登录方式，
+/// 以便界面识别「ChatGPT 订阅登录」与「API Key 登录」。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodexAuthState {
+    /// `chatgpt`（订阅登录）| `api_key` | `none`
+    pub login: String,
+    /// 是否存在 ChatGPT 订阅登录缓存（`tokens.access_token` / `refresh_token`）。
+    pub has_subscription: bool,
+    /// `auth.json` 是否存在（区分「未登录」与「没有该文件」）。
+    pub auth_file_exists: bool,
+}
+
+impl CodexAuthState {
+    fn none() -> Self {
+        Self {
+            login: "none".to_string(),
+            has_subscription: false,
+            auth_file_exists: false,
+        }
+    }
+}
+
+/// 从指定 `auth.json` 判定登录态；文件缺失或损坏按未登录处理。
+fn codex_auth_state_from(path: &Path) -> CodexAuthState {
+    let Ok(text) = fs::read_to_string(path) else {
+        return CodexAuthState::none();
+    };
+    let Ok(value) = serde_json::from_str::<Value>(&text) else {
+        return CodexAuthState {
+            login: "none".to_string(),
+            has_subscription: false,
+            auth_file_exists: true,
+        };
+    };
+    let tokens = value.get("tokens").and_then(Value::as_object);
+    let token_present = |key: &str| {
+        tokens
+            .and_then(|tokens| tokens.get(key))
+            .and_then(Value::as_str)
+            .map(|token| !token.trim().is_empty())
+            .unwrap_or(false)
+    };
+    let has_subscription = token_present("access_token")
+        || token_present("refresh_token")
+        || value
+            .get("auth_mode")
+            .and_then(Value::as_str)
+            .map(|mode| mode.eq_ignore_ascii_case("chatgpt"))
+            .unwrap_or(false);
+    let has_api_key = value
+        .get("OPENAI_API_KEY")
+        .and_then(Value::as_str)
+        .map(|key| !key.trim().is_empty())
+        .unwrap_or(false);
+    let login = if has_subscription {
+        "chatgpt"
+    } else if has_api_key {
+        "api_key"
+    } else {
+        "none"
+    };
+    CodexAuthState {
+        login: login.to_string(),
+        has_subscription,
+        auth_file_exists: true,
+    }
+}
+
+/// 读取 `~/.codex/auth.json`（尊重 `CODEX_HOME`）的登录态。
+fn read_codex_auth_state() -> CodexAuthState {
+    match codex_home_dir() {
+        Ok(dir) => codex_auth_state_from(&dir.join("auth.json")),
+        Err(_) => CodexAuthState::none(),
     }
 }
 
@@ -133,6 +215,9 @@ pub struct AgentAppStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub codex_settings: Option<BTreeMap<String, Value>>,
     pub config_text: String,
+    /// Codex 登录态摘要（仅 Codex；不含令牌内容）。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub codex_auth: Option<CodexAuthState>,
     pub error: Option<String>,
 }
 
@@ -154,6 +239,11 @@ pub struct AgentAppConfigInput {
     /// `null` keeps the existing credential; a string replaces it.  An empty
     /// string explicitly removes the credential from the target config.
     pub auth_token: Option<String>,
+    /// Codex 模型来源：`melody-hub`（默认，接管到本地端口）或 `keep`
+    /// （保留 Codex 自身配置，例如 ChatGPT 订阅登录或用户自带的 provider）。
+    /// `keep` 只写功能与推理开关，不触碰 `model_provider` / `model`。
+    #[serde(default)]
+    pub model_source: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -198,6 +288,12 @@ pub fn save_agent_app_config(
         return Err("Claude Code persistent effortLevel only supports low, medium, high, or xhigh; max is session-only".to_string());
     }
     let path = app.config_path()?;
+    // 只有显式传 "keep" 才保留 Codex 自身配置；其余（含缺省）按接管处理。
+    let model_source = if config.model_source.as_deref() == Some("keep") {
+        "keep"
+    } else {
+        "melody-hub"
+    };
 
     if path.exists() {
         backup_config(&path)?;
@@ -213,6 +309,7 @@ pub fn save_agent_app_config(
             auth_token: config.auth_token.as_deref(),
             reasoning_effort: &reasoning_effort,
             feature_flags: &config.feature_flags,
+            model_source,
         })?,
         AgentApp::Claude => save_claude(SaveTarget {
             path: &path,
@@ -223,6 +320,7 @@ pub fn save_agent_app_config(
             reasoning_effort: &reasoning_effort,
             thinking_enabled: config.thinking_enabled,
             feature_flags: &config.feature_flags,
+            model_source,
         })?,
         AgentApp::OpenCode => save_opencode(SaveTarget {
             path: &path,
@@ -233,6 +331,7 @@ pub fn save_agent_app_config(
             reasoning_effort: &reasoning_effort,
             thinking_enabled: config.thinking_enabled,
             feature_flags: &config.feature_flags,
+            model_source,
         })?,
     }
 
@@ -315,25 +414,11 @@ pub fn disconnect_agent_app(id: String) -> Result<AgentAppStatus, String> {
 
 fn disconnect_codex(path: &Path) -> Result<(), String> {
     let mut document = read_toml_document(path)?;
-    document.remove("model_provider");
-    document.remove("model");
-    document.remove("model_catalog_json");
-    document.remove("model_reasoning_effort");
-    document.remove("model_reasoning_summary");
-    if let Some(providers) = document
-        .get_mut("model_providers")
-        .and_then(Item::as_table_like_mut)
-    {
-        providers.remove(MELODY_PROVIDER_ID);
-    }
-    if let Some(features) = document
-        .get_mut("features")
-        .and_then(Item::as_table_like_mut)
-    {
-        for key in CODEX_FEATURE_KEYS {
-            features.remove(key);
-        }
-    }
+    // 按接管前的快照精确还原模型来源相关键与功能开关：直接删除会把用户
+    // 原本的模型（例如订阅下的 gpt-5.6-luna）一并丢掉。
+    restore_codex_model_source(path, &mut document)?;
+    let _ = fs::remove_file(codex_restore_path(path));
+    let _ = fs::remove_file(codex_model_list_path(path));
     write_text_atomic(path, &document.to_string())
 }
 
@@ -441,6 +526,11 @@ fn load_status(app: AgentApp) -> Result<AgentAppStatus, String> {
         feature_flags: values.0.feature_flags,
         codex_settings,
         config_text,
+        codex_auth: if app == AgentApp::Codex {
+            Some(read_codex_auth_state())
+        } else {
+            None
+        },
         error: values.1,
     })
 }
@@ -557,6 +647,7 @@ struct SaveTarget<'a> {
     reasoning_effort: &'a str,
     thinking_enabled: bool,
     feature_flags: &'a BTreeMap<String, bool>,
+    model_source: &'a str,
 }
 
 fn save_codex(target: SaveTarget<'_>) -> Result<(), String> {
@@ -569,36 +660,48 @@ fn save_codex(target: SaveTarget<'_>) -> Result<(), String> {
         reasoning_effort,
         thinking_enabled,
         feature_flags,
+        model_source,
     } = target;
     let mut document = read_toml_document(path)?;
-    document["model_provider"] = value(MELODY_PROVIDER_ID);
-    if !model.is_empty() {
-        document["model"] = value(model);
+
+    if model_source == "keep" {
+        // 保留 Codex 自身配置（ChatGPT 订阅登录，或用户自带的 provider）：
+        // 只写功能与推理开关，绝不触碰 model_provider / model / 模型目录，
+        // 因此订阅用户可以放心在这里开关实验特性。
+        // 若此前处于接管态，这里视为退出接管并还原原始模型来源。
+        if codex_is_managed(&document) {
+            restore_codex_model_source(path, &mut document)?;
+            let _ = fs::remove_file(codex_restore_path(path));
+        }
+        heal_codex_model_catalog_key(&mut document);
     } else {
-        document.remove("model");
+        // 接管：首次接管前快照原始值，断开时据此精确还原。
+        if !codex_is_managed(&document) {
+            capture_codex_restore_record(path, &document)?;
+        }
+        document["model_provider"] = value(MELODY_PROVIDER_ID);
+        if !model.is_empty() {
+            document["model"] = value(model);
+        } else {
+            document.remove("model");
+        }
+
+        // 可用模型列表写入我们自己的旁挂文件：Codex 的 `model_catalog_json`
+        // 是「指向目录 JSON 文件的路径」，写入内联数组会让 Codex 整份配置
+        // 加载失败（实测 0.154：failed to parse model_catalog_json path）。
+        write_codex_model_list(path, available_models)?;
+        heal_codex_model_catalog_key(&mut document);
+
+        let provider = &mut document["model_providers"][MELODY_PROVIDER_ID];
+        provider["name"] = value(MELODY_PROVIDER_NAME);
+        provider["base_url"] = value(endpoint);
+        provider["wire_api"] = value("responses");
+        if let Some(token) = auth_token {
+            set_toml_optional_string(provider, "experimental_bearer_token", token);
+        }
     }
 
-    // 将可用模型列表写入 model_catalog_json（JSON 字符串格式）
-    let filtered: Vec<&str> = available_models
-        .iter()
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .collect();
-    if filtered.is_empty() {
-        document.remove("model_catalog_json");
-    } else {
-        let json = serde_json::to_string(&filtered)
-            .map_err(|e| format!("Failed to serialize model catalog: {}", e))?;
-        document["model_catalog_json"] = value(json);
-    }
-
-    let provider = &mut document["model_providers"][MELODY_PROVIDER_ID];
-    provider["name"] = value(MELODY_PROVIDER_NAME);
-    provider["base_url"] = value(endpoint);
-    provider["wire_api"] = value("responses");
-    if let Some(token) = auth_token {
-        set_toml_optional_string(provider, "experimental_bearer_token", token);
-    }
+    // 以下两项与模型来源无关，两种模式都写。
     if reasoning_effort.trim().is_empty() {
         document.remove("model_reasoning_effort");
     } else {
@@ -646,12 +749,15 @@ fn read_codex(path: &Path) -> Result<AgentConfigValues, String> {
     let feature_flags =
         read_toml_bool_flags(document.get("features"), &CODEX_FEATURE_KEYS);
 
-    // 读取 model_catalog_json（JSON 字符串格式的模型名数组）
-    let available_models = document
-        .get("model_catalog_json")
-        .and_then(Item::as_str)
-        .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok())
-        .unwrap_or_default();
+    // 模型列表来自我们自己的旁挂文件；旧版本曾写进 model_catalog_json，
+    // 该值与 Codex schema 不符，读取时兼容、保存时自动清理。
+    let available_models = read_codex_model_list(path).unwrap_or_else(|| {
+        document
+            .get("model_catalog_json")
+            .and_then(Item::as_str)
+            .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok())
+            .unwrap_or_default()
+    });
 
     Ok(AgentConfigValues {
         endpoint: provider
@@ -691,6 +797,7 @@ fn save_claude(target: SaveTarget<'_>) -> Result<(), String> {
         reasoning_effort,
         thinking_enabled,
         feature_flags,
+        ..
     } = target;
     let mut root = read_json_object(path)?;
     {
@@ -815,6 +922,7 @@ fn save_opencode(target: SaveTarget<'_>) -> Result<(), String> {
         reasoning_effort,
         thinking_enabled,
         feature_flags,
+        ..
     } = target;
     let mut root = read_json_object(path)?;
     let providers = ensure_object(&mut root, "provider")?;
@@ -1332,6 +1440,183 @@ fn normalize_endpoint(endpoint: &str) -> Result<String, String> {
     Ok(endpoint.to_string())
 }
 
+/// 接管时会改写的顶层键（断开时按快照还原）。
+const CODEX_MANAGED_TOP_LEVEL_KEYS: [&str; 5] = [
+    "model",
+    "model_provider",
+    "model_catalog_json",
+    "model_reasoning_effort",
+    "model_reasoning_summary",
+];
+
+/// 接管前快照：只记录模型来源相关键与功能开关，**不保存任何凭据**。
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CodexRestoreRecord {
+    /// 顶层字符串键 → 原值。
+    #[serde(default)]
+    top_level: BTreeMap<String, String>,
+    /// 接管前不存在、断开时应删除的顶层键。
+    #[serde(default)]
+    absent_top_level: Vec<String>,
+    /// `features.*` 的原值；未出现在此处的功能键视为原本不存在。
+    #[serde(default)]
+    features: BTreeMap<String, bool>,
+}
+
+/// 快照与目标配置同目录：`config.toml.melody-hub.restore.json`。
+fn codex_restore_path(path: &Path) -> PathBuf {
+    let filename = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("config");
+    path.with_file_name(format!("{}.melody-hub.restore.json", filename))
+}
+
+/// 我们自己的模型列表文件：`config.toml.melody-hub.models.json`。
+/// 放在 Codex 配置目录里，但 Codex 不读取它，因此不会影响其配置解析。
+fn codex_model_list_path(path: &Path) -> PathBuf {
+    let filename = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("config");
+    path.with_file_name(format!("{}.melody-hub.models.json", filename))
+}
+
+fn write_codex_model_list(
+    path: &Path,
+    available_models: &[String],
+) -> Result<(), String> {
+    let list: Vec<&str> = available_models
+        .iter()
+        .map(|model| model.trim())
+        .filter(|model| !model.is_empty())
+        .collect();
+    let target = codex_model_list_path(path);
+    if list.is_empty() {
+        let _ = fs::remove_file(target);
+        return Ok(());
+    }
+    let json = serde_json::to_string_pretty(&list).map_err(|e| e.to_string())?;
+    write_text_atomic(&target, &json)
+}
+
+fn read_codex_model_list(path: &Path) -> Option<Vec<String>> {
+    let text = fs::read_to_string(codex_model_list_path(path)).ok()?;
+    serde_json::from_str::<Vec<String>>(&text).ok()
+}
+
+/// 清理旧版本写进 `model_catalog_json` 的内联数组（不符合 Codex schema，
+/// 会让配置整体加载失败）；用户自己的取值（合法路径）保持不动。
+fn heal_codex_model_catalog_key(document: &mut Document) {
+    let legacy = document
+        .get("model_catalog_json")
+        .and_then(Item::as_str)
+        .and_then(|value| serde_json::from_str::<Vec<String>>(value).ok())
+        .is_some();
+    if legacy {
+        document.remove("model_catalog_json");
+    }
+}
+
+fn codex_is_managed(document: &Document) -> bool {
+    document.get("model_provider").and_then(Item::as_str) == Some(MELODY_PROVIDER_ID)
+}
+
+fn remove_melody_provider_table(document: &mut Document) {
+    let now_empty = match document
+        .get_mut("model_providers")
+        .and_then(Item::as_table_like_mut)
+    {
+        Some(providers) => {
+            providers.remove(MELODY_PROVIDER_ID);
+            // 只清理我们写入的条目；清空后一并移除空表，避免留下
+            // 无意义的 `[model_providers]` 块（用户的其他 provider 不受影响）。
+            providers.is_empty()
+        }
+        None => false,
+    };
+    if now_empty {
+        document.remove("model_providers");
+    }
+}
+
+/// 记录接管前的原始值（仅在从非托管态进入接管时调用一次）。
+fn capture_codex_restore_record(path: &Path, document: &Document) -> Result<(), String> {
+    let mut record = CodexRestoreRecord::default();
+    for key in CODEX_MANAGED_TOP_LEVEL_KEYS {
+        match document.get(key) {
+            None => record.absent_top_level.push(key.to_string()),
+            Some(item) => {
+                // 非字符串取值不进快照：还原时保持不动，宁可不动也不误删。
+                if let Some(text) = item.as_str() {
+                    record.top_level.insert(key.to_string(), text.to_string());
+                }
+            }
+        }
+    }
+    if let Some(features) = document.get("features").and_then(Item::as_table_like) {
+        for key in CODEX_FEATURE_KEYS {
+            if let Some(enabled) = features.get(key).and_then(Item::as_bool) {
+                record.features.insert(key.to_string(), enabled);
+            }
+        }
+    }
+    let json = serde_json::to_string_pretty(&record).map_err(|e| e.to_string())?;
+    write_text_atomic(&codex_restore_path(path), &json)
+}
+
+fn read_codex_restore_record(path: &Path) -> Option<CodexRestoreRecord> {
+    let text = fs::read_to_string(codex_restore_path(path)).ok()?;
+    serde_json::from_str(&text).ok()
+}
+
+/// 退出接管：按快照还原顶层键与功能开关，并移除我们写入的 provider 表。
+fn restore_codex_model_source(
+    path: &Path,
+    document: &mut Document,
+) -> Result<(), String> {
+    if let Some(record) = read_codex_restore_record(path) {
+        for key in CODEX_MANAGED_TOP_LEVEL_KEYS {
+            if let Some(original) = record.top_level.get(key) {
+                document[key] = value(original.as_str());
+            } else if record.absent_top_level.iter().any(|absent| absent == key) {
+                document.remove(key);
+            }
+        }
+        if let Some(features) = document
+            .get_mut("features")
+            .and_then(Item::as_table_like_mut)
+        {
+            for key in CODEX_FEATURE_KEYS {
+                match record.features.get(key) {
+                    Some(enabled) => {
+                        features.insert(key, value(*enabled));
+                    }
+                    None => {
+                        features.remove(key);
+                    }
+                }
+            }
+        }
+    } else {
+        // 没有快照（更低版本接管留下的状态）：退化为清理我们写入的键。
+        for key in CODEX_MANAGED_TOP_LEVEL_KEYS {
+            document.remove(key);
+        }
+        if let Some(features) = document
+            .get_mut("features")
+            .and_then(Item::as_table_like_mut)
+        {
+            for key in CODEX_FEATURE_KEYS {
+                features.remove(key);
+            }
+        }
+    }
+    remove_melody_provider_table(document);
+    Ok(())
+}
+
 fn backup_path(path: &Path) -> PathBuf {
     let filename = path
         .file_name()
@@ -1414,6 +1699,221 @@ mod tests {
             "http://127.0.0.1:8080/v1"
         );
         assert!(normalize_endpoint("127.0.0.1:8080").is_err());
+    }
+
+    fn unique_temp_path(tag: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "melody-hub-agent-apps-{}-{}-{}.toml",
+            tag,
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|elapsed| elapsed.as_nanos())
+                .unwrap_or_default()
+        ))
+    }
+
+    fn cleanup(path: &Path) {
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(codex_restore_path(path));
+    }
+
+    /// 订阅登录（auth_mode = chatgpt + tokens）应被识别为 ChatGPT 登录。
+    #[test]
+    fn codex_auth_state_detects_chatgpt_subscription() {
+        let path = unique_temp_path("auth-chatgpt").with_extension("json");
+        fs::write(
+            &path,
+            r#"{"auth_mode":"chatgpt","OPENAI_API_KEY":null,"tokens":{"access_token":"a","refresh_token":"r","id_token":"i","account_id":"acct"}}"#,
+        )
+        .unwrap();
+
+        let state = codex_auth_state_from(&path);
+        assert!(state.has_subscription);
+        assert_eq!(state.login, "chatgpt");
+        assert!(state.auth_file_exists);
+        let _ = fs::remove_file(&path);
+    }
+
+    /// 只有 API Key 的登录不应被误判为订阅。
+    #[test]
+    fn codex_auth_state_detects_api_key_login() {
+        let path = unique_temp_path("auth-apikey").with_extension("json");
+        fs::write(
+            &path,
+            r#"{"OPENAI_API_KEY":"sk-test","auth_mode":"apikey"}"#,
+        )
+        .unwrap();
+
+        let state = codex_auth_state_from(&path);
+        assert!(!state.has_subscription);
+        assert_eq!(state.login, "api_key");
+        let _ = fs::remove_file(&path);
+    }
+
+    /// 文件缺失或损坏按未登录处理，且不 panic。
+    #[test]
+    fn codex_auth_state_handles_missing_and_broken_files() {
+        let missing = unique_temp_path("auth-missing").with_extension("json");
+        let state = codex_auth_state_from(&missing);
+        assert_eq!(state.login, "none");
+        assert!(!state.auth_file_exists);
+
+        let broken = unique_temp_path("auth-broken").with_extension("json");
+        fs::write(&broken, "not json").unwrap();
+        let state = codex_auth_state_from(&broken);
+        assert_eq!(state.login, "none");
+        assert!(state.auth_file_exists);
+        let _ = fs::remove_file(&broken);
+    }
+
+    /// 接管不得写入 Codex 的 `model_catalog_json`（该键要求路径且会让配置
+    /// 加载失败），模型列表改为我们自己的旁挂文件。
+    #[test]
+    fn codex_takeover_keeps_model_list_out_of_codex_config() {
+        let path = unique_temp_path("codex-catalog");
+        fs::write(
+            &path,
+            "model = \"gpt-5.6-luna\"\nmodel_catalog_json = \"[\\\"legacy\\\"]\"\n",
+        )
+        .unwrap();
+
+        let available = vec!["gpt-4.1".to_string(), "deepseek-v4-flash".to_string()];
+        let flags = BTreeMap::new();
+        save_codex(SaveTarget {
+            path: &path,
+            endpoint: "http://127.0.0.1:8080/v1",
+            model: "gpt-4.1",
+            available_models: &available,
+            auth_token: Some("token"),
+            reasoning_effort: "max",
+            thinking_enabled: true,
+            feature_flags: &flags,
+            model_source: "melody-hub",
+        })
+        .unwrap();
+
+        let document = read_toml_document(&path).unwrap();
+        // 旧版本写入的内联数组必须被清掉，且不再写入新值。
+        assert!(document.get("model_catalog_json").is_none());
+        // 模型列表改存旁挂文件，读回顺序与内容一致。
+        assert_eq!(read_codex_model_list(&path), Some(available.clone()));
+        assert_eq!(read_codex(&path).unwrap().available_models, available);
+        // 用户自己的其他键照旧保留。
+        assert_eq!(
+            document.get("service_tier").and_then(Item::as_str),
+            None,
+            "sample config has no service_tier"
+        );
+
+        disconnect_codex(&path).unwrap();
+        // 断开后旁挂文件清理，原始 model 还原。
+        assert!(read_codex_model_list(&path).is_none());
+        assert_eq!(
+            read_toml_document(&path)
+                .unwrap()
+                .get("model")
+                .and_then(Item::as_str),
+            Some("gpt-5.6-luna")
+        );
+        cleanup(&path);
+    }
+
+    /// keep 模式：订阅用户编辑功能开关时，模型来源必须原封不动。
+    #[test]
+    fn codex_keep_mode_preserves_model_source() {
+        let path = unique_temp_path("codex-keep");
+        fs::write(
+            &path,
+            "model = \"gpt-5.6-luna\"\nmodel_reasoning_effort = \"max\"\n\n[features]\nweb_search = true\n",
+        )
+        .unwrap();
+
+        let available = vec!["gpt-4.1".to_string()];
+        let flags = BTreeMap::from([("web_search".to_string(), false)]);
+        save_codex(SaveTarget {
+            path: &path,
+            endpoint: "http://127.0.0.1:8080",
+            model: "gpt-4.1",
+            available_models: &available,
+            auth_token: Some("token"),
+            reasoning_effort: "max",
+            thinking_enabled: true,
+            feature_flags: &flags,
+            model_source: "keep",
+        })
+        .unwrap();
+
+        let document = read_toml_document(&path).unwrap();
+        assert_eq!(
+            document.get("model").and_then(Item::as_str),
+            Some("gpt-5.6-luna")
+        );
+        assert!(document.get("model_provider").is_none());
+        assert!(document.get("model_providers").is_none());
+        assert!(document.get("model_catalog_json").is_none());
+        // 功能开关仍然按用户的编辑写入。
+        assert_eq!(
+            document
+                .get("features")
+                .and_then(Item::as_table_like)
+                .and_then(|features| features.get("web_search"))
+                .and_then(Item::as_bool),
+            Some(false)
+        );
+        cleanup(&path);
+    }
+
+    /// 接管后再断开，必须还原用户原本的模型与 provider，而不是直接删除。
+    #[test]
+    fn codex_takeover_then_disconnect_restores_original_model_source() {
+        let path = unique_temp_path("codex-restore");
+        fs::write(
+            &path,
+            "model = \"gpt-5.6-luna\"\nmodel_reasoning_effort = \"max\"\n",
+        )
+        .unwrap();
+
+        let available = vec!["gpt-4.1".to_string()];
+        let flags = BTreeMap::new();
+        save_codex(SaveTarget {
+            path: &path,
+            endpoint: "http://127.0.0.1:8080",
+            model: "gpt-4.1",
+            available_models: &available,
+            auth_token: Some("token"),
+            reasoning_effort: "high",
+            thinking_enabled: true,
+            feature_flags: &flags,
+            model_source: "melody-hub",
+        })
+        .unwrap();
+
+        let managed = read_toml_document(&path).unwrap();
+        assert_eq!(
+            managed.get("model_provider").and_then(Item::as_str),
+            Some(MELODY_PROVIDER_ID)
+        );
+        assert_eq!(managed.get("model").and_then(Item::as_str), Some("gpt-4.1"));
+        assert!(codex_restore_path(&path).exists());
+
+        disconnect_codex(&path).unwrap();
+
+        let restored = read_toml_document(&path).unwrap();
+        assert_eq!(
+            restored.get("model").and_then(Item::as_str),
+            Some("gpt-5.6-luna")
+        );
+        assert_eq!(
+            restored
+                .get("model_reasoning_effort")
+                .and_then(Item::as_str),
+            Some("max")
+        );
+        assert!(restored.get("model_provider").is_none());
+        assert!(restored.get("model_providers").is_none());
+        assert!(!codex_restore_path(&path).exists());
+        cleanup(&path);
     }
 
     #[test]
@@ -1533,6 +2033,7 @@ mode = "limited"
             auth_token: Some("token"),
             reasoning_effort: "xhigh",
             feature_flags: &feature_flags,
+            model_source: "melody-hub",
         })
         .unwrap();
         let values = read_codex(&path).unwrap();
@@ -1568,6 +2069,7 @@ mode = "limited"
             reasoning_effort: "medium",
             thinking_enabled: true,
             feature_flags: &claude_flags,
+            model_source: "melody-hub",
         })
         .unwrap();
         save_opencode(SaveTarget {
@@ -1579,6 +2081,7 @@ mode = "limited"
             reasoning_effort: "high",
             thinking_enabled: true,
             feature_flags: &opencode_flags,
+            model_source: "melody-hub",
         })
         .unwrap();
 
@@ -1628,6 +2131,7 @@ mode = "limited"
             auth_token: None,
             reasoning_effort: "",
             feature_flags: &BTreeMap::new(),
+            model_source: "melody-hub",
         })
         .unwrap();
         save_codex(SaveTarget {
@@ -1639,6 +2143,7 @@ mode = "limited"
             auth_token: None,
             reasoning_effort: "",
             feature_flags: &BTreeMap::new(),
+            model_source: "melody-hub",
         })
         .unwrap();
         assert!(read_codex(&codex_path).unwrap().model.is_empty());
@@ -1652,6 +2157,7 @@ mode = "limited"
             reasoning_effort: "",
             thinking_enabled: false,
             feature_flags: &BTreeMap::new(),
+            model_source: "melody-hub",
         })
         .unwrap();
         save_claude(SaveTarget {
@@ -1663,6 +2169,7 @@ mode = "limited"
             reasoning_effort: "",
             thinking_enabled: false,
             feature_flags: &BTreeMap::new(),
+            model_source: "melody-hub",
         })
         .unwrap();
         assert!(read_claude(&claude_path).unwrap().model.is_empty());
@@ -1676,6 +2183,7 @@ mode = "limited"
             reasoning_effort: "",
             thinking_enabled: false,
             feature_flags: &BTreeMap::new(),
+            model_source: "melody-hub",
         })
         .unwrap();
         save_opencode(SaveTarget {
@@ -1687,6 +2195,7 @@ mode = "limited"
             reasoning_effort: "",
             thinking_enabled: false,
             feature_flags: &BTreeMap::new(),
+            model_source: "melody-hub",
         })
         .unwrap();
         assert!(read_opencode(&opencode_path).unwrap().model.is_empty());

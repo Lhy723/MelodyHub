@@ -25,6 +25,13 @@ export interface UpdateMetadata {
 
 export type AgentAppId = 'codex' | 'claude' | 'opencode';
 
+/** Codex 登录态摘要：不含任何令牌内容。 */
+export interface CodexAuthState {
+  login: 'chatgpt' | 'api_key' | 'none';
+  hasSubscription: boolean;
+  authFileExists: boolean;
+}
+
 export interface AgentAppStatus {
   id: AgentAppId;
   configPath: string;
@@ -43,6 +50,8 @@ export interface AgentAppStatus {
   thinkingEnabled: boolean;
   featureFlags: Record<string, boolean>;
   codexSettings?: Record<string, unknown>;
+  /** 仅 Codex：登录方式（用于识别订阅登录）。 */
+  codexAuth?: CodexAuthState;
   configText: string;
   error?: string | null;
 }
@@ -57,6 +66,8 @@ export interface AgentAppConfigInput {
   featureFlags: Record<string, boolean>;
   /** null keeps the existing credential; a string replaces it. */
   authToken: string | null;
+  /** Codex 模型来源：`melody-hub`（默认，接管）| `keep`（保留 Codex 自身配置）。 */
+  modelSource?: 'melody-hub' | 'keep';
 }
 
 /** Progress events streamed from `download_and_install_update`. */
@@ -123,8 +134,7 @@ export const desktopApi: DesktopApi = {
   getProxyStatus: () =>
     invoke<{ running: boolean; host: string; port: number; uptimeSecs: number }>('get_proxy_status'),
   getStats: (timeRange) => invoke<UsageStats>('get_stats', { timeRange }),
-  getRecentRequests: (limit, timeRange) =>
-    invoke<RequestRecord[]>('get_recent_requests', { limit, timeRange }),
+  getRecentRequests: (limit, timeRange) => invoke<RequestRecord[]>('get_recent_requests', { limit, timeRange }),
   getDailyUsage: (timeRange?) => invoke<DailyUsage[]>('get_daily_usage', { timeRange: timeRange ?? null }),
   resetStats: () => invoke('reset_stats'),
   exitApp: () => invoke('exit_app'),
@@ -132,9 +142,7 @@ export const desktopApi: DesktopApi = {
   openLogDir: () => invoke('open_log_dir'),
   exportLogs: () => invoke<string>('export_logs'),
   exportConfig: () => invoke<string>('export_config'),
-  importConfig: (
-    payloadJson: string,
-  ): Promise<{ settingsApplied: boolean; providers: number; aggregations: number }> =>
+  importConfig: (payloadJson: string): Promise<{ settingsApplied: boolean; providers: number; aggregations: number }> =>
     invoke('import_config', { payloadJson }),
   fetchProviderModels: (flavor, apiBase, apiKey) => invoke('fetch_provider_models', { flavor, apiBase, apiKey }),
   testProviderConnection: (flavor, apiBase, apiKey) => invoke('test_provider_connection', { flavor, apiBase, apiKey }),
